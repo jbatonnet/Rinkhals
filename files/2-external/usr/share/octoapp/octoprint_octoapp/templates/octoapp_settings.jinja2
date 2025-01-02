@@ -1,0 +1,31 @@
+<form class="form-horizontal">
+	<div class="control-group" id="octoapp-list">
+		<h4>{{ _("Connected devices") }}</h4>
+		<p>{{ _("Using the app <b>automatically</b> connects a device. Devices are <b>automatically</b> disconnected when the app is uninstalled or the registration expires.") }}</p>
+		<p>{{ _("iOS expires Live Activities after 8h, open the app to refresh the Live Activty once it's expired.") }}</p>
+		<table data-bind="" class="table table-striped">
+				<thead>
+				<tr>
+					<th style="width:33%">Device</th>
+					<th>Last seen</th>
+					<th>Expires</th>
+					<th>App version</th>
+				</tr>
+				</thead>
+				<tbody>
+				<!-- ko foreach: apps -->
+		        <tr>
+					<td><span data-bind="text: $data.displayName"></span>&nbsp;&nbsp;<small><span data-bind="text: $data.displayDescription"></span></small></td>
+					<td><span data-bind="text: moment(parseFloat($data.lastSeenAt) * 1000).format('lll')"></span></td>
+					<td><span data-bind="text: $data.expireAt ? (moment(parseFloat($data.expireAt) * 1000).fromNow()) : ('Never')"></span></td>
+					<td>
+						<span data-bind="text: $data.appVersion"></span>
+						<span data-bind="visible: $data.appOutdated" style="border-radius:20px; padding: 2px 10px; color: white; background: #ff5151; white-space: nowrap;">Needs update</span>
+					</td>
+				</tr>
+		    	<!-- /ko -->
+				</tbody>
+		</table>
+		<small>The OctoApp plugin is based on the OctoEverywhere plugin</small>
+	</div>
+</form>

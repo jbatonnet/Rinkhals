@@ -1,0 +1,19 @@
+Metadata-Version: 2.1
+Name: octoflatbuffers
+Version: 2.0.5
+Summary: A special fork of flatbuffers used for OctoEverywhere!
+Home-page: https://github.com/QuinnDamerell/octoflatbuffers
+Author: Quinn Damerell
+Author-email: support@octoeverywhere.com
+License: Apache 2.0
+Project-URL: Documentation, https://github.com/QuinnDamerell/octoflatbuffers
+Project-URL: Source, https://github.com/QuinnDamerell/octoflatbuffers
+Classifier: Intended Audience :: Developers
+Classifier: License :: OSI Approved :: Apache Software License
+Classifier: Operating System :: OS Independent
+Classifier: Programming Language :: Python
+Classifier: Programming Language :: Python :: 2
+Classifier: Programming Language :: Python :: 3
+Classifier: Topic :: Software Development :: Libraries :: Python Modules
+
+A special fork of flatbuffers used for OctoEverywhere!

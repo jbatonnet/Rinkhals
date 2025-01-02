@@ -1,0 +1,7 @@
+#
+# This file is only used by the moonraker setup, not OctoPrint!
+# OctoPrint uses the package list in the setup.py file.
+#
+# These requirements are optional. If one fails to install we just move on!
+#
+pycryptodome>=3.15.0

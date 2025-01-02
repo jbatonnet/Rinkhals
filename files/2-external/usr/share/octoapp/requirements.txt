@@ -1,0 +1,20 @@
+#
+# This file is only used by the moonraker setup, not OctoPrint!
+# OctoPrint uses the package list in the setup.py file.
+#
+# BUT, for the most part, the packages should be exactly synced between these sources.
+# The only excpetion would be any packages moonraker or OctoPrint depend upon, that the other doesn't.
+#
+# For comments on package lock versions, see the comments in the setup.py file.
+#
+websocket_client>=1.6.0,<1.7.99
+requests>=2.24.0
+octoflatbuffers==2.0.5
+pillow
+certifi>=2023.7.22
+rsa>=4.9
+dnspython>=2.3.0
+httpx==0.24.0
+urllib3>=1.26.15,<1.27.0
+# The following are required only for Moonraker
+configparser

@@ -1,0 +1,11 @@
+backports/configparser/__init__.py,sha256=FYw9t5R_tPvliAPWax9i6IbO6341wVuAnw43YUc0D2Q,54590
+backports/configparser/__pycache__/__init__.cpython-311.pyc,,
+backports/configparser/__pycache__/compat.cpython-311.pyc,,
+backports/configparser/compat.py,sha256=p0dZMhF4m1C7GKZyE_0qAXCWkrUv3LrurqpEWQqHky4,424
+configparser-7.1.0.dist-info/INSTALLER,sha256=zuuue4knoyJ-UwPPXg8fezS7VCrXJQrAP7zeNuwvFQg,4
+configparser-7.1.0.dist-info/LICENSE,sha256=htoPAa6uRjSKPD1GUZXcHOzN55956HdppkuNoEsqR0E,1023
+configparser-7.1.0.dist-info/METADATA,sha256=qpffJDM0PeUmKmej9_bfZvCoF4sJJaGY-lls7iNO6cQ,5388
+configparser-7.1.0.dist-info/RECORD,,
+configparser-7.1.0.dist-info/REQUESTED,sha256=47DEQpj8HBSa-_TImW-5JCeuQeRkm5NMpJWZG3hSuFU,0
+configparser-7.1.0.dist-info/WHEEL,sha256=HiCZjzuy6Dw0hdX5R3LCFPDmFS4BWl8H-8W39XfmgX4,91
+configparser-7.1.0.dist-info/top_level.txt,sha256=cGjaLMOoBR1FK0ApojtzWVmViTtJ7JGIK_HwXiEsvtU,10

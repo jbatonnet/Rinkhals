@@ -230,21 +230,33 @@ fi
 
 
 ################
-# log "> Starting OctoApp companion..."
+log "> Starting OctoApp companion..."
 
-# if [ ! -f $RINKHALS_HOME/.disable-octoapp ]; then
-#     # python -m /usr/share/octoapp/moonraker_octoapp "ewogICAgJ0tsaXBwZXJDb25maWdGb2xkZXInOiAnL3VzZXJlbWFpbi9yaW5raGFscy9xdWljay1kZXBsb3kvaG9tZS9yaW5raGFscy9wcmludGVyX2RhdGEvY29uZmlnJywKICAgICdNb29ucmFrZXJDb25maWdGaWxlJzogJy91c2VyZW1haW4vcmlua2hhbHMvcXVpY2stZGVwbG95L2hvbWUvcmlua2hhbHMvcHJpbnRlcl9kYXRhL2NvbmZpZy9tb29ucmFrZXIuY29uZicsCiAgICAnS2xpcHBlckxvZ0ZvbGRlcic6ICcvdXNlcmVtYWluL3JpbmtoYWxzL3F1aWNrLWRlcGxveS9ob21lL3JpbmtoYWxzL3ByaW50ZXJfZGF0YS9sb2dzJywKICAgICdMb2NhbEZpbGVTdG9yYWdlUGF0aCc6ICcvdXNlcmVtYWluL3JpbmtoYWxzL3F1aWNrLWRlcGxveS9ob21lL3JpbmtoYWxzL29jdG9hcHAnLAogICAgJ0lzT2JzZXJ2ZXInIDogZmFsc2UKfQ=="
+kill_by_name octoapp
 
-#     # {
-#     #     'KlipperConfigFolder': '/useremain/rinkhals/quick-deploy/home/rinkhals/printer_data/config',
-#     #     'MoonrakerConfigFile': '/useremain/rinkhals/quick-deploy/home/rinkhals/printer_data/config/moonraker.conf',
-#     #     'KlipperLogFolder': '/useremain/rinkhals/quick-deploy/home/rinkhals/printer_data/logs',
-#     #     'LocalFileStoragePath': '/useremain/rinkhals/quick-deploy/home/rinkhals/octoapp',
-#     #     'IsObserver' : false
-#     # }
-# else
-#     log "/!\ OctoApp companion was disabled by .disable-octoapp"
-# fi
+if [ ! -f $RINKHALS_HOME/.disable-octoapp ]; then
+    mkdir -p /useremain/home/rinkhals/octoapp
+    cd /usr/share/octoapp
+
+    python -m moonraker_octoapp "ewogICAgIktsaXBwZXJDb25maWdGb2xkZXIiOiAiL3VzZXJlbWFpbi9ob21lL3JpbmtoYWxzL3ByaW50ZXJfZGF0YS9jb25maWciLAogICAgIk1vb25yYWtlckNvbmZpZ0ZpbGUiOiAiL3VzZXJlbWFpbi9ob21lL3JpbmtoYWxzL3ByaW50ZXJfZGF0YS9jb25maWcvbW9vbnJha2VyLmNvbmYiLAogICAgIktsaXBwZXJMb2dGb2xkZXIiOiAiL3VzZXJlbWFpbi9ob21lL3JpbmtoYWxzL3ByaW50ZXJfZGF0YS9sb2dzIiwKICAgICJMb2NhbEZpbGVTdG9yYWdlUGF0aCI6ICIvdXNlcmVtYWluL2hvbWUvcmlua2hhbHMvb2N0b2FwcCIsCiAgICAiSXNPYnNlcnZlciI6IGZhbHNlLAoKICAgICJTZXJ2aWNlTmFtZSI6ICJPY3RvQXBwIiwKICAgICJWaXJ0dWFsRW52UGF0aCI6ICIvdXNlcmVtYWluL2hvbWUvcmlua2hhbHMiLAogICAgIlJlcG9Sb290Rm9sZGVyIjogIi91c3Ivc2hhcmUvb2N0b2FwcCIKfQ==" >> $RINKHALS_ROOT/logs/octoapp.log 2>&1 &
+    assert_by_name octoapp
+
+    cd $RINKHALS_ROOT
+    
+    # {
+    #     "KlipperConfigFolder": "/useremain/home/rinkhals/printer_data/config",
+    #     "MoonrakerConfigFile": "/useremain/home/rinkhals/printer_data/config/moonraker.conf",
+    #     "KlipperLogFolder": "/useremain/home/rinkhals/printer_data/logs",
+    #     "LocalFileStoragePath": "/useremain/home/rinkhals/octoapp",
+    #     "IsObserver": false,
+    #
+    #     "ServiceName": "OctoApp",
+    #     "VirtualEnvPath": "/useremain/home/rinkhals",
+    #     "RepoRootFolder": "/usr/share/octoapp"
+    # }
+else
+    log "/!\ OctoApp companion was disabled by .disable-octoapp"
+fi
 
 
 ################

@@ -13,5 +13,6 @@ export TMPDIR=$PIP_TEMP
 python -m ensurepip
 python -m pip install -r /usr/share/moonraker/scripts/moonraker-requirements.txt
 python -m pip install websockets paho-mqtt aiohttp
+python -m pip install -r /usr/share/octoapp/requirements.txt
 
 rm -rf $PIP_TEMP

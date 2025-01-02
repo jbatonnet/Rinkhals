@@ -1,0 +1,9 @@
+{
+    "KlipperConfigFolder": "/home/pi/printer_data/config",
+    "MoonrakerConfigFile": "/home/pi/printer_data/config/moonraker.conf",
+    "KlipperLogFolder": "/home/pi/printer_data/logs",
+    "LocalFileStoragePath": "/home/pi/printer_data/octoapp-store",
+    "ServiceName": "octoapp",
+    "VirtualEnvPath": "/home/pi/octoapp-env",
+    "RepoRootFolder": "/home/pi/octoapp"
+}
