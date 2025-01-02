@@ -147,6 +147,7 @@ chmod +x ./usr/sbin/* 2> /dev/null
 chmod +x ./usr/libexec/* 2> /dev/null
 chmod +x ./usr/share/scripts/* 2> /dev/null
 chmod +x ./usr/libexec/gcc/arm-buildroot-linux-uclibcgnueabihf/11.4.0/* 2> /dev/null
+chmod +x ./usr/local/bin/* 2> /dev/null
 
 
 ################
@@ -212,6 +213,10 @@ mount --bind /useremain/app/gk/gcodes /userdata/app/gk/printer_data/gcodes
 
 [ -f /userdata/app/gk/printer_data/config/moonraker.conf ] || cp /userdata/app/gk/printer_data/config/default/moonraker.conf /userdata/app/gk/printer_data/config/
 [ -f /userdata/app/gk/printer_data/config/printer.cfg ] || cp /userdata/app/gk/printer_data/config/default/printer.cfg /userdata/app/gk/printer_data/config/
+
+[ -f /userdata/app/gk/K3SysUi.bak ] || cp /userdata/app/gk/K3SysUi /userdata/app/gk/K3SysUi.bak
+rm /userdata/app/gk/K3SysUi
+cp $RINKHALS_ROOT/usr/local/bin/K3SysUi /userdata/app/gk/K3SysUi
 
 
 ################
