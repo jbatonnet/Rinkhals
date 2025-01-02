@@ -2,3 +2,4 @@ build/tmp
 scripts/tmp
 build/dist
 files/4-rinkhals/usr/share/data/framebuffer.bmp
+files/4-rinkhals/usr/share/data/output.bmp

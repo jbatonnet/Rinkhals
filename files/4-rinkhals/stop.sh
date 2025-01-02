@@ -50,6 +50,11 @@ umount -l /lib 2> /dev/null
 umount -l /sbin 2> /dev/null
 umount -l /usr 2> /dev/null
 
+if [ -f /userdata/app/gk/K3SysUi.bak ]; then
+    rm /userdata/app/gk/K3SysUi 2> /dev/null
+    cp /userdata/app/gk/K3SysUi.bak /userdata/app/gk/K3SysUi 2> /dev/null
+fi
+
 
 ################
 log "> Restarting Anycubic apps..."
