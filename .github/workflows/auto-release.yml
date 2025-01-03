@@ -23,4 +23,5 @@ jobs:
             --repo="$GITHUB_REPOSITORY" \
             --title="${GITHUB_REPOSITORY#*/} ${tag}" \
             --generate-notes \
+            --draft \
             build/dist/update.swu

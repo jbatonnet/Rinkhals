@@ -264,6 +264,13 @@ fi
 
 
 ################
+if [ ! -f $RINKHALS_HOME/.disable-moonraker ]; then
+    log "> Waiting for Moonraker to start..."
+    wait_for_port 7126
+fi
+
+
+################
 log "> Starting mjpg-streamer..."
 
 kill_by_name mjpg_streamer
@@ -281,13 +288,6 @@ if [ ! -f $RINKHALS_HOME/.disable-mjpgstreamer ]; then
     fi
 else
     log "/!\ mjpg-streamer was disabled by .disable-mjpgstreamer"
-fi
-
-
-################
-if [ ! -f $RINKHALS_HOME/.disable-moonraker ]; then
-    log "> Waiting for Moonraker to start..."
-    wait_for_port 7126
 fi
 
 
@@ -310,7 +310,7 @@ sleep 1
 
 assert_by_name gklib
 assert_by_name gkapi
-assert_by_name K3SysUi
+#assert_by_name K3SysUi
 
 
 ################
