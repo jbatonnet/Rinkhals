@@ -66,7 +66,7 @@ quit() {
 }
 
 export TZ=UTC
-ntpdate -u pool.ntp.org > /dev/null 2>&1 > /dev/null # Try to sync local time before starting
+ntpdate -u pool.ntp.org > /dev/null # Try to sync local time before starting
 
 KOBRA_VERSION=`cat /useremain/dev/version`
 RINKHALS_ROOT=`dirname $(realpath $0)`
