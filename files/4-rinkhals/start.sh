@@ -66,7 +66,7 @@ quit() {
 }
 
 export TZ=UTC
-ntpclient -s -h pool.ntp.org > /dev/null # Try to sync local time before starting
+ntpd -q -g -c /tmp/ntp.conf -d > /dev/null # Try to sync local time before starting
 
 KOBRA_VERSION=`cat /useremain/dev/version`
 RINKHALS_ROOT=`dirname $(realpath $0)`
