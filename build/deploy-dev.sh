@@ -14,7 +14,7 @@ export RCLONE_CONFIG_KOBRA_TYPE=sftp
 export RCLONE_CONFIG_KOBRA_HOST=$KOBRA_IP
 export RCLONE_CONFIG_KOBRA_PORT=${KOBRA_PORT:-22}
 export RCLONE_CONFIG_KOBRA_USER=root
-export RCLONE_CONFIG_KOBRA_PASS=`rclone obscure "rockchip"`
+export RCLONE_CONFIG_KOBRA_PASS=$(rclone obscure "rockchip")
 
 # Sync base files
 mkdir -p /tmp/target
@@ -45,28 +45,8 @@ cp -pr /files/4-rinkhals/* /tmp/target
 
 echo "dev" > /tmp/target/.version
 
-
-# TODO: We need to wait for this PR to complete: https://github.com/rclone/rclone/pull/8040
-# # Recreate symbolic links to save space
-# echo "Optimizing size..."
-# cd /tmp/target
-
-# for FILE in `find -type f -name "*.so*"`; do
-#     FILES=`ls -al $FILE*`
-#     SIZE=`echo "$FILES" | head -n 1 | awk '{print $5}'`
-#     CANONICAL=`echo "$FILES" | awk -v SIZE="$SIZE" '{ if ($5 == SIZE) { print $NF } }' | tail -n 1`
-
-#     if [ "$FILE" != "$CANONICAL" ]; then
-#         #echo "$FILE ($SIZE bytes) > $CANONICAL"
-
-#         rm $FILE
-#         ln -s $CANONICAL $FILE
-#     fi
-# done
-
-
 # Push to the Kobra
-rclone -v sync --absolute \
+rclone -v sync --absolute --sftp-disable-hashcheck \
     --filter "- *.log" --filter "- *.pyc" --filter "- __pycache__/**" \
     --filter "+ /*.*" --filter "+ /bin/**" --filter "+ /sbin/**" --filter "+ /usr/**" --filter "+ /etc/**" --filter "+ /home/**" --filter "+ /lib/**" --filter "+ /.version" \
     --filter "- *" \

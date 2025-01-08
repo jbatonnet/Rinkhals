@@ -2,13 +2,13 @@ function log() {
     echo "${*}"
 
     mkdir -p /useremain/rinkhals/.current/logs
-    echo "`date`: ${*}" >> /useremain/rinkhals/.current/logs/rinkhals.log
+    echo "$(date): ${*}" >> /useremain/rinkhals/.current/logs/rinkhals.log
 }
 function kill_by_name() {
-    PIDS=`ps | grep "$1" | grep -v grep | awk '{print $1}'`
+    PIDS=$(ps | grep "$1" | grep -v grep | awk '{print $1}')
 
-    for PID in `echo "$PIDS"`; do
-        CMDLINE=`cat /proc/$PID/cmdline` 2>/dev/null
+    for PID in $(echo "$PIDS"); do
+        CMDLINE=$(cat /proc/$PID/cmdline) 2>/dev/null
 
         log "Killing $PID ($CMDLINE)"
         kill -9 $PID
@@ -16,7 +16,7 @@ function kill_by_name() {
 }
 
 
-RINKHALS_ROOT=`dirname $0`
+RINKHALS_ROOT=$(dirname $0)
 
 cd $RINKHALS_ROOT
 mkdir -p ./logs

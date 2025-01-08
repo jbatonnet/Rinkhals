@@ -21,7 +21,7 @@ cp /userdata/app/gk/printer_data/logs/*.log $TMP_PATH/moonraker/ 2> /dev/null
 
 # Collect different Rinkhals versions logs
 cd /useremain/rinkhals
-for VERSION in `ls -1d */`; do
+for VERSION in $(ls -1d */); do
     mkdir -p $TMP_PATH/$VERSION
     cp /useremain/rinkhals/$VERSION*.log $TMP_PATH/$VERSION 2> /dev/null
     cp /useremain/rinkhals/$VERSION/logs/*.log $TMP_PATH/$VERSION 2> /dev/null

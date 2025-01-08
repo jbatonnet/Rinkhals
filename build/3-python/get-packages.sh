@@ -14,7 +14,7 @@ export RCLONE_CONFIG_KOBRA_TYPE=sftp
 export RCLONE_CONFIG_KOBRA_HOST=$KOBRA_IP
 export RCLONE_CONFIG_KOBRA_PORT=${KOBRA_PORT:-22}
 export RCLONE_CONFIG_KOBRA_USER=root
-export RCLONE_CONFIG_KOBRA_PASS=`rclone obscure "rockchip"`
+export RCLONE_CONFIG_KOBRA_PASS=$(rclone obscure "rockchip")
 
 
 mkdir -p /files/3-python/usr/lib/python3.11/site-packages
