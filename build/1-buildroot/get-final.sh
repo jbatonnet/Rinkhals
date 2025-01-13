@@ -18,7 +18,7 @@ export RCLONE_CONFIG_BUILDER_TYPE=sftp
 export RCLONE_CONFIG_BUILDER_HOST=$BUILDER_IP
 export RCLONE_CONFIG_BUILDER_PORT=${BUILDER_PORT:-22}
 export RCLONE_CONFIG_BUILDER_USER=${BUILDER_USER:-"root"}
-export RCLONE_CONFIG_BUILDER_PASS=`rclone obscure "${BUILDER_PASS}"`
+export RCLONE_CONFIG_BUILDER_PASS=$(rclone obscure "${BUILDER_PASS}")
 
 
 rclone -v sync Builder:$BUILDER_PATH/output/final /files/1-buildroot

@@ -23,9 +23,9 @@ chmod +x $TMP_TOOL_PATH/dropbear
 chmod +x $TMP_TOOL_PATH/sftp-server
 
 # Kill anything on port 2222
-INODE=`cat /proc/net/tcp | grep 00000000:08AE | awk '/.*:.*:.*/{print $10;}'`
+INODE=$(cat /proc/net/tcp | grep 00000000:08AE | awk '/.*:.*:.*/{print $10;}')
 if [[ "$INODE" != "" ]]; then
-    PID=`ls -l /proc/*/fd/* 2> /dev/null | grep "socket:\[$INODE\]" | awk -F'/' '{print $3}'`
+    PID=$(ls -l /proc/*/fd/* 2> /dev/null | grep "socket:\[$INODE\]" | awk -F'/' '{print $3}')
     kill -9 $PID
     sleep 1
 fi

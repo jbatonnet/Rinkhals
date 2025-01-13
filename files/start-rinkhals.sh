@@ -2,13 +2,13 @@
 
 function log() {
     echo "${*}"
-    echo "`date`: ${*}" >> /useremain/rinkhals/rinkhals.log
+    echo "$(date): ${*}" >> /useremain/rinkhals/rinkhals.log
 }
 
 log
 log "Starting Rinkhals..."
 
-CALLER=`cat /proc/$PPID/cmdline`
+CALLER=$(cat /proc/$PPID/cmdline)
 log "Rinkhals startup was called from $CALLER ($PPID)"
 
 if [ ! -f /useremain/rinkhals/.version ]; then
@@ -21,7 +21,7 @@ if [ -f /mnt/udisk/.disable-rinkhals ] || [ -f /useremain/rinkhals/.disable-rink
     exit 1
 fi
 
-RINKHALS_VERSION=`cat /useremain/rinkhals/.version`
+RINKHALS_VERSION=$(cat /useremain/rinkhals/.version)
 log "Rinkhals version $RINKHALS_VERSION selected"
 
 if [ ! -d /useremain/rinkhals/$RINKHALS_VERSION ]; then

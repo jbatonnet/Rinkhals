@@ -19,8 +19,8 @@ fi
 
 function log() {
     echo "${*}"
-    echo "`date`: ${*}" >> /useremain/rinkhals/install.log
-    echo "`date`: ${*}" >> /mnt/udisk/aGVscF9zb3Nf/install.log
+    echo "$(date): ${*}" >> /useremain/rinkhals/install.log
+    echo "$(date): ${*}" >> /mnt/udisk/aGVscF9zb3Nf/install.log
 }
 function progress() {
     if [ "$1" == "success" ]; then
@@ -65,7 +65,7 @@ progress 0
 
 
 # Make sure we install on the right compatible version
-KOBRA_VERSION=`cat /useremain/dev/version`
+KOBRA_VERSION=$(cat /useremain/dev/version)
 
 if [[ "$KOBRA_VERSION" != "2.3.5.3" ]]; then
     log "This Rinkhals version is only compatible with Kobra firmware 2.3.5.3, stopping installation"
@@ -108,7 +108,7 @@ cp /userdata/app/gk/config/device_account.json /mnt/udisk/aGVscF9zb3Nf/device_ac
 # Copy Rinkhals
 progress 0.3
 
-RINKHALS_VERSION=`cat ${update_file_path}/.version`
+RINKHALS_VERSION=$(cat ${update_file_path}/.version)
 log "Installing Rinkhals version $RINKHALS_VERSION"
 
 log "Copying Rinkhals files"
@@ -131,7 +131,7 @@ rm /useremain/rinkhals/.disable-rinkhals
 # Install Rinkhals loader
 progress 0.9
 
-PRESENT=`cat /userdata/app/gk/start.sh | grep "Rinkhals/begin"`
+PRESENT=$(cat /userdata/app/gk/start.sh | grep "Rinkhals/begin")
 if [ "$PRESENT" == "" ]; then
     log "Installing Rinkhals loader as it is missing"
 

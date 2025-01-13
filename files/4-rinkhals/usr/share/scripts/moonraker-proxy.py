@@ -169,7 +169,7 @@ async def websocket_handler(request):
                             
                             if data["method"] == "printer.print.start" and REMOTE_MODE == 'lan':
                                 log('Intercepted "printer.print.start", replacing with MQTT call...')
-                                mqtt_printfile(data['params']['filename'])
+                                await mqtt_printfile(data['params']['filename'])
                                 continue
 
                             elif data["method"] == "server.files.metadata":

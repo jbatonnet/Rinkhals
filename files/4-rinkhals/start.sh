@@ -1,55 +1,5 @@
-msleep() {
-    usleep $(($1 * 1000))
-}
-beep() {
-    echo 1 > /sys/class/pwm/pwmchip0/pwm0/enable
-    usleep $((${*}*1000))
-    echo 0 > /sys/class/pwm/pwmchip0/pwm0/enable
-}
-log() {
-    echo "${*}"
+source $(dirname $(realpath $0))/tools.sh
 
-    mkdir -p $RINKHALS_ROOT/logs
-    echo "`date`: ${*}" >> $RINKHALS_ROOT/logs/rinkhals.log
-}
-kill_by_name() {
-    PIDS=`ps | grep "$1" | grep -v grep | awk '{print $1}'`
-
-    for PID in `echo "$PIDS"`; do
-        CMDLINE=`cat /proc/$PID/cmdline` 2>/dev/null
-
-        log "Killing $PID ($CMDLINE)"
-        kill -9 $PID
-    done
-}
-assert_by_name() {
-    PIDS=`ps | grep "$1" | grep -v grep | awk '{print $1}'`
-
-    if [ "$PIDS" == "" ]; then
-        log "/!\ ${*} should be running but it's not"
-        quit
-    fi
-}
-wait_for_port() {
-    DELAY=500
-    TOTAL=0
-
-    while [ 1 ]; do
-        OPEN=`netstat -tln | grep :$1`
-        if [ "$OPEN" != "" ]; then
-            break
-        fi
-
-        if [ "$TOTAL" -gt "60000" ]; then
-            log "/!\ Timeout waiting for port $1 to open"
-            quit
-        fi
-
-        msleep $DELAY
-
-        TOTAL=$(( $TOTAL + $DELAY ))
-    done
-}
 quit() {
     echo
     log "/!\\ Startup failed, stopping Rinkhals..."
@@ -67,10 +17,10 @@ quit() {
 export TZ=UTC
 ntpclient -s -h pool.ntp.org > /dev/null # Try to sync local time before starting
 
-KOBRA_VERSION=`cat /useremain/dev/version`
-RINKHALS_ROOT=`dirname $(realpath $0)`
-RINKHALS_VERSION=`cat $RINKHALS_ROOT/.version`
-RINKHALS_HOME=/useremain/home/rinkhals
+KOBRA_VERSION=$(cat /useremain/dev/version)
+export RINKHALS_ROOT=$(dirname $(realpath $0))
+export RINKHALS_VERSION=$(cat $RINKHALS_ROOT/.version)
+export RINKHALS_HOME=/useremain/home/rinkhals
 
 if [ "$KOBRA_VERSION" != "2.3.5.3" ]; then
     log "Your printer has firmware $KOBRA_VERSION. This Rinkhals version is only compatible with Kobra firmware 2.3.5.3, stopping startup"
@@ -86,7 +36,7 @@ mkdir -p ./logs
 if [ ! -f /tmp/rinkhals-bootid ]; then
     echo $RANDOM > /tmp/rinkhals-bootid
 fi
-BOOT_ID=`cat /tmp/rinkhals-bootid`
+BOOT_ID=$(cat /tmp/rinkhals-bootid)
 
 log
 log "[$BOOT_ID] Starting Rinkhals..."
@@ -117,9 +67,10 @@ log "| Rinkhals home: $RINKHALS_HOME"
 log " --------------------------------------------------"
 echo
 
-REMOTE_MODE=`cat /useremain/dev/remote_ctrl_mode`
+REMOTE_MODE=$(cat /useremain/dev/remote_ctrl_mode)
 if [ "$REMOTE_MODE" != "lan" ]; then
-    log "LAN mode is disabled, some functions might not work properly"
+    log "/!\ LAN mode is disabled, some functions might not work properly"
+    echo
 fi
 
 touch /useremain/rinkhals/.disable-rinkhals
@@ -233,24 +184,6 @@ fi
 
 
 ################
-# log "> Starting OctoApp companion..."
-
-# if [ ! -f $RINKHALS_HOME/.disable-octoapp ]; then
-#     # python -m /usr/share/octoapp/moonraker_octoapp "ewogICAgJ0tsaXBwZXJDb25maWdGb2xkZXInOiAnL3VzZXJlbWFpbi9yaW5raGFscy9xdWljay1kZXBsb3kvaG9tZS9yaW5raGFscy9wcmludGVyX2RhdGEvY29uZmlnJywKICAgICdNb29ucmFrZXJDb25maWdGaWxlJzogJy91c2VyZW1haW4vcmlua2hhbHMvcXVpY2stZGVwbG95L2hvbWUvcmlua2hhbHMvcHJpbnRlcl9kYXRhL2NvbmZpZy9tb29ucmFrZXIuY29uZicsCiAgICAnS2xpcHBlckxvZ0ZvbGRlcic6ICcvdXNlcmVtYWluL3JpbmtoYWxzL3F1aWNrLWRlcGxveS9ob21lL3JpbmtoYWxzL3ByaW50ZXJfZGF0YS9sb2dzJywKICAgICdMb2NhbEZpbGVTdG9yYWdlUGF0aCc6ICcvdXNlcmVtYWluL3JpbmtoYWxzL3F1aWNrLWRlcGxveS9ob21lL3JpbmtoYWxzL29jdG9hcHAnLAogICAgJ0lzT2JzZXJ2ZXInIDogZmFsc2UKfQ=="
-
-#     # {
-#     #     'KlipperConfigFolder': '/useremain/rinkhals/quick-deploy/home/rinkhals/printer_data/config',
-#     #     'MoonrakerConfigFile': '/useremain/rinkhals/quick-deploy/home/rinkhals/printer_data/config/moonraker.conf',
-#     #     'KlipperLogFolder': '/useremain/rinkhals/quick-deploy/home/rinkhals/printer_data/logs',
-#     #     'LocalFileStoragePath': '/useremain/rinkhals/quick-deploy/home/rinkhals/octoapp',
-#     #     'IsObserver' : false
-#     # }
-# else
-#     log "/!\ OctoApp companion was disabled by .disable-octoapp"
-# fi
-
-
-################
 log "> Starting nginx..."
 
 kill_by_name nginx
@@ -284,7 +217,7 @@ export LD_LIBRARY_PATH=/userdata/app/gk:$LD_LIBRARY_PATH
 sleep 1
 
 ./gkapi &> $RINKHALS_ROOT/logs/gkapi.log &
-./K3SysUi &> $RINKHALS_ROOT/logs/gkui.log &
+./K3SysUi &> $RINKHALS_ROOT/logs/K3SysUi.log &
 
 cd $RINKHALS_ROOT
 

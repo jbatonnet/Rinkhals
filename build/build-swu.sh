@@ -40,13 +40,13 @@ echo "Optimizing size..."
 
 cd /tmp/update_swu/rinkhals
 
-for FILE in `find -type f -name "*.so*"`; do
-    FILES=`ls -al $FILE*`
-    SIZE=`echo "$FILES" | head -n 1 | awk '{print $5}'`
-    CANONICAL=`echo "$FILES" | awk -v SIZE="$SIZE" '{ if ($5 == SIZE) { print $NF } }' | tail -n 1`
+for FILE in $(find -type f -name "*.so*"); do
+    FILES=$(ls -al $FILE*)
+    SIZE=$(echo "$FILES" | head -n 1 | awk '{print $5}')
+    CANONICAL=$(echo "$FILES" | awk -v SIZE="$SIZE" '{ if ($5 == SIZE) { print $NF } }' | tail -n 1)
 
     if [ "$FILE" != "$CANONICAL" ]; then
-        #RELPATH=`python3 -c "import os.path; print(os.path.relpath('$CANONICAL', '$(dirname $FILE)'))"`
+        #RELPATH=$(python3 -c "import os.path; print(os.path.relpath('$CANONICAL', '$(dirname $FILE)'))")
         #echo "$FILE ($SIZE bytes) > $(basename $CANONICAL)"
 
         rm $FILE
@@ -54,10 +54,10 @@ for FILE in `find -type f -name "*.so*"`; do
     fi
 done
 
-BUSYBOX_SIZE=`ls -al ./bin/busybox | awk '{print $5}'`
+BUSYBOX_SIZE=$(ls -al ./bin/busybox | awk '{print $5}')
 
-for FILE in `find ./bin -type f | grep -v busybox`; do
-    SIZE=`ls -al $FILE | awk '{print $5}'`
+for FILE in $(find ./bin -type f | grep -v busybox); do
+    SIZE=$(ls -al $FILE | awk '{print $5}')
 
     if [ "$SIZE" -eq "$BUSYBOX_SIZE" ]; then
         #echo "$FILE ($SIZE bytes) > busybox"
@@ -67,8 +67,8 @@ for FILE in `find ./bin -type f | grep -v busybox`; do
     fi
 done
 
-for FILE in `find ./sbin -type f`; do
-    SIZE=`ls -al $FILE | awk '{print $5}'`
+for FILE in $(find ./sbin -type f); do
+    SIZE=$(ls -al $FILE | awk '{print $5}')
 
     if [ "$SIZE" -eq "$BUSYBOX_SIZE" ]; then
         #echo "$FILE ($SIZE bytes) > busybox"
@@ -78,8 +78,8 @@ for FILE in `find ./sbin -type f`; do
     fi
 done
 
-for FILE in `find ./usr/bin -type f`; do
-    SIZE=`ls -al $FILE | awk '{print $5}'`
+for FILE in $(find ./usr/bin -type f); do
+    SIZE=$(ls -al $FILE | awk '{print $5}')
 
     if [ "$SIZE" -eq "$BUSYBOX_SIZE" ]; then
         #echo "$FILE ($SIZE bytes) > busybox"
@@ -89,8 +89,8 @@ for FILE in `find ./usr/bin -type f`; do
     fi
 done
 
-for FILE in `find ./usr/sbin -type f`; do
-    SIZE=`ls -al $FILE | awk '{print $5}'`
+for FILE in $(find ./usr/sbin -type f); do
+    SIZE=$(ls -al $FILE | awk '{print $5}')
 
     if [ "$SIZE" -eq "$BUSYBOX_SIZE" ]; then
         #echo "$FILE ($SIZE bytes) > busybox"

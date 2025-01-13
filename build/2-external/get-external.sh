@@ -38,14 +38,3 @@ unzip -d moonraker moonraker.zip
 mkdir -p /files/2-external/usr/share/moonraker
 rm -rf /files/2-external/usr/share/moonraker/*
 cp -pr /work/moonraker/*/* /files/2-external/usr/share/moonraker
-
-
-# OctoApp
-# echo "Downloading OctoApp..."
-
-# wget -O octoapp.zip https://github.com/crysxd/OctoApp-Plugin/archive/refs/tags/2.1.6.zip
-# unzip -d octoapp octoapp.zip
-
-# mkdir -p /files/2-external/usr/share/octoapp
-# rm -rf /files/2-external/usr/share/octoapp/*
-# cp -pr /work/octoapp/* /files/2-external/usr/share/octoapp
