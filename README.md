@@ -25,9 +25,17 @@ The stock firmwares are available on a separate branch: https://github.com/jbato
 </p>
 
 
+## Touch UI
 
+After installation, Rinkhals provides a touch UI accessible from the printer screen when you tap the Settings icon, then tap Rinkhals.
 
+This UI allows you to stop or disable Rinkhals, and to control what feature and or app is enabled. This will allow you to customize your experience and keep the printer memory as low as needed based on your situation.
 
+<p align="center">
+    <img width="192" src="./doc/screenshot-settings.png">
+    <img width="192" src="./doc/screenshot-rinkhals-ui.png">
+    <img width="192" src="./doc/screenshot-rinkhals-apps.png">
+</p>
 
 
 ## Apps system
