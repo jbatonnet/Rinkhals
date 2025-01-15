@@ -252,6 +252,49 @@ fi
 
 
 ################
+log "> Starting apps..."
+
+OLD_LD_LIBRARY_PATH=$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=/lib:/usr/lib:$LD_LIBRARY_PATH
+
+BUILTIN_APPS=$(find $RINKHALS_ROOT/home/rinkhals/apps -type d -mindepth 1 -maxdepth 1 -exec basename {} \; 2> /dev/null)
+USER_APPS=$(find $RINKHALS_HOME/apps -type d -mindepth 1 -maxdepth 1 -exec basename {} \; 2> /dev/null)
+
+APPS=$(printf "$BUILTIN_APPS\n$USER_APPS" | sort -uV)
+
+for APP in $APPS; do
+    BUITLIN_APP_ROOT=$(ls -d1 $RINKHALS_ROOT/home/rinkhals/apps/$APP 2> /dev/null)
+    USER_APP_ROOT=$(ls -d1 $RINKHALS_HOME/apps/$APP 2> /dev/null)
+
+    APP_ROOT=${USER_APP_ROOT:-${BUITLIN_APP_ROOT}}
+
+    if [ ! -f $APP_ROOT/app.sh ]; then
+        continue
+    fi
+
+    cd $APP_ROOT
+    chmod +x $APP_ROOT/app.sh
+
+    if ([ -f $APP_ROOT/.enabled ] || [ -f $RINKHALS_HOME/apps/$APP.enabled ]) && [ ! -f $APP_ROOT/.disabled ] && [ ! -f $RINKHALS_HOME/apps/$APP.disabled ]; then
+        log "  - Starting $APP ($APP_ROOT)..."
+        $APP_ROOT/app.sh start
+    else
+        APP_STATUS=$($APP_ROOT/app.sh status | grep Status | awk '{print $1}')
+
+        if [ "$APP_STATUS" == "$APP_STATUS_STARTED" ]; then
+            log "  - Stopping $APP ($APP_ROOT) as it is not enabled..."
+            $APP_ROOT/app.sh stop
+        else
+            log "  - Skipping $APP ($APP_ROOT) as it is not enabled"
+        fi
+    fi
+done
+
+cd $RINKHALS_ROOT
+export LD_LIBRARY_PATH=$OLD_LD_LIBRARY_PATH
+
+
+################
 log "> Cleaning up..."
 
 rm /useremain/rinkhals/.disable-rinkhals

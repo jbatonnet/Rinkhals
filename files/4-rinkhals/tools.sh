@@ -118,3 +118,14 @@ kill_by_port() {
         kill -9 $PID
     fi
 }
+
+export APP_STATUS_STARTED=started
+export APP_STATUS_STOPPED=stopped
+
+report_status() {
+    APP_STATUS=$1
+    APP_PIDS=$2
+
+    echo "Status: $APP_STATUS"
+    echo "PIDs: $APP_PIDS"
+}
