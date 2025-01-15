@@ -97,6 +97,7 @@ chmod +x ./usr/sbin/* 2> /dev/null
 chmod +x ./usr/libexec/* 2> /dev/null
 chmod +x ./usr/share/scripts/* 2> /dev/null
 chmod +x ./usr/libexec/gcc/arm-buildroot-linux-uclibcgnueabihf/11.4.0/* 2> /dev/null
+chmod +x ./opt/rinkhals/*/*.sh 2> /dev/null
 
 
 ################
@@ -219,7 +220,22 @@ export LD_LIBRARY_PATH=/userdata/app/gk:$LD_LIBRARY_PATH
 sleep 1
 
 ./gkapi &> $RINKHALS_ROOT/logs/gkapi.log &
+
+# Little dance to patch K3SysUi
+# We should be able to delete the file after starting it, Linux will keep the inode alive until the process exits (https://stackoverflow.com/a/196910)
+# But K3SysUi checks for its binary location, so moving does the trick instead
+# Then directly restore the original file to keep everything tidy
+
+rm -rf K3SysUi.original 2> /dev/null
+mv K3SysUi K3SysUi.original
+cp /opt/rinkhals/ui/K3SysUi-2.3.5.3.patch K3SysUi
+
+chmod +x K3SysUi
 ./K3SysUi &> $RINKHALS_ROOT/logs/K3SysUi.log &
+
+rm -rf K3SysUi.patch 2> /dev/null
+mv K3SysUi K3SysUi.patch
+mv K3SysUi.original K3SysUi
 
 cd $RINKHALS_ROOT
 
