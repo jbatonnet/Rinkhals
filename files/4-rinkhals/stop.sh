@@ -76,13 +76,12 @@ cd /useremain/rinkhals/.current
 umount -l /userdata/app/gk/printer_data/gcodes 2> /dev/null
 umount -l /userdata/app/gk/printer_data 2> /dev/null
 
+umount -l /etc 2> /dev/null
 umount -l /opt 2> /dev/null
-umount -l /bin 2> /dev/null
-umount -l /lib 2> /dev/null
 umount -l /sbin 2> /dev/null
+umount -l /bin 2> /dev/null
 umount -l /usr 2> /dev/null
-umount -l /etc/ssl 2> /dev/null
-umount -l /etc/profile.d 2> /dev/null
+umount -l /lib 2> /dev/null
 
 
 ################

@@ -105,21 +105,43 @@ log "> Preparing overlay..."
 umount -l /userdata/app/gk/printer_data/gcodes 2> /dev/null
 umount -l /userdata/app/gk/printer_data 2> /dev/null
 
+umount -l /etc 2> /dev/null
+umount -l /opt 2> /dev/null
 umount -l /sbin 2> /dev/null
 umount -l /bin 2> /dev/null
 umount -l /usr 2> /dev/null
 umount -l /lib 2> /dev/null
-umount -l /opt 2> /dev/null
-umount -l /etc/ssl 2> /dev/null
-umount -l /etc/profile.d 2> /dev/null
 
-mount -o ro --bind ./lib /lib
-mount --bind ./usr /usr
-mount -o ro --bind ./bin /bin
-mount -o ro --bind ./sbin /sbin
-mount -o ro --bind ./opt /opt
-mount -o ro --bind ./etc/ssl /etc/ssl
-mount -o ro --bind ./etc/profile.d /etc/profile.d
+DIRECTORIES="/lib /usr /bin /sbin /opt /etc"
+ORIGINAL_ROOT=/tmp/rinkhals/original
+MERGED_ROOT=/tmp/rinkhals/merged
+
+# Backup original directories
+for DIRECTORY in $DIRECTORIES; do
+    ORIGINAL_DIRECTORY=$ORIGINAL_ROOT$DIRECTORY
+
+    umount -l $ORIGINAL_DIRECTORY 2> /dev/null
+
+    mkdir -p $ORIGINAL_DIRECTORY
+    rm -rf $ORIGINAL_DIRECTORY/*
+
+    mount --bind $DIRECTORY $ORIGINAL_DIRECTORY
+done
+
+# Overlay directories
+for DIRECTORY in $DIRECTORIES; do
+    ORIGINAL_DIRECTORY=$ORIGINAL_ROOT$DIRECTORY
+    RINKHALS_DIRECTORY=$RINKHALS_ROOT$DIRECTORY
+    MERGED_DIRECTORY=$MERGED_ROOT$DIRECTORY
+
+    mkdir -p $MERGED_DIRECTORY
+    rm -rf $MERGED_DIRECTORY/*
+
+    [ -d $ORIGINAL_DIRECTORY ] && cp -ars $ORIGINAL_DIRECTORY/* $MERGED_DIRECTORY
+    [ -d $RINKHALS_DIRECTORY ] && cp -ars $RINKHALS_DIRECTORY/* $MERGED_DIRECTORY
+
+    mount --bind $MERGED_DIRECTORY $DIRECTORY
+done
 
 
 ################

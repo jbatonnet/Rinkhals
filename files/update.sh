@@ -82,14 +82,15 @@ if [[ "$KOBRA_VERSION" != "2.3.5.3" ]]; then
 fi
 
 
-# Stop Rinkhals if it is running already
+# Unmount everything to prevent any issues
 progress 0.1
-if [ -f /useremain/rinkhals/.current/stop.sh ]; then
-    log "Stopping Rinkhals"
 
-    chmod +x /useremain/rinkhals/.current/stop.sh
-    /useremain/rinkhals/.current/stop.sh
-fi
+umount -l /etc 2> /dev/null
+umount -l /opt 2> /dev/null
+umount -l /sbin 2> /dev/null
+umount -l /bin 2> /dev/null
+umount -l /usr 2> /dev/null
+umount -l /lib 2> /dev/null
 
 
 # Backup the machine-specific files

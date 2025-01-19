@@ -31,9 +31,6 @@ rclone -v sync --absolute \
 mkdir -p /tmp/target
 rm -rf /tmp/target/*
 
-echo "Building layer 0/4 (stock)..."
-cp -pr /files/0-stock/* /tmp/target
-
 echo "Building layer 1/4 (buildroot)..."
 cp -pr /files/1-buildroot/* /tmp/target
 

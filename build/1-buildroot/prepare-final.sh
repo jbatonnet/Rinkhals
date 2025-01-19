@@ -20,7 +20,6 @@ rm -rf ./output/final/tmp
 rm -rf ./output/final/usr/lib32
 rm -rf ./output/final/var
 rm ./output/final/THIS_IS_NOT_YOUR_ROOT_FILESYSTEM
-rm ./output/final/linuxrc
 
 # Clean /etc except for ssl
 for dir in ./output/final/etc/*; do

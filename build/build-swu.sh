@@ -14,11 +14,12 @@ mkdir -p /tmp/update_swu/rinkhals
 cp -r /files/*.* /tmp/update_swu
 chmod +x /tmp/update_swu/*.sh
 
-echo "Building layer 0/4 (stock)..."
-cp -pr /files/0-stock/* /tmp/update_swu/rinkhals
-
 echo "Building layer 1/4 (buildroot)..."
 cp -r /files/1-buildroot/* /tmp/update_swu/rinkhals
+
+BUSYBOX_TARGET=busybox.rinkhals
+rm /tmp/update_swu/rinkhals/bin/busybox
+cp -r /files/1-buildroot/bin/busybox /tmp/update_swu/rinkhals/bin/$BUSYBOX_TARGET
 
 echo "Building layer 2/4 (external)..."
 cp -r /files/2-external/* /tmp/update_swu/rinkhals
@@ -49,7 +50,6 @@ for FILE in $(find -type f -name "*.so*"); do
     CANONICAL=$(echo "$FILES" | awk -v SIZE="$SIZE" '{ if ($5 == SIZE) { print $NF } }' | tail -n 1)
 
     if [ "$FILE" != "$CANONICAL" ]; then
-        #RELPATH=$(python3 -c "import os.path; print(os.path.relpath('$CANONICAL', '$(dirname $FILE)'))")
         #echo "$FILE ($SIZE bytes) > $(basename $CANONICAL)"
 
         rm $FILE
@@ -57,16 +57,16 @@ for FILE in $(find -type f -name "*.so*"); do
     fi
 done
 
-BUSYBOX_SIZE=$(ls -al ./bin/busybox | awk '{print $5}')
+BUSYBOX_SIZE=$(ls -al ./bin/$BUSYBOX_TARGET | awk '{print $5}')
 
 for FILE in $(find ./bin -type f | grep -v busybox); do
     SIZE=$(ls -al $FILE | awk '{print $5}')
 
     if [ "$SIZE" -eq "$BUSYBOX_SIZE" ]; then
-        #echo "$FILE ($SIZE bytes) > busybox"
+        #echo "$FILE ($SIZE bytes) > $BUSYBOX_TARGET"
         
         rm $FILE
-        ln -s busybox $FILE
+        ln -s $BUSYBOX_TARGET $FILE
     fi
 done
 
@@ -74,10 +74,10 @@ for FILE in $(find ./sbin -type f); do
     SIZE=$(ls -al $FILE | awk '{print $5}')
 
     if [ "$SIZE" -eq "$BUSYBOX_SIZE" ]; then
-        #echo "$FILE ($SIZE bytes) > busybox"
+        #echo "$FILE ($SIZE bytes) > $BUSYBOX_TARGET"
 
         rm $FILE
-        ln -s ../bin/busybox $FILE
+        ln -s ../bin/$BUSYBOX_TARGET $FILE
     fi
 done
 
@@ -85,10 +85,10 @@ for FILE in $(find ./usr/bin -type f); do
     SIZE=$(ls -al $FILE | awk '{print $5}')
 
     if [ "$SIZE" -eq "$BUSYBOX_SIZE" ]; then
-        #echo "$FILE ($SIZE bytes) > busybox"
+        #echo "$FILE ($SIZE bytes) > $BUSYBOX_TARGET"
 
         rm $FILE
-        ln -s ../../bin/busybox $FILE
+        ln -s ../../bin/$BUSYBOX_TARGET $FILE
     fi
 done
 
@@ -96,10 +96,10 @@ for FILE in $(find ./usr/sbin -type f); do
     SIZE=$(ls -al $FILE | awk '{print $5}')
 
     if [ "$SIZE" -eq "$BUSYBOX_SIZE" ]; then
-        #echo "$FILE ($SIZE bytes) > busybox"
+        #echo "$FILE ($SIZE bytes) > $BUSYBOX_TARGET"
 
         rm $FILE
-        ln -s ../../bin/busybox $FILE
+        ln -s ../../bin/$BUSYBOX_TARGET $FILE
     fi
 done
 

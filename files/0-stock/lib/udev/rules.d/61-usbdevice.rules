@@ -1,1 +1,0 @@
-SUBSYSTEM=="android_usb",ACTION=="change",RUN+="/usr/bin/usbdevice %E{DEVPATH} %E{USB_STATE}"
