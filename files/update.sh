@@ -43,6 +43,17 @@ function beep() {
     sleep ${*}
     echo 0 > /sys/class/pwm/pwmchip0/pwm0/enable
 }
+function quit() {
+    progress error
+    beep 1
+    sleep 1
+    beep 1
+    sleep 1
+    beep 1
+
+    fb_restore
+    exit 1
+}
 
 function fb_capture() {
     /ac_lib/lib/third_bin/ffmpeg -f fbdev -i /dev/fb0 -frames:v 1 -y /tmp/framebuffer.bmp 1>/dev/null 2>/dev/null
@@ -65,20 +76,24 @@ progress 0
 
 
 # Make sure we install on the right compatible version
+KOBRA_MODEL=$(cat /userdata/app/gk/printer.cfg | grep device_type | awk -F':' '{print $2}' | xargs)
 KOBRA_VERSION=$(cat /useremain/dev/version)
 
-if [[ "$KOBRA_VERSION" != "2.3.5.3" ]]; then
-    log "This Rinkhals version is only compatible with Kobra firmware 2.3.5.3, stopping installation"
-    
-    progress error
-    beep 1
-    sleep 1
-    beep 1
-    sleep 1
-    beep 1
-
-    fb_restore
-    exit 1
+if [ "$KOBRA_MODEL" == "Anycubic Kobra 2 Pro" ]; then
+    export KOBRA_MODEL_CODE=K2P
+    if [ "$KOBRA_VERSION" != "3.1.2.3" ]; then
+        log "Your printer has firmware $KOBRA_VERSION. This Rinkhals version is only compatible with firmware 3.1.2.3 on the Kobra 2 Pro, stopping installation"
+        quit
+    fi
+elif [ "$KOBRA_MODEL" == "Anycubic Kobra 3" ]; then
+    export KOBRA_MODEL_CODE=K3
+    if [ "$KOBRA_VERSION" != "2.3.5.3" ]; then
+        log "Your printer has firmware $KOBRA_VERSION. This Rinkhals version is only compatible with firmware 2.3.5.3 on the Kobra 3, stopping installation"
+        quit
+    fi
+else
+    log "Your printer's model is not recognized, stopping startup"
+    quit
 fi
 
 

@@ -6,8 +6,12 @@
 
 # Rinkhals
 
-Rinkhals is a custom firmware for the Anycubic Kobra 3 3D printer. The goal of this project is to create a simple and safe overlay for the Kobra 3 firmware, adding some usefule features.
+Rinkhals is a custom firmware for the Anycubic Kobra series of 3D printers. The goal of this project is to create a simple and safe overlay for the Kobra firmware, adding some usefule features.
 This firmware will likely not support all use cases, like running vanilla Klipper or your specific feature / plugin.
+
+For now the following printers and firmwares are supported:
+- Kobra 3 (+ combo) with firmware 2.3.5.3
+- Kobra 2 Pro with firmware 3.1.2.3
 
 Here are some of the features I added:
 - Mainsail, Fluidd and Moonraker (using nginx)
@@ -15,7 +19,7 @@ Here are some of the features I added:
 - Print from Moonraker will show the print screen (moonraker-proxy)
 - Access using SSH and ADB
 
-This project is named after rinkhals. They are a sub-species of Cobras ... Kobra 3 ... Rinkhals 👏
+This project is named after rinkhals. They are a sub-species of Cobras ... Kobra ... Rinkhals 👏
 
 The stock firmwares are available on a separate branch: https://github.com/jbatonnet/Rinkhals/tree/stock-firmwares
 
@@ -27,6 +31,8 @@ If you are interested in development anf/or testing, join me on Discord: https:/
 
 
 ## Touch UI
+
+_(Exclusive to Kobra 3 for now)_
 
 After installation, Rinkhals provides a touch UI accessible from the printer screen when you tap the Settings icon, then tap Rinkhals.
 
@@ -50,13 +56,13 @@ Instructions on how to install or develop apps are on the other repo as well.
 
 You can install Rinkhals on top of other custom firmwares. Rinkhals only appends its loader to **start.sh**, so if it's the last instruction, it will start no matter what firmware you are using.
 
-- Make sure your printer uses firmware 2.3.5.3 ([how to install firmware](https://github.com/jbatonnet/Rinkhals/wiki/Firmware#how-to-install-a-firmware))
+- Make sure your printer uses one of the supported firmwares ([how to install firmware](https://github.com/jbatonnet/Rinkhals/wiki/Firmware#how-to-install-a-firmware))
     - Installation will simply fail without touching your printer if you are using some other version
 - Format a USB drive as FAT32
 - Create a directory named **aGVscF9zb3Nf**
 - Download the version of Rinkhals you want to install
 - Copy the **update.swu** file in the **aGVscF9zb3Nf** directory
-- Plug the USB drive in the Kobra 3
+- Plug the USB drive in the printer
 - You should hear a beep, meaning the printer detected the update file
 - After about 20 seconds (the time for the printer to prepare the update), you will see a progress bar on the screen
     - If the progress bar turns green and you ear 2 beeps, the pritner reboots and Rinkhals is installed
@@ -151,3 +157,4 @@ Thanks to the following projects/persons:
 - systemik (https://github.com/systemik/Kobra3-Firmware)
 - Anycubic for the cool printer and the few OSS items (https://github.com/ANYCUBIC-3D/Kobra)
 - Icon created by Freepik - Flaticon (https://www.flaticon.com/free-icons/snake)
+- moosbewohner for Kobra 2 Pro support (https://github.com/moosbewohner/Rinkhals)

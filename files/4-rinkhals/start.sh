@@ -17,13 +17,27 @@ quit() {
 export TZ=UTC
 ntpclient -s -h pool.ntp.org > /dev/null # Try to sync local time before starting
 
-KOBRA_VERSION=$(cat /useremain/dev/version)
 export RINKHALS_ROOT=$(dirname $(realpath $0))
 export RINKHALS_VERSION=$(cat $RINKHALS_ROOT/.version)
 export RINKHALS_HOME=/useremain/home/rinkhals
 
-if [ "$KOBRA_VERSION" != "2.3.5.3" ]; then
-    log "Your printer has firmware $KOBRA_VERSION. This Rinkhals version is only compatible with Kobra firmware 2.3.5.3, stopping startup"
+export KOBRA_MODEL=$(cat /userdata/app/gk/printer.cfg | grep device_type | awk -F':' '{print $2}' | xargs)
+export KOBRA_VERSION=$(cat /useremain/dev/version)
+
+if [ "$KOBRA_MODEL" == "Anycubic Kobra 2 Pro" ]; then
+    export KOBRA_MODEL_CODE=K2P
+    if [ "$KOBRA_VERSION" != "3.1.2.3" ]; then
+        log "Your printer has firmware $KOBRA_VERSION. This Rinkhals version is only compatible with firmware 3.1.2.3 on the Kobra 2 Pro, stopping startup"
+        exit 1
+    fi
+elif [ "$KOBRA_MODEL" == "Anycubic Kobra 3" ]; then
+    export KOBRA_MODEL_CODE=K3
+    if [ "$KOBRA_VERSION" != "2.3.5.3" ]; then
+        log "Your printer has firmware $KOBRA_VERSION. This Rinkhals version is only compatible with firmware 2.3.5.3 on the Kobra 3, stopping startup"
+        exit 1
+    fi
+else
+    log "Your printer's model is not recognized, stopping startup"
     exit 1
 fi
 
@@ -60,6 +74,7 @@ echo "      ██████████████████    ██    
 echo
 
 log " --------------------------------------------------"
+log "| Kobra model: $KOBRA_MODEL ($KOBRA_MODEL_CODE)"
 log "| Kobra firmware: $KOBRA_VERSION"
 log "| Rinkhals version: $RINKHALS_VERSION"
 log "| Rinkhals root: $RINKHALS_ROOT"
@@ -190,7 +205,7 @@ umount -l /userdata/app/gk/printer_data/gcodes 2> /dev/null
 mount --bind /useremain/app/gk/gcodes /userdata/app/gk/printer_data/gcodes
 
 [ -f /userdata/app/gk/printer_data/config/moonraker.conf ] || cp /userdata/app/gk/printer_data/config/default/moonraker.conf /userdata/app/gk/printer_data/config/
-[ -f /userdata/app/gk/printer_data/config/printer.cfg ] || cp /userdata/app/gk/printer_data/config/default/printer.cfg /userdata/app/gk/printer_data/config/
+[ -f /userdata/app/gk/printer_data/config/printer.cfg ] || cp /userdata/app/gk/printer_data/config/default/printer.$KOBRA_MODEL_CODE.cfg /userdata/app/gk/printer_data/config/
 
 
 ################
@@ -243,21 +258,25 @@ sleep 1
 
 ./gkapi &> $RINKHALS_ROOT/logs/gkapi.log &
 
-# Little dance to patch K3SysUi
-# We should be able to delete the file after starting it, Linux will keep the inode alive until the process exits (https://stackoverflow.com/a/196910)
-# But K3SysUi checks for its binary location, so moving does the trick instead
-# Then directly restore the original file to keep everything tidy
+if [ "$KOBRA_MODEL_CODE" == "K3" ]; then
+    # Little dance to patch K3SysUi
+    # We should be able to delete the file after starting it, Linux will keep the inode alive until the process exits (https://stackoverflow.com/a/196910)
+    # But K3SysUi checks for its binary location, so moving does the trick instead
+    # Then directly restore the original file to keep everything tidy
 
-rm -rf K3SysUi.original 2> /dev/null
-mv K3SysUi K3SysUi.original
-cp /opt/rinkhals/ui/K3SysUi-2.3.5.3.patch K3SysUi
+    rm -rf K3SysUi.original 2> /dev/null
+    mv K3SysUi K3SysUi.original
+    cp /opt/rinkhals/ui/K3SysUi.K3-2.3.5.3.patch K3SysUi
+    chmod +x K3SysUi
+fi
 
-chmod +x K3SysUi
 ./K3SysUi &> $RINKHALS_ROOT/logs/K3SysUi.log &
 
-rm -rf K3SysUi.patch 2> /dev/null
-mv K3SysUi K3SysUi.patch
-mv K3SysUi.original K3SysUi
+if [ "$KOBRA_MODEL_CODE" == "K3" ]; then
+    rm -rf K3SysUi.patch 2> /dev/null
+    mv K3SysUi K3SysUi.patch
+    mv K3SysUi.original K3SysUi
+fi
 
 cd $RINKHALS_ROOT
 

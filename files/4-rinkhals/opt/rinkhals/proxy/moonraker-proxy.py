@@ -29,6 +29,7 @@ PRINTER_ID = os.getenv('MOONRAKER_PROXY_PRINTER_ID')
 MQTT_USERNAME = os.getenv('MOONRAKER_PROXY_MQTT_USERNAME')
 MQTT_PASSWORD = os.getenv('MOONRAKER_PROXY_MQTT_PASSWORD')
 REMOTE_MODE = 'lan'
+USE_MQTT = False
 
 # Constants
 CORS_HEADERS = {
@@ -115,7 +116,7 @@ async def http_handler(request):
         data = await request.read()
         file_to_print = None
 
-        if request.method == 'POST' and request.raw_path == '/api/files/local' and REMOTE_MODE == 'lan':
+        if request.method == 'POST' and request.raw_path == '/api/files/local' and USE_MQTT:
             data_str = data.decode('utf-8')
 
             print_index = data_str.index('form-data; name="print"')
@@ -167,7 +168,7 @@ async def websocket_handler(request):
                         data = json.loads(msg.data)
                         if "method" in data:
                             
-                            if data["method"] == "printer.print.start" and REMOTE_MODE == 'lan':
+                            if data["method"] == "printer.print.start" and USE_MQTT:
                                 log('Intercepted "printer.print.start", replacing with MQTT call...')
                                 await mqtt_printfile(data['params']['filename'])
                                 continue
@@ -221,22 +222,27 @@ if __name__ == "__main__":
 
     # Retrieve printer information
     if not MQTT_USERNAME or not MQTT_PASSWORD:
+        if os.path.isfile('/userdata/app/gk/config/device_account.json'):
+            with open('/userdata/app/gk/config/device_account.json', 'r') as f:
+                json_data = f.read()
+                data = json.loads(json_data)
 
-        with open('/userdata/app/gk/config/device_account.json', 'r') as f:
-            json_data = f.read()
-            data = json.loads(json_data)
-
-            if not MQTT_USERNAME:
-                MQTT_USERNAME = data['username']
-            if not MQTT_PASSWORD:
-                MQTT_PASSWORD = data['password']
+                if not MQTT_USERNAME:
+                    MQTT_USERNAME = data['username']
+                if not MQTT_PASSWORD:
+                    MQTT_PASSWORD = data['password']
+        else:
+            log('No MQTT credentials found, MQTT will not be used')
 
     if not PRINTER_ID:
+        if os.path.isfile('/useremain/dev/device_id'):
+            with open('/useremain/dev/device_id', 'r') as f:
+                PRINTER_ID = f.read().strip()
 
-        with open('/useremain/dev/device_id', 'r') as f:
-            PRINTER_ID = f.read().strip()
+    if REMOTE_MODE == 'lan' and MQTT_USERNAME and MQTT_PASSWORD and PRINTER_ID:
+        USE_MQTT = True
 
-    if DEBUG:
+    if DEBUG and PRINTER_ID:
         log('Printer ID: {0}'.format(PRINTER_ID))
 
     # Start asynchonous server

@@ -29,6 +29,5 @@ All existing code / binaries / projects are provided here under their own licens
 - files/2-external/usr/share/fluidd/* > https://github.com/fluidd-core/fluidd/blob/master/LICENSE
 - files/2-external/usr/share/mainsail/* > https://github.com/mainsail-crew/mainsail/blob/master/LICENSE
 - files/2-external/usr/share/moonraker/* > https://github.com/utkabobr/moonraker/blob/master/LICENSE
-- files/2-external/usr/share/octoapp/* > https://github.com/crysxd/OctoApp-Plugin/blob/release/LICENSE
 - files/3-python/usr/lib/python*/site-packages/* > Corresponding module licenses
 - icon.png > https://www.flaticon.com/free-icons/snake
