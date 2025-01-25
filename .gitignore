@@ -3,3 +3,4 @@ scripts/tmp
 build/dist
 files/4-rinkhals/usr/share/data/framebuffer.bmp
 *.env
+files/4-rinkhals/opt/rinkhals/ui/K3SysUi*.[!p]
