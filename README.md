@@ -11,7 +11,7 @@ This firmware will likely not support all use cases, like running vanilla Klippe
 
 For now the following printers and firmwares are supported:
 - Kobra 3 (+ combo) with firmware 2.3.5.3
-- Kobra 2 Pro with firmware 3.1.2.3
+- Kobra 2 Pro and firmware 3.1.2.3 (must have mainboard type "[Trigorilla Spe **B** v1.0.x](https://1coderookie.github.io/Kobra2ProInsights/hardware/mainboard/#trigorilla_spe_b_v10x-stock-new-revision)"!)
 
 Here are some of the features I added:
 - Mainsail, Fluidd and Moonraker (using nginx)
@@ -23,7 +23,7 @@ This project is named after rinkhals. They are a sub-species of Cobras ... Kobra
 
 The stock firmwares are available on a separate branch: https://github.com/jbatonnet/Rinkhals/tree/stock-firmwares
 
-If you are interested in development anf/or testing, join me on Discord: https://discord.gg/3mrANjpNJC
+If you are interested in development and/or testing, join me on Discord: https://discord.gg/3mrANjpNJC
 
 <p align="center">
     <img width="48" src="https://github.com/jbatonnet/Rinkhals/blob/master/icon.png?raw=true" />
