@@ -6,12 +6,12 @@
 
 # Rinkhals
 
-Rinkhals is a custom firmware for the Anycubic Kobra series of 3D printers. The goal of this project is to create a simple and safe overlay for the Kobra firmware, adding some usefule features.
+Rinkhals is a custom firmware for certain Anycubic Kobra 3D printers that run KobraOS. The goal of this project is to create a simple and safe overlay for the KobraOS firmware, adding some usefule features.
 This firmware will likely not support all use cases, like running vanilla Klipper or your specific feature / plugin.
 
 For now the following printers and firmwares are supported:
 - Kobra 3 (+ combo) with firmware 2.3.5.3
-- Kobra 2 Pro and firmware 3.1.2.3 (must have mainboard type "[Trigorilla Spe **B** v1.0.x](https://1coderookie.github.io/Kobra2ProInsights/hardware/mainboard/#trigorilla_spe_b_v10x-stock-new-revision)"!)
+- Kobra 2 Pro and firmware 3.1.2.3 (*must* have mainboard type "[Trigorilla Spe **B** v1.0.x](https://1coderookie.github.io/Kobra2ProInsights/hardware/mainboard/#trigorilla_spe_b_v10x-stock-new-revision)")
 
 Here are some of the features I added:
 - Mainsail, Fluidd and Moonraker (using nginx)
