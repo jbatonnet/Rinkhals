@@ -277,7 +277,9 @@ class SpoolManager:
         else:
             self.pending_reports[spool_id] = used_length
 
-    def set_active_spool(self, spool_id: Union[int, None]) -> None:
+    def set_active_spool(self, spool_id: Union[int, None] = None, SPOOL_ID: Union[int, None] = None) -> None:
+        if spool_id is None:
+            spool_id = int(SPOOL_ID)
         assert spool_id is None or isinstance(spool_id, int)
         if self.spool_id == spool_id:
             logging.info(f"Spool ID already set to: {spool_id}")
