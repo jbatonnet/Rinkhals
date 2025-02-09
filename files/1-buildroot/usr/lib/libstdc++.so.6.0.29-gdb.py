@@ -19,8 +19,8 @@ import gdb
 import os
 import os.path
 
-pythondir = '/buildroot/output/host/share/gcc-11.4.0/python'
-libdir = '/buildroot/output/host/arm-buildroot-linux-uclibcgnueabihf/lib'
+pythondir = '/usr/share/gcc-11.4.0/python'
+libdir = '/usr/lib'
 
 # This file might be loaded when there is no current objfile.  This
 # can happen if the user loads it manually.  In this case we don't

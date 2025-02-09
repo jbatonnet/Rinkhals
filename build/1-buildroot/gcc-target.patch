@@ -105,7 +105,7 @@ index 00000000..4fc6d9b9
 +	--disable-lto
 +# Finally, we add some of our own flags
 +GCC_TARGET_CONF_OPTS += \
-+	--enable-languages=c \
++	--enable-languages=c,c++ \
 +	--disable-boostrap \
 +	--disable-libgomp \
 +	--disable-nls \

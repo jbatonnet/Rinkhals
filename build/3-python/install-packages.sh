@@ -6,6 +6,7 @@ mkdir -p $PIP_TEMP
 
 export PATH=/usr/libexec/gcc/arm-buildroot-linux-uclibcgnueabihf/11.4.0:$PATH
 export CC=/usr/bin/gcc
+export CXX=/usr/bin/g++
 export LD_LIBRARY_PATH=/lib:/usr/lib
 export HOME=$PIP_TEMP
 export TMPDIR=$PIP_TEMP
