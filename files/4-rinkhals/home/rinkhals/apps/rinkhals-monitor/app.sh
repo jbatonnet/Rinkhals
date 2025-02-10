@@ -12,6 +12,7 @@ status() {
     fi
 }
 start() {
+    stop
     cd $APP_ROOT
     chmod +x rinkhals-monitor.sh
     ./rinkhals-monitor.sh &

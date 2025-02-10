@@ -113,17 +113,18 @@ async def http_handler(request):
         log('Proxying web request "{0} {1}"'.format(request.method, request.raw_path))
 
     async with aiohttp.ClientSession() as session:
-        data = await request.read()
+        data = None
         file_to_print = None
 
-        if request.method == 'POST' and request.raw_path == '/api/files/local' and USE_MQTT:
-            data_str = data.decode('utf-8')
+        if request.method == 'POST' and request.raw_path == '/api/files/local' and USE_MQTT and request.content_length and request.content_length > 500:
+            data = await request.content.readexactly(500)
+            data_str = data.decode('utf-8', errors='ignore')
 
             print_index = data_str.index('form-data; name="print"')
             if print_index > -1:
                 print_value = data_str[print_index + 23:print_index + 100].strip()
                 if print_value.startswith('true'):
-                    data_str = data_str[:200].replace('true', 'false') + data_str[200:]
+                    data_str = data_str.replace('true', 'false')
                     data = data_str.encode('utf-8')
 
                     log('Intecepted web request with print "{0} {1}", replacing with MQTT call...'.format(request.method, request.raw_path))
@@ -131,7 +132,20 @@ async def http_handler(request):
                     file_to_print = data_str[data_str.index('filename="') + 10:]
                     file_to_print = file_to_print[:file_to_print.index('"')]
 
-        async with session.request(method = request.method, url = 'http://' + PRINTER_IP + ':' + MOONRAKER_PORT + request.raw_path, data = data, headers = request.headers) as response:
+                    log(f'Trying to print "{file_to_print}"...')
+
+        async def proxy_stream():
+            if data:
+                yield data
+            async for chunk in request.content.iter_any():
+                yield chunk
+
+        async with session.request(
+            method = request.method,
+            url = f'http://{PRINTER_IP}:{MOONRAKER_PORT}{request.raw_path}',
+            data=proxy_stream(),
+            headers = request.headers
+        ) as response:
             body = await response.read()
 
             if file_to_print:
@@ -140,7 +154,7 @@ async def http_handler(request):
                 if error:
                     return aiohttp.web.Response(status = 400, body = '[moonraker-proxy] ' + str(error))
 
-            return aiohttp.web.Response(status = response.status, body = body, headers = CORS_HEADERS)
+            return aiohttp.web.Response(status = response.status, headers = CORS_HEADERS, body = body)
 
 
 
