@@ -10,13 +10,6 @@ This fork is currently a work in progress. New features, fixes, and improvements
 
 - **SimplyPrint Integration**: Now fully functional and integrated, enabling reliable printing support within Rinkhals.
 
-## 💡 How to Use
-
-1. Clone this repository:
-    ```bash
-    git clone https://github.com/miguelmaster12/Rinkhals-simplyprint-fix.git
-    ```
-
 ## 📝 Attribution
 
 Original work by [jbatonnet](https://github.com/jbatonnet).
