@@ -14,9 +14,8 @@ This fork is currently a work in progress. New features, fixes, and improvements
 
 1. Clone this repository:
     ```bash
-    git clone https://github.com/<your-username>/Rinkhals.git
+    git clone https://github.com/miguelmaster12/Rinkhals-simplyprint-fix.git
     ```
-2. [Any setup or installation instructions specific to SimplyPrint integration].
 
 ## 📝 Attribution
 
