@@ -21,4 +21,8 @@ export RCLONE_CONFIG_BUILDER_USER=${BUILDER_USER:-"root"}
 export RCLONE_CONFIG_BUILDER_PASS=$(rclone obscure "${BUILDER_PASS}")
 
 
+# Fetch the builroot files
 rclone -v sync Builder:$BUILDER_PATH/output/final /files/1-buildroot
+
+# Build the certificate bundle
+cat /files/1-buildroot/etc/ssl/certs/*.pem > /files/1-buildroot/etc/ssl/cert.pem
