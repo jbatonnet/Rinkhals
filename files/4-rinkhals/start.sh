@@ -159,6 +159,8 @@ for DIRECTORY in $DIRECTORIES; do
     mount --bind $MERGED_DIRECTORY $DIRECTORY
 done
 
+# Adjust the time
+ntpclient -s -h pool.ntp.org > /dev/null
 
 ################
 log "> Starting SSH & ADB..."
