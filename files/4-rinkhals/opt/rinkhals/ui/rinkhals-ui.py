@@ -406,7 +406,9 @@ def main():
             app_root = get_app_root(app)
 
         os.system(f'chmod +x {app_root}/app.sh')
-        os.system(f'{app_root}/app.sh start')
+        code = os.system(f'timeout -t 5 {app_root}/app.sh start')
+        if code != 0:
+            pass
 
         redraw = True
 

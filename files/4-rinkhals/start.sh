@@ -342,7 +342,12 @@ for APP in $APPS; do
 
     if ([ -f $APP_ROOT/.enabled ] || [ -f $RINKHALS_HOME/apps/$APP.enabled ]) && [ ! -f $APP_ROOT/.disabled ] && [ ! -f $RINKHALS_HOME/apps/$APP.disabled ]; then
         log "  - Starting $APP ($APP_ROOT)..."
-        $APP_ROOT/app.sh start
+        timeout -t 5 $APP_ROOT/app.sh start
+
+        if [ "$?" != "0" ]; then
+            log "/!\ Timeout while starting $APP ($APP_ROOT)"
+            $APP_ROOT/app.sh stop
+        fi
     else
         APP_STATUS=$($APP_ROOT/app.sh status | grep Status | awk '{print $1}')
 
