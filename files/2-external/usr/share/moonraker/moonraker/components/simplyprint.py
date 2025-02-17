@@ -13,6 +13,7 @@ import pathlib
 import base64
 import tornado.websocket
 from tornado.escape import url_escape
+from tornado.httpclient import HTTPRequest
 import logging.handlers
 import tempfile
 from queue import SimpleQueue
@@ -194,33 +195,41 @@ class SimplyPrint(APITransport):
             url = self.connect_url
             if self.reconnect_token is not None:
                 url = f"{self.connect_url}/{self.reconnect_token}"
+
             if log_connect:
-                logging.info(f"Connecting To SimplyPrint: {url}")
+                logging.info(f"Connecting to SimplyPrint: {url}")
                 log_connect = False
+
+            req = HTTPRequest(
+                url, connect_timeout=5.,
+                allow_ipv6=False,
+                validate_cert=False
+            )
+
             try:
-                self.ws = await tornado.websocket.websocket_connect(
-                    url, connect_timeout=5.,
-                )
+                self.ws = await tornado.websocket.websocket_connect(req)
                 setattr(self.ws, "on_ping", self._on_ws_ping)
                 cur_time = self.eventloop.get_loop_time()
                 self._last_ping_received = cur_time
+                logging.info("Connected to SimplyPrint Cloud")
+
+                await self._read_messages()
+                log_connect = True  # Reset log flag after a successful connection
+
             except asyncio.CancelledError:
-                raise
-            except Exception:
+                raise  # Allow task cancellation to propagate correctly
+
+            except Exception as e:
                 curtime = self.eventloop.get_loop_time()
                 timediff = curtime - self.last_err_log_time
                 if timediff > CONNECTION_ERROR_LOG_TIME:
                     self.last_err_log_time = curtime
-                    logging.exception("Failed to connect to SimplyPrint")
-            else:
-                logging.info("Connected to SimplyPrint Cloud")
-                await self._read_messages()
-                log_connect = True
+                    logging.exception(f"Failed to connect to SimplyPrint: {e}")
+
             if not self.is_closing:
                 await asyncio.sleep(self.reconnect_delay)
 
     async def _read_messages(self) -> None:
-        message: Union[str, bytes, None]
         while self.ws is not None:
             message = await self.ws.read_message()
             if isinstance(message, str):
@@ -228,17 +237,13 @@ class SimplyPrint(APITransport):
             elif message is None:
                 self.ping_sp_timer.stop()
                 cur_time = self.eventloop.get_loop_time()
-                ping_time: float = cur_time - self._last_ping_received
-                reason = code = None
-                if self.ws is not None:
-                    reason = self.ws.close_reason
-                    code = self.ws.close_code
-                msg = (
-                    f"SimplyPrint Disconnected - Code: {code}, "
-                    f"Reason: {reason}, "
-                    f"Server Ping Time Elapsed: {ping_time}"
-                )
-                logging.info(msg)
+                ping_time = cur_time - self._last_ping_received
+
+                reason = self.ws.close_reason if self.ws else "Unknown"
+                code = self.ws.close_code if self.ws else "Unknown"
+
+                logging.info(f"SimplyPrint Disconnected - Code: {code}, Reason: {reason}, Server Ping Time Elapsed: {ping_time}")
+
                 self.connected = False
                 self.ws = None
                 break
@@ -1002,10 +1007,11 @@ class SimplyPrint(APITransport):
         firmware_date: str = ""
         # Approximate the firmware "date" using the last modified
         # time of the Klippy source folder
-        kpath = pathlib.Path(kinfo["klipper_path"]).joinpath("klippy")
-        if kpath.is_dir():
-            mtime = kpath.stat().st_mtime
-            firmware_date = time.asctime(time.gmtime(mtime))
+        if "klipper_path" in kinfo:
+            kpath = pathlib.Path(kinfo["klipper_path"]).joinpath("klippy")
+            if kpath.is_dir():
+                mtime = kpath.stat().st_mtime
+                firmware_date = time.asctime(time.gmtime(mtime))
         version: str = kinfo["software_version"]
         unsafe = version.endswith("-dirty") or version == "?"
         if unsafe:
