@@ -32,6 +32,6 @@ usleep 100000
 
 # Start Python UI
 kill_by_name rinkhals-ui.py
-python $RINKHALS_ROOT/opt/rinkhals/ui/rinkhals-ui.py
+python $RINKHALS_ROOT/opt/rinkhals/ui/rinkhals-ui.py >> $RINKHALS_ROOT/logs/rinkhals-ui.log 2>&1 &
 
 echo "Done!"

@@ -21,7 +21,6 @@ class JSONWithCommentsDecoder(json.JSONDecoder):
 
 DEBUG = os.getenv('DEBUG')
 DEBUG = not not DEBUG
-DEBUG = True
 
 SCREEN_WIDTH = 272
 SCREEN_HEIGHT = 480
@@ -241,7 +240,7 @@ def main():
         global touch_device, touch_x, touch_y, touch_down, touch_down_builder, touch_actions    
 
         if SIMULATOR:
-            time.sleep(duration)
+            time.sleep(duration / 1000)
         else:
             stop = time.time_ns() + duration * 1000000
 
@@ -359,6 +358,9 @@ def main():
 
         enabled = is_app_enabled(app, app_root)
 
+        if not os.path.exists(f'{RINKHALS_HOME}/apps'):
+            os.makedirs(f'{RINKHALS_HOME}/apps')
+
         # If this is a built-in app, let's use HOME/apps/app.enabled
         if app_root.startswith(BUILTIN_APP_PATH):
             if enabled:
@@ -405,24 +407,33 @@ def main():
         if not app_root:
             app_root = get_app_root(app)
 
+        log(f'Starting app {app} from {app_root}...')
+
         os.system(f'chmod +x {app_root}/app.sh')
-        code = os.system(f'timeout -t 5 {app_root}/app.sh start')
+        code = os.system(f'timeout -t 5 sh -c "{app_root}/app.sh start"')
         if code != 0:
             pass
 
+        log(f'Started app {app} from {app_root}')
         redraw = True
 
     def stop_app(app, app_root = None):
         if not app_root:
             app_root = get_app_root(app)
 
+        log(f'Stopping app {app} from {app_root}...')
+
         os.system(f'chmod +x {app_root}/app.sh')
         os.system(f'{app_root}/app.sh stop')
+
+        log(f'Stopped app {app} from {app_root}')
         redraw = True
 
     def stop_rinkhals():
         global screen, dialog, redraw
  
+        log('Stopping Rinkhals...')
+
         screen = None
 
         zero_fb()
@@ -431,6 +442,8 @@ def main():
     def restart_rinkhals():
         global screen, dialog, redraw
  
+        log('Restarting Rinkhals...')
+
         zero_fb()
         os.system(RINKHALS_ROOT + '/start.sh')
 
