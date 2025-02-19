@@ -177,17 +177,17 @@ else
     fi
 fi
 
-# if [ "$(cat /proc/net/tcp | grep 00000000:15B3)" != "" ]; then # 5555 = x15B3
-#     log "/!\ ADB is already running"
-# else
-#     adbd >> ./logs/adbd.log &
-#     msleep 500
+if [ "$(cat /proc/net/tcp | grep 00000000:15B3)" != "" ]; then # 5555 = x15B3
+    log "/!\ ADB is already running"
+else
+    adbd >> ./logs/adbd.log &
+    msleep 500
 
-#     if [ "$(cat /proc/net/tcp | grep 00000000:15B3)" == "" ]; then
-#         log "/!\ ADB did not start properly"
-#         quit
-#     fi
-# fi
+    if [ "$(cat /proc/net/tcp | grep 00000000:15B3)" == "" ]; then
+        log "/!\ ADB did not start properly"
+        quit
+    fi
+fi
 
 
 ################
@@ -342,7 +342,7 @@ for APP in $APPS; do
 
     if ([ -f $APP_ROOT/.enabled ] || [ -f $RINKHALS_HOME/apps/$APP.enabled ]) && [ ! -f $APP_ROOT/.disabled ] && [ ! -f $RINKHALS_HOME/apps/$APP.disabled ]; then
         log "  - Starting $APP ($APP_ROOT)..."
-        timeout -t 5 $APP_ROOT/app.sh start
+        timeout -t 5 sh -c "$APP_ROOT/app.sh start"
 
         if [ "$?" != "0" ]; then
             log "/!\ Timeout while starting $APP ($APP_ROOT)"
