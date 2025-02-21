@@ -15,7 +15,6 @@ quit() {
 }
 
 export TZ=UTC
-ntpclient -s -h pool.ntp.org > /dev/null # Try to sync local time before starting
 
 export RINKHALS_ROOT=$(dirname $(realpath $0))
 export RINKHALS_VERSION=$(cat $RINKHALS_ROOT/.version)
@@ -159,8 +158,9 @@ for DIRECTORY in $DIRECTORIES; do
     mount --bind $MERGED_DIRECTORY $DIRECTORY
 done
 
-# Adjust the time
-ntpclient -s -h pool.ntp.org > /dev/null
+# Sync time
+$RINKHALS_ROOT/opt/rinkhals/scripts/ntpclient.sh &
+
 
 ################
 log "> Starting SSH & ADB..."
