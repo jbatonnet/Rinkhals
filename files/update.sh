@@ -91,6 +91,12 @@ elif [ "$KOBRA_MODEL" == "Anycubic Kobra 3" ]; then
         log "Your printer has firmware $KOBRA_VERSION. This Rinkhals version is only compatible with firmware 2.3.5.3 on the Kobra 3, stopping installation"
         quit
     fi
+elif [ "$KOBRA_MODEL" == "Anycubic Kobra S1" ]; then
+    export KOBRA_MODEL_CODE=K3
+    if [ "$KOBRA_VERSION" != "2.4.6.6" ]; then
+        log "Your printer has firmware $KOBRA_VERSION. This Rinkhals version is only compatible with firmware 2.4.6.6 on the Kobra S1, stopping installation"
+        quit
+    fi
 else
     log "Your printer's model is not recognized, stopping startup"
     quit
