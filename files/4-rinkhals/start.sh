@@ -209,6 +209,14 @@ mount --bind /useremain/app/gk/gcodes /userdata/app/gk/printer_data/gcodes
 [ -f /userdata/app/gk/printer_data/config/moonraker.conf ] || cp /userdata/app/gk/printer_data/config/default/moonraker.conf /userdata/app/gk/printer_data/config/
 [ -f /userdata/app/gk/printer_data/config/printer.cfg ] || cp /userdata/app/gk/printer_data/config/default/printer.$KOBRA_MODEL_CODE.cfg /userdata/app/gk/printer_data/config/printer.cfg
 
+if [ -f /mnt/udisk/printer.cfg ]; then
+    cp /userdata/app/gk/printer_data/config/printer.cfg /userdata/app/gk/printer_data/config/printer.cfg.bak
+    rm /userdata/app/gk/printer_data/config/printer.cfg
+    cp /mnt/udisk/printer.cfg /userdata/app/gk/printer_data/config/printer.cfg
+fi
+
+
+
 
 ################
 log "> Starting Moonraker..."
