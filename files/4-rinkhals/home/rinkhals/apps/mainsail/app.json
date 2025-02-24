@@ -1,0 +1,12 @@
+{
+    "$version": "1",
+
+    "name": "Mainsail",
+    "description": "Mainsail web interface, listening on port 4409",
+    "version": "0.1",
+
+    "requirements":
+    {
+        "memory": 8
+    }
+}
