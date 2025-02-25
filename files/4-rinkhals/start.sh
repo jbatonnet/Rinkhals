@@ -294,6 +294,24 @@ sleep 1
 
 assert_by_name gklib
 assert_by_name gkapi
+
+TOTAL=0
+
+while [ 1 ]; do
+    timeout -t 1 socat /tmp/unix_uds1 /tmp/unix_uds1 2> /dev/null
+    if [ "$?" -gt 127 ]; then
+        break
+    fi
+
+    if [ "$TOTAL" -gt 30 ]; then
+        log "/!\ Timeout waiting for gklib to start"
+        quit
+    fi
+
+    sleep 1
+    TOTAL=$(( $TOTAL + 1 ))
+done
+
 #assert_by_name K3SysUi
 
 
