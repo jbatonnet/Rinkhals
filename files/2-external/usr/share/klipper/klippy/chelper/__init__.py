@@ -13,7 +13,7 @@ import cffi
 
 GCC_CMD = "gcc"
 COMPILE_ARGS = ("-Wall -g -O2 -shared -fPIC"
-                " -flto -fwhole-program -fno-use-linker-plugin"
+                #" -fno-lto -fwhole-program -fno-use-linker-plugin"
                 " -o %s %s")
 SSE_FLAGS = "-mfpmath=sse -msse2"
 SOURCE_FILES = [
