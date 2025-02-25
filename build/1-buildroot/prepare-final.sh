@@ -30,9 +30,5 @@ done
 # Clean GCC copies
 rm -rf ./output/final/usr/bin/arm-buildroot-linux-uclibcgnueabihf-*
 
-# Clean python packages
-rm -rf ./output/final/usr/lib/python3.11/site-packages/*
-rm -rf ./output/final/usr/lib/python3.*/site-packages/*
-
 # Clean python .pyc files
 find ./output/final/usr/lib/python3.* -name '*.pyc' -type f -delete
