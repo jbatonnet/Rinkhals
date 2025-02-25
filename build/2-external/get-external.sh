@@ -38,3 +38,16 @@ unzip -d moonraker moonraker.zip
 mkdir -p /files/2-external/usr/share/moonraker
 rm -rf /files/2-external/usr/share/moonraker/*
 cp -pr /work/moonraker/*/* /files/2-external/usr/share/moonraker
+
+
+# Klipper
+echo "Downloading Klipper..."
+
+wget -O klipper.zip https://github.com/Klipper3d/klipper/archive/refs/heads/master.zip
+unzip -d klipper klipper.zip
+
+mkdir -p /files/2-external/usr/share/klipper
+rm -rf /files/2-external/usr/share/klipper/*
+
+cp -pr /work/klipper/*/klippy /files/2-external/usr/share/klipper/
+cp -p /work/klipper/*/scripts/klippy-requirements.txt /files/2-external/usr/share/klipper/
