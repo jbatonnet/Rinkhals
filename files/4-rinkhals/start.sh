@@ -165,28 +165,18 @@ $RINKHALS_ROOT/opt/rinkhals/scripts/ntpclient.sh &
 ################
 log "> Starting SSH & ADB..."
 
-if [ "$(cat /proc/net/tcp | grep 00000000:0016)" != "" ]; then # 22 = x16
+if [ "$(get_by_port 22)" != "" ]; then
     log "/!\ SSH is already running"
 else
     dropbear -F -E -a -p 22 -P /tmp/dropbear.pid -r /usr/local/etc/dropbear/dropbear_rsa_host_key >> ./logs/dropbear.log 2>&1 &
-    msleep 500
-
-    if [ "$(cat /proc/net/tcp | grep 00000000:0016)" == "" ]; then
-        log "/!\ SSH did not start properly"
-        quit
-    fi
+    wait_for_port 22 5000 "/!\ SSH did not start properly"
 fi
 
-if [ "$(cat /proc/net/tcp | grep 00000000:15B3)" != "" ]; then # 5555 = x15B3
+if [ "$(get_by_port 5555)" != "" ]; then
     log "/!\ ADB is already running"
 else
     adbd >> ./logs/adbd.log &
-    msleep 500
-
-    if [ "$(cat /proc/net/tcp | grep 00000000:15B3)" == "" ]; then
-        log "/!\ ADB did not start properly"
-        quit
-    fi
+    wait_for_port 5555 5000 "/!\ ADB did not start properly"
 fi
 
 
@@ -216,8 +206,6 @@ if [ -f /mnt/udisk/printer.cfg ]; then
 fi
 
 
-
-
 ################
 log "> Starting Moonraker..."
 
@@ -227,7 +215,7 @@ kill_by_name moonraker-proxy.py
 if [ ! -f $RINKHALS_HOME/.disable-moonraker ]; then
     HOME=/userdata/app/gk python /usr/share/moonraker/moonraker/moonraker.py >> ./logs/moonraker.log 2>&1 &
     python /opt/rinkhals/proxy/moonraker-proxy.py >> ./logs/moonraker.log 2>&1 &
-    wait_for_port 7125
+    wait_for_port 7125 30000 "/!\ Moonraker proxy did not start properly"
 else
     log "/!\ Moonraker was disabled by .disable-moonraker"
 fi
@@ -243,7 +231,7 @@ if [ ! -f $RINKHALS_HOME/.disable-nginx ]; then
     mkdir -p /var/cache/nginx
 
     nginx -c /usr/local/etc/nginx/nginx.conf &
-    wait_for_port 80
+    wait_for_port 80 30000 "/!\ nginx did not start properly"
 else
     log "/!\ nginx was disabled by .disable-nginx"
 fi
@@ -252,7 +240,7 @@ fi
 ################
 if [ ! -f $RINKHALS_HOME/.disable-moonraker ]; then
     log "> Waiting for Moonraker to start..."
-    wait_for_port 7126
+    wait_for_port 7126 30000 "/!\ Moonraker did not start properly"
 fi
 
 
@@ -294,25 +282,9 @@ sleep 1
 
 assert_by_name gklib
 assert_by_name gkapi
-
-TOTAL=0
-
-while [ 1 ]; do
-    timeout -t 1 socat /tmp/unix_uds1 /tmp/unix_uds1 2> /dev/null
-    if [ "$?" -gt 127 ]; then
-        break
-    fi
-
-    if [ "$TOTAL" -gt 30 ]; then
-        log "/!\ Timeout waiting for gklib to start"
-        quit
-    fi
-
-    sleep 1
-    TOTAL=$(( $TOTAL + 1 ))
-done
-
 #assert_by_name K3SysUi
+
+wait_for_socket /tmp/unix_uds1 30000 "/!\ Timeout waiting for gklib to start"
 
 
 ################
@@ -327,7 +299,7 @@ if [ ! -f $RINKHALS_HOME/.disable-mjpgstreamer ]; then
         sleep 1
 
         mjpg_streamer -i "/usr/lib/mjpg-streamer/input_uvc.so -d /dev/video10 -n" -o "/usr/lib/mjpg-streamer/output_http.so -w /usr/share/mjpg-streamer/www"  >> ./logs/mjpg_streamer.log 2>&1 &
-        wait_for_port 8080
+        wait_for_port 8080 30000 "/!\ mjpg-streamer did not start properly"
     else
         log "Webcam /dev/video10 not found. mjpg-streamer will not start"
     fi
