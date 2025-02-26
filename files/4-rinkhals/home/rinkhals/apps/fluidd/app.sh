@@ -3,7 +3,7 @@ source /useremain/rinkhals/.current/tools.sh
 APP_ROOT=$(dirname $(realpath $0))
 
 status() {
-    PID=$(cat /tmp/rinkhals-mainsail.pid 2> /dev/null)
+    PID=$(cat /tmp/rinkhals-fluidd.pid 2> /dev/null)
     if [ "$PID" == "" ]; then
         report_status $APP_STATUS_STOPPED
         return
@@ -20,18 +20,18 @@ status() {
 start() {
     lighttpd -f $APP_ROOT/lighttpd.conf &
     PID=$!
-    echo $PID > /tmp/rinkhals-mainsail.pid
+    echo $PID > /tmp/rinkhals-fluidd.pid
 
     # socat TCP-LISTEN:80,fork TCP:127.0.0.1:4409 &
 }
 stop() {
-    PID=$(cat /tmp/rinkhals-mainsail.pid 2> /dev/null)
+    PID=$(cat /tmp/rinkhals-fluidd.pid 2> /dev/null)
 
     if [ "$PID" != "" ]; then
         kill -9 $PID
     fi
 
-    rm /tmp/rinkhals-mainsail.pid
+    rm /tmp/rinkhals-fluidd.pid
 }
 
 case "$1" in
