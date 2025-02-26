@@ -215,32 +215,11 @@ kill_by_name moonraker-proxy.py
 if [ ! -f $RINKHALS_HOME/.disable-moonraker ]; then
     HOME=/userdata/app/gk python /usr/share/moonraker/moonraker/moonraker.py >> ./logs/moonraker.log 2>&1 &
     python /opt/rinkhals/proxy/moonraker-proxy.py >> ./logs/moonraker.log 2>&1 &
+
     wait_for_port 7125 30000 "/!\ Moonraker proxy did not start properly"
+    wait_for_port 7126 30000 "/!\ Moonraker did not start properly"
 else
     log "/!\ Moonraker was disabled by .disable-moonraker"
-fi
-
-
-################
-log "> Starting nginx..."
-
-kill_by_name nginx
-
-if [ ! -f $RINKHALS_HOME/.disable-nginx ]; then
-    mkdir -p /var/log/nginx
-    mkdir -p /var/cache/nginx
-
-    nginx -c /usr/local/etc/nginx/nginx.conf &
-    wait_for_port 80 30000 "/!\ nginx did not start properly"
-else
-    log "/!\ nginx was disabled by .disable-nginx"
-fi
-
-
-################
-if [ ! -f $RINKHALS_HOME/.disable-moonraker ]; then
-    log "> Waiting for Moonraker to start..."
-    wait_for_port 7126 30000 "/!\ Moonraker did not start properly"
 fi
 
 
