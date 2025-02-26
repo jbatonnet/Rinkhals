@@ -20,6 +20,25 @@ quit() {
     exit 1
 }
 
+install_swu() {
+    SWU_FILE=$1
+
+    echo "> Extracting $SWU_FILE ..."
+
+    mkdir -p /useremain/update_swu
+    rm -rf /useremain/update_swu/*
+
+    cd /useremain/update_swu
+
+    unzip -P U2FsdGVkX19deTfqpXHZnB5GeyQ/dtlbHjkUnwgCi+w= $SWU_FILE -d /useremain
+    tar -xzf /useremain/update_swu/setup.tar.gz -C /useremain/update_swu
+
+    echo "> Running update.sh ..."
+
+    chmod +x update.sh
+    ./update.sh
+}
+
 get_command_line() {
     PID=$1
 

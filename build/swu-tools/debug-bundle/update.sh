@@ -41,6 +41,9 @@ ls -al /useremain/rinkhals > $TMP_PATH/ls-rinkhals.log 2> /dev/null
 netstat -tln > $TMP_PATH/netstat.log 2> /dev/null
 ps > $TMP_PATH/ps.log 2> /dev/null
 top -n 1 > $TMP_PATH/top.log 2> /dev/null
+dmesg > $TMP_PATH/dmesg.log 2> /dev/null
+cat /userdata/app/gk/printer.cfg > $TMP_PATH/original-printer.cfg 2> /dev/null
+cat /userdata/app/gk/printer_data/config/printer.cfg > $TMP_PATH/rinkhals-printer.cfg 2> /dev/null
 
 # Collect webcam path and video formats
 ls -al /dev/v4l/by-id/* > $TMP_PATH/ls-dev-v4l.log 2> /dev/null
