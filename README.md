@@ -46,7 +46,7 @@ Rinkhals uses an overlay system to keep its modifications isolated from the stoc
     - If the progress bar turns green and you ear 2 beeps, the pritner reboots and Rinkhals is installed
     - If the progress bar turns red and you ear 3 beeps, the installation failed but everyhting should still work as usual. You will then find more information in the **aGVscF9zb3Nf/install.log** file on the USB drive
 
-If needed, the stock firmwares are available on a separate branch: https://github.com/jbatonnet/Rinkhals/tree/stock-firmwares
+If needed, the stock firmwares are available over there: https://1drv.ms/f/s!Ag-0E4JXrqAlwbwl1zK9Le15gYv0sA?e=v2YMPT
 
 ## Touch UI
 
