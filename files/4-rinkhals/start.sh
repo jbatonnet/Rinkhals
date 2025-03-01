@@ -191,44 +191,6 @@ fi
 
 
 ################
-log "> Starting Moonraker..."
-
-kill_by_name moonraker.py
-kill_by_name moonraker-proxy.py
-
-if [ ! -f $RINKHALS_HOME/.disable-moonraker ]; then
-    HOME=/userdata/app/gk python /usr/share/moonraker/moonraker/moonraker.py >> ./logs/moonraker.log 2>&1 &
-    python /opt/rinkhals/proxy/moonraker-proxy.py >> ./logs/moonraker.log 2>&1 &
-    wait_for_port 7125 30000 "/!\ Moonraker proxy did not start properly"
-else
-    log "/!\ Moonraker was disabled by .disable-moonraker"
-fi
-
-
-################
-log "> Starting nginx..."
-
-kill_by_name nginx
-
-if [ ! -f $RINKHALS_HOME/.disable-nginx ]; then
-    mkdir -p /var/log/nginx
-    mkdir -p /var/cache/nginx
-
-    nginx -c /usr/local/etc/nginx/nginx.conf &
-    wait_for_port 80 30000 "/!\ nginx did not start properly"
-else
-    log "/!\ nginx was disabled by .disable-nginx"
-fi
-
-
-################
-if [ ! -f $RINKHALS_HOME/.disable-moonraker ]; then
-    log "> Waiting for Moonraker to start..."
-    wait_for_port 7126 30000 "/!\ Moonraker did not start properly"
-fi
-
-
-################
 log "> Restarting Anycubic apps..."
 
 # Generate the printer.cfg file
@@ -276,27 +238,6 @@ assert_by_name gkapi
 #assert_by_name K3SysUi
 
 wait_for_socket /tmp/unix_uds1 30000 "/!\ Timeout waiting for gklib to start"
-
-
-################
-log "> Starting mjpg-streamer..."
-
-kill_by_name mjpg_streamer
-
-if [ ! -f $RINKHALS_HOME/.disable-mjpgstreamer ]; then
-    if [ -e /dev/video10 ]; then
-        kill_by_name gkcam
-
-        sleep 1
-
-        mjpg_streamer -i "/usr/lib/mjpg-streamer/input_uvc.so -d /dev/video10 -n" -o "/usr/lib/mjpg-streamer/output_http.so -w /usr/share/mjpg-streamer/www"  >> ./logs/mjpg_streamer.log 2>&1 &
-        wait_for_port 8080 30000 "/!\ mjpg-streamer did not start properly"
-    else
-        log "Webcam /dev/video10 not found. mjpg-streamer will not start"
-    fi
-else
-    log "/!\ mjpg-streamer was disabled by .disable-mjpgstreamer"
-fi
 
 
 ################

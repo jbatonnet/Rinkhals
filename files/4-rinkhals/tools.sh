@@ -75,10 +75,24 @@ install_swu() {
 get_command_line() {
     PID=$1
 
-    CMDLINE=$(cat /proc/$PID/cmdline)
+    CMDLINE=$(cat /proc/$PID/cmdline 2> /dev/null)
     CMDLINE=$(echo $CMDLINE | head -c 80)
 
     echo $CMDLINE
+}
+kill_by_id() {
+    PID=$1
+    if [ "$PID" == "" ]; then
+        return
+    fi
+    if [ ! -e /proc/$PID/cmdline ]; then
+        return
+    fi
+
+    CMDLINE=$(get_command_line $PID)
+
+    log "Killing $PID ($CMDLINE)"
+    kill -9 $PID
 }
 
 get_by_name() {
@@ -120,10 +134,7 @@ kill_by_name() {
     PIDS=$(get_by_name $1)
 
     for PID in $(echo "$PIDS"); do
-        CMDLINE=$(get_command_line $PID)
-
-        log "Killing $PID ($CMDLINE)"
-        kill -9 $PID
+        kill_by_id $PID
     done
 }
 
@@ -170,13 +181,7 @@ assert_by_port() {
 }
 kill_by_port() {
     PID=$(get_by_port $1)
-
-    if [[ "$PID" != "" ]]; then
-        CMDLINE=$(get_command_line $PID)
-
-        log "Killing $PID ($CMDLINE)"
-        kill -9 $PID
-    fi
+    kill_by_id $PID
 }
 
 wait_for_socket() {

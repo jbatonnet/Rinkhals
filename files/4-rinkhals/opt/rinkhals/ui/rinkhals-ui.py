@@ -143,7 +143,7 @@ def subscribe_mqtt():
 
 
 def main():
-    global screen, dialog, redraw, modified_features, selected_app
+    global screen, dialog, redraw, selected_app
     global touch_device, touch_x, touch_y, touch_down, touch_down_builder, touch_actions
 
     # Log information
@@ -188,7 +188,6 @@ def main():
     redraw = True
     screen = 'main'
     dialog = None
-    modified_features = False
     selected_app = None
 
     if SIMULATOR:
@@ -301,21 +300,6 @@ def main():
 
         selected_app = app
         show_screen('app')
-
-    def toggle_feature(enabled, disable_file):
-        global modified_features
-
-        if enabled:
-            if os.path.exists(disable_file):
-                try:
-                    os.remove(disable_file)
-                except:
-                    pass
-        else:
-            with open(disable_file, 'wb'):
-                pass
-
-        modified_features = True
 
     def get_app_root(app):
         user_app_root = f'{USER_APP_PATH}/{app}'
@@ -487,12 +471,13 @@ def main():
             draw.text((SCREEN_WIDTH / 2, 232), 'Disk usage: ' + disk_usage, fill = color_subtitle, font = font_subtitle, anchor = 'mm')
 
             current_y = 280
+
             surface = (0, current_y - 22, SCREEN_WIDTH, current_y + 22)
             if not dialog and touch_down and touch_down[1] >= current_y - 22 and touch_down[1] <= current_y + 22:
                 draw.rectangle(surface, fill = color_secondary)
-            draw.text((16, current_y), 'Manage features', fill = color_text, font = font_text, anchor = 'lm')
+            draw.text((16, current_y), 'Manage apps', fill = color_text, font = font_text, anchor = 'lm')
             draw.text((SCREEN_WIDTH - 16, current_y), '>', fill = color_text, font = font_text, anchor = 'rm')
-            touch_actions.append((surface, lambda: show_screen('features')))
+            touch_actions.append((surface, lambda: show_screen('apps')))
 
             # current_y = current_y + 44
             # surface = (0, current_y - 22, SCREEN_WIDTH, current_y + 22)
@@ -500,14 +485,6 @@ def main():
             #     draw.rectangle(surface, fill = color_secondary)
             # draw.text((16, current_y), 'Clean storage (logs, old files, ...)', fill = color_text, font = font_text, anchor = 'lm')
             # touch_actions.append((surface, lambda: show_dialog('confirm-cleanup')))
-
-            current_y = current_y + 44
-            surface = (0, current_y - 22, SCREEN_WIDTH, current_y + 22)
-            if not dialog and touch_down and touch_down[1] >= current_y - 22 and touch_down[1] <= current_y + 22:
-                draw.rectangle(surface, fill = color_secondary)
-            draw.text((16, current_y), 'Manage apps', fill = color_text, font = font_text, anchor = 'lm')
-            draw.text((SCREEN_WIDTH - 16, current_y), '>', fill = color_text, font = font_text, anchor = 'rm')
-            touch_actions.append((surface, lambda: show_screen('apps')))
 
             current_y = current_y + 44
             surface = (0, current_y - 22, SCREEN_WIDTH, current_y + 22)
@@ -588,73 +565,6 @@ def main():
                 touch_actions = []
                 touch_actions.append(((72, button_top, SCREEN_WIDTH - 72, button_top + 36), lambda: show_dialog(None)))
                 touch_actions.append(((0, 0, SCREEN_WIDTH, SCREEN_HEIGHT), lambda: show_dialog(None)))
-
-        elif screen == 'features':
-            if modified_features:
-                touch_actions.append(((0, 24, 48, 72), lambda: show_dialog('features-restart')))
-            else:
-                touch_actions.append(((0, 24, 48, 72), lambda: show_screen('main')))
-
-            feature_moonraker = not os.path.isfile(RINKHALS_HOME + '/.disable-moonraker')
-            feature_mjpgstreamer = not os.path.isfile(RINKHALS_HOME + '/.disable-mjpgstreamer')
-            feature_nginx = not os.path.isfile(RINKHALS_HOME + '/.disable-nginx')
-
-            buffer = background.copy()
-            draw = ImageDraw.Draw(buffer)
-
-            draw.text((SCREEN_WIDTH / 2, 50), 'Manage features', fill = color_text, font = font_title, anchor = 'mm')
-
-            current_y = 96
-            checked = feature_moonraker
-
-            surface = (0, current_y - 22, SCREEN_WIDTH, current_y + 22)
-            if not dialog and touch_down and touch_down[1] >= current_y - 22 and touch_down[1] <= current_y + 22:
-                draw.rectangle(surface, fill = color_secondary)
-            draw.text((16, current_y), 'Enable Moonraker', fill = color_text, font = font_text, anchor = 'lm')
-            draw.rounded_rectangle((SCREEN_WIDTH - 60, current_y - 12, SCREEN_WIDTH - 12, current_y + 12), radius = 12, fill = color_primary if checked else color_secondary)
-            position = SCREEN_WIDTH - 24 if checked else SCREEN_WIDTH - 48
-            draw.rounded_rectangle((position - 9, current_y - 9, position + 9, current_y + 9), 9, fill = color_text if checked else color_disabled)
-            touch_actions.append((surface, lambda: toggle_feature(not feature_moonraker, RINKHALS_HOME + '/.disable-moonraker')))
-
-            current_y = current_y + 44
-            enabled = feature_moonraker
-            checked = feature_moonraker and feature_mjpgstreamer
-            
-            surface = (0, current_y - 22, SCREEN_WIDTH, current_y + 22)
-            if not dialog and enabled and touch_down and touch_down[1] >= current_y - 22 and touch_down[1] <= current_y + 22:
-                draw.rectangle(surface, fill = color_secondary)
-            draw.text((28, current_y), 'Camera in Moonraker', fill = color_text if enabled else color_disabled, font = font_text, anchor = 'lm')
-            draw.rounded_rectangle((SCREEN_WIDTH - 60, current_y - 12, SCREEN_WIDTH - 12, current_y + 12), radius = 12, fill = color_primary if checked else color_secondary)
-            position = SCREEN_WIDTH - 24 if checked else SCREEN_WIDTH - 48
-            draw.rounded_rectangle((position - 9, current_y - 9, position + 9, current_y + 9), 9, fill = color_text if checked else color_disabled)
-            touch_actions.append((surface, lambda: toggle_feature(not feature_mjpgstreamer, RINKHALS_HOME + '/.disable-mjpgstreamer')))
- 
-            current_y = current_y + 44
-            enabled = feature_moonraker
-            checked = feature_moonraker and feature_nginx
-            
-            surface = (0, current_y - 22, SCREEN_WIDTH, current_y + 22)
-            if not dialog and enabled and touch_down and touch_down[1] >= current_y - 22 and touch_down[1] <= current_y + 22:
-                draw.rectangle(surface, fill = color_secondary)
-            draw.text((28, current_y), 'Mainsail and Fluidd', fill = color_text if enabled else color_disabled, font = font_text, anchor = 'lm')
-            draw.rounded_rectangle((SCREEN_WIDTH - 60, current_y - 12, SCREEN_WIDTH - 12, current_y + 12), radius = 12, fill = color_primary if checked else color_secondary)
-            position = SCREEN_WIDTH - 24 if checked else SCREEN_WIDTH - 48
-            draw.rounded_rectangle((position - 9, current_y - 9, position + 9, current_y + 9), 9, fill = color_text if checked else color_disabled)
-            touch_actions.append((surface, lambda: toggle_feature(not feature_nginx, RINKHALS_HOME + '/.disable-nginx')))
-
-            if dialog == 'features-restart':
-                dialog_height = 144
-                dialog_top = (SCREEN_HEIGHT - dialog_height) / 2
-                button_top = dialog_top + dialog_height - 56
-
-                draw.rounded_rectangle((32, dialog_top, SCREEN_WIDTH - 32, dialog_top + dialog_height), radius = 16, fill = color_secondary)
-                draw.multiline_text((SCREEN_WIDTH / 2, dialog_top + 16), 'You toggled some feature\nRinkhals needs to restart', align = 'center', fill = color_text, font = font_text, anchor = 'ma')
-                draw.rounded_rectangle((72, button_top, SCREEN_WIDTH - 72, button_top + 36), radius = 8, fill = color_primary)
-                draw.text((SCREEN_WIDTH / 2, button_top + 18), 'Restart', fill = color_text, font = font_text, anchor = 'mm')
-
-                touch_actions = []
-                touch_actions.append(((72, button_top, SCREEN_WIDTH - 72, button_top + 36), lambda: restart_rinkhals()))
-                touch_actions.append(((0, 0, SCREEN_WIDTH, SCREEN_HEIGHT), lambda: show_screen('main')))
 
         elif screen == 'apps':
             touch_actions.append(((0, 24, 48, 72), lambda: show_screen('main')))
