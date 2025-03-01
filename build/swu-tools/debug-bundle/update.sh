@@ -38,6 +38,9 @@ find /userdata > $TMP_PATH/find-userdata.log 2> /dev/null
 find /useremain > $TMP_PATH/find-useremain.log 2> /dev/null
 find /oem > $TMP_PATH/find-oem.log 2> /dev/null
 find /ac_lib > $TMP_PATH/find-aclib.log 2> /dev/null
+find /bin > $TMP_PATH/find-bin.log 2> /dev/null
+find /usr > $TMP_PATH/find-usr.log 2> /dev/null
+find /lib > $TMP_PATH/find-lib.log 2> /dev/null
 
 # Collect basic printer info (firmware version, LAN mode, startup script)
 cp /useremain/dev/remote_ctrl_mode $TMP_PATH/ 2> /dev/null

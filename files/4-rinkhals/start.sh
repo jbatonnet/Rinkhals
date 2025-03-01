@@ -152,11 +152,15 @@ else
     wait_for_port 22 5000 "/!\ SSH did not start properly"
 fi
 
-if [ "$(get_by_port 5555)" != "" ]; then
-    log "/!\ ADB is already running"
+if [ -f /usr/bin/adbd ]; then
+    if [ "$(get_by_port 5555)" != "" ]; then
+        log "/!\ ADB is already running"
+    else
+        adbd >> ./logs/adbd.log &
+        wait_for_port 5555 5000 "/!\ ADB did not start properly"
+    fi
 else
-    adbd >> ./logs/adbd.log &
-    wait_for_port 5555 5000 "/!\ ADB did not start properly"
+    log "/!\ ADB is not available"
 fi
 
 
