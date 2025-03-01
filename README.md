@@ -22,6 +22,8 @@ In case you're wondering this project is named after rinkhals, a sub-species of 
 
 You can join the Rinkhals community on Discord: https://discord.gg/3mrANjpNJC
 
+Since people have been asking, I accept donations but please remember that I work on Rinkhals for fun and not for the money. I will not accept donations to work on specific bugs or features.
+
 
 <p align="center">
     <img width="48" src="https://github.com/jbatonnet/Rinkhals/blob/master/icon.png?raw=true" />
