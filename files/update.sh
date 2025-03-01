@@ -1,28 +1,18 @@
 #!/bin/sh
-# update_optional.sh
-update_file_path="/useremain/update_swu"
-to_update_path="/userdata/app/gk"
-to_update_wifi_cfg="/userdata/wifi_cfg"
-to_run_sh_path="/userdata/app/kenv"
-to_gcode_path="/useremain"
-swu_path="/mnt/udisk/aGVscF9zb3Nf"
-cfg_name="mode_cfg"
-is_udisk="yes"
 
-mode=1
+UPDATE_PATH="/useremain/update_swu"
+USB_UPDATE_PATH="/mnt/udisk/aGVscF9zb3Nf"
 
-echo "mode: ${mode}"
 
-if [ -f ${swu_path}/update.swu ];then
-    is_udisk="yes"
-fi
+. $UPDATE_PATH/rinkhals/tools.sh
 
-function log() {
+
+log() {
     echo "${*}"
     echo "$(date): ${*}" >> /useremain/rinkhals/install.log
     echo "$(date): ${*}" >> /mnt/udisk/aGVscF9zb3Nf/install.log
 }
-function progress() {
+progress() {
     if [ "$1" == "success" ]; then
         fb_draw "drawbox=x=16:y=16:w=32:h=ih-32:t=fill:color=black,drawbox=x=20:y=20:w=24:h=ih-40:t=fill:color=green"
         return
@@ -38,31 +28,33 @@ function progress() {
 
     fb_draw "drawbox=x=16:y=16:w=32:h=ih-32:t=fill:color=black,drawbox=x=20:y=20:w=24:h=(ih-40)*${*}:t=fill:color=white"
 }
-function beep() {
-    echo 1 > /sys/class/pwm/pwmchip0/pwm0/enable
-    sleep ${*}
-    echo 0 > /sys/class/pwm/pwmchip0/pwm0/enable
-}
-function quit() {
+quit() {
     progress error
-    beep 1
-    sleep 1
-    beep 1
-    sleep 1
-    beep 1
+
+    beep 1000
+    msleep 1000
+    beep 1000
+    msleep 1000
+    beep 1000
 
     fb_restore
     exit 1
 }
 
-function fb_capture() {
-    /ac_lib/lib/third_bin/ffmpeg -f fbdev -i /dev/fb0 -frames:v 1 -y /tmp/framebuffer.bmp 1>/dev/null 2>/dev/null
+fb_capture() {
+    if [ -f /ac_lib/lib/third_bin/ffmpeg ]; then
+        /ac_lib/lib/third_bin/ffmpeg -f fbdev -i /dev/fb0 -frames:v 1 -y /tmp/framebuffer.bmp 1>/dev/null 2>/dev/null
+    fi
 }
-function fb_restore() {
-    /ac_lib/lib/third_bin/ffmpeg -i /tmp/framebuffer.bmp -f fbdev /dev/fb0 1>/dev/null 2>/dev/null
+fb_restore() {
+    if [ -f /ac_lib/lib/third_bin/ffmpeg ]; then
+        /ac_lib/lib/third_bin/ffmpeg -i /tmp/framebuffer.bmp -f fbdev /dev/fb0 1>/dev/null 2>/dev/null
+    fi
 }
-function fb_draw() {
-    /ac_lib/lib/third_bin/ffmpeg -i /tmp/framebuffer.bmp -vf "${*}" -f fbdev /dev/fb0 1>/dev/null 2>/dev/null
+fb_draw() {
+    if [ -f /ac_lib/lib/third_bin/ffmpeg ]; then
+        /ac_lib/lib/third_bin/ffmpeg -i /tmp/framebuffer.bmp -vf "${*}" -f fbdev /dev/fb0 1>/dev/null 2>/dev/null
+    fi
 }
 
 
@@ -76,25 +68,7 @@ progress 0
 
 
 # Make sure we install on the right compatible version
-KOBRA_MODEL=$(cat /userdata/app/gk/printer.cfg | grep device_type | awk -F':' '{print $2}' | xargs)
-KOBRA_VERSION=$(cat /useremain/dev/version)
-
-if [ "$KOBRA_MODEL" == "Anycubic Kobra 2 Pro" ]; then
-    export KOBRA_MODEL_CODE=K2P
-    if [ "$KOBRA_VERSION" != "3.1.2.3" ]; then
-        log "Your printer has firmware $KOBRA_VERSION. This Rinkhals version is only compatible with firmware 3.1.2.3 on the Kobra 2 Pro, stopping installation"
-        quit
-    fi
-elif [ "$KOBRA_MODEL" == "Anycubic Kobra 3" ]; then
-    export KOBRA_MODEL_CODE=K3
-    if [ "$KOBRA_VERSION" != "2.3.5.3" ]; then
-        log "Your printer has firmware $KOBRA_VERSION. This Rinkhals version is only compatible with firmware 2.3.5.3 on the Kobra 3, stopping installation"
-        quit
-    fi
-else
-    log "Your printer's model is not recognized, stopping startup"
-    quit
-fi
+check_compatibility
 
 
 # Unmount everything to prevent any issues
@@ -124,22 +98,26 @@ cp /userdata/app/gk/config/device_account.json /mnt/udisk/aGVscF9zb3Nf/device_ac
 # Copy Rinkhals
 progress 0.3
 
-RINKHALS_VERSION=$(cat ${update_file_path}/.version)
+RINKHALS_VERSION=$(cat $UPDATE_PATH/.version)
+
 log "Installing Rinkhals version $RINKHALS_VERSION"
 
 log "Copying Rinkhals files"
-mkdir -p /useremain/rinkhals/${RINKHALS_VERSION}
-rm -rf /useremain/rinkhals/${RINKHALS_VERSION}/*
-cp -r ${update_file_path}/rinkhals/* /useremain/rinkhals/${RINKHALS_VERSION}
-echo ${RINKHALS_VERSION} > /useremain/rinkhals/${RINKHALS_VERSION}/.version
+mkdir -p /useremain/rinkhals/$RINKHALS_VERSION
+rm -rf /useremain/rinkhals/$RINKHALS_VERSION/*
+cp -r $UPDATE_PATH/rinkhals/* /useremain/rinkhals/$RINKHALS_VERSION
+
+echo $RINKHALS_VERSION > /useremain/rinkhals/$RINKHALS_VERSION/.version
 
 progress 0.8
 
 log "Copying Rinkhals startup files"
 rm -f /useremain/rinkhals/*.*
-cp ${update_file_path}/start-rinkhals.sh /useremain/rinkhals/start-rinkhals.sh
-cp ${update_file_path}/start.sh.patch /useremain/rinkhals/start.sh.patch
-echo ${RINKHALS_VERSION} > /useremain/rinkhals/.version
+cp $UPDATE_PATH/start-rinkhals.sh /useremain/rinkhals/start-rinkhals.sh
+
+cp $UPDATE_PATH/start.sh.patch /useremain/rinkhals/start.sh.patch
+
+echo $RINKHALS_VERSION > /useremain/rinkhals/.version
 
 rm /useremain/rinkhals/.disable-rinkhals
 
@@ -151,16 +129,19 @@ PRESENT=$(cat /userdata/app/gk/start.sh | grep "Rinkhals/begin")
 if [ "$PRESENT" == "" ]; then
     log "Installing Rinkhals loader as it is missing"
 
-    cat ${update_file_path}/start.sh.patch >> /userdata/app/gk/start.sh
-    cat ${update_file_path}/start.sh.patch >> /userdata/app/gk/restart_k3c.sh
+    cat $UPDATE_PATH/start.sh.patch >> /userdata/app/gk/start.sh
+    if [ -f /userdata/app/gk/restart_k3c.sh ]; then
+        cat $UPDATE_PATH/start.sh.patch >> /userdata/app/gk/restart_k3c.sh
+    fi
 else
     log "Rinkhals loader was detected, skipping installation"
 fi
 
 log "Removing update files"
-rm -rf ${update_file_path}
-rm -rf ${to_gcode_path}/update.swu
-rm -rf ${swu_path}/update.swu
+
+rm -rf $UPDATE_PATH
+rm -f /useremain/update.swu
+rm -f $USB_UPDATE_PATH/update.swu
 
 sync
 log "Rinkhals installation complete, rebooting..."
@@ -169,8 +150,8 @@ log "Rinkhals installation complete, rebooting..."
 # Notify user
 progress success
 
-beep 1
-sleep 1
-beep 1
+beep 1000
+msleep 1000
+beep 1000
 
 reboot

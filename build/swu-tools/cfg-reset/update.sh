@@ -14,14 +14,17 @@ KOBRA_MODEL=$(cat /userdata/app/gk/printer.cfg | grep device_type | awk -F':' '{
 KOBRA_VERSION=$(cat /useremain/dev/version)
 
 if [ "$KOBRA_MODEL" == "Anycubic Kobra 2 Pro" ]; then
-    export KOBRA_MODEL_CODE=K2P
     if [ "$KOBRA_VERSION" != "3.1.2.3" ]; then
         beep 100 && usleep 100000 && beep 100
         exit 1
     fi
 elif [ "$KOBRA_MODEL" == "Anycubic Kobra 3" ]; then
-    export KOBRA_MODEL_CODE=K3
     if [ "$KOBRA_VERSION" != "2.3.5.3" ]; then
+        beep 100 && usleep 100000 && beep 100
+        exit 1
+    fi
+elif [ "$KOBRA_MODEL" == "Anycubic Kobra S1" ]; then
+    if [ "$KOBRA_VERSION" != "2.4.6.6" ] && [ "$KOBRA_VERSION" != "2.4.8.3" ]; then
         beep 100 && usleep 100000 && beep 100
         exit 1
     fi

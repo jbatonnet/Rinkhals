@@ -1,5 +1,11 @@
 source $(dirname $(realpath $0))/tools.sh
 
+export TZ=UTC
+export RINKHALS_ROOT=$(dirname $(realpath $0))
+export RINKHALS_VERSION=$(cat $RINKHALS_ROOT/.version)
+
+check_compatibility
+
 quit() {
     echo
     log "/!\\ Startup failed, stopping Rinkhals..."
@@ -13,32 +19,6 @@ quit() {
 
     exit 1
 }
-
-export TZ=UTC
-
-export RINKHALS_ROOT=$(dirname $(realpath $0))
-export RINKHALS_VERSION=$(cat $RINKHALS_ROOT/.version)
-export RINKHALS_HOME=/useremain/home/rinkhals
-
-export KOBRA_MODEL=$(cat /userdata/app/gk/printer.cfg | grep device_type | awk -F':' '{print $2}' | xargs)
-export KOBRA_VERSION=$(cat /useremain/dev/version)
-
-if [ "$KOBRA_MODEL" == "Anycubic Kobra 2 Pro" ]; then
-    export KOBRA_MODEL_CODE=K2P
-    if [ "$KOBRA_VERSION" != "3.1.2.3" ]; then
-        log "Your printer has firmware $KOBRA_VERSION. This Rinkhals version is only compatible with firmware 3.1.2.3 on the Kobra 2 Pro, stopping startup"
-        exit 1
-    fi
-elif [ "$KOBRA_MODEL" == "Anycubic Kobra 3" ]; then
-    export KOBRA_MODEL_CODE=K3
-    if [ "$KOBRA_VERSION" != "2.3.5.3" ]; then
-        log "Your printer has firmware $KOBRA_VERSION. This Rinkhals version is only compatible with firmware 2.3.5.3 on the Kobra 3, stopping startup"
-        exit 1
-    fi
-else
-    log "Your printer's model is not recognized, stopping startup"
-    exit 1
-fi
 
 cd $RINKHALS_ROOT
 rm -rf /useremain/rinkhals/.current 2> /dev/null
@@ -197,7 +177,11 @@ umount -l /userdata/app/gk/printer_data/gcodes 2> /dev/null
 mount --bind /useremain/app/gk/gcodes /userdata/app/gk/printer_data/gcodes
 
 [ -f /userdata/app/gk/printer_data/config/moonraker.conf ] || cp /userdata/app/gk/printer_data/config/default/moonraker.conf /userdata/app/gk/printer_data/config/
-[ -f /userdata/app/gk/printer_data/config/printer.cfg ] || cp /userdata/app/gk/printer_data/config/default/printer.$KOBRA_MODEL_CODE.cfg /userdata/app/gk/printer_data/config/printer.cfg
+
+if [ ! -f /userdata/app/gk/printer_data/config/printer.cfg ]; then
+    cp /userdata/app/gk/printer_data/config/default/printer.${KOBRA_MODEL_CODE}_${KOBRA_VERSION}.cfg /userdata/app/gk/printer_data/config/printer.cfg
+    cat /userdata/app/gk/printer_data/config/default/printer.cfg.patch >> /userdata/app/gk/printer_data/config/printer.cfg
+fi
 
 if [ -f /mnt/udisk/printer.cfg ]; then
     cp /userdata/app/gk/printer_data/config/printer.cfg /userdata/app/gk/printer_data/config/printer.cfg.bak

@@ -1,9 +1,17 @@
 #!/bin/sh
 
 # From a Windows machine:
-#   docker run --rm -it -v .\build:/build -v .\files:/files ghcr.io/jbatonnet/rinkhals/build /build/swu-tools/ssh/build-swu.sh
+#   docker run --rm -it -e KOBRA_MODEL_CODE="K3" -v .\build:/build -v .\files:/files ghcr.io/jbatonnet/rinkhals/build /build/swu-tools/ssh/build-swu.sh
+
+
+if [ "$KOBRA_MODEL_CODE" = "" ]; then
+    echo "Please specify your Kobra model using KOBRA_MODEL_CODE environment variable"
+    exit 1
+fi
 
 set -e
+BUILD_ROOT=$(dirname $(realpath $0))
+. $BUILD_ROOT/../../tools.sh
 
 
 # Prepare update
@@ -18,6 +26,7 @@ cp /files/1-buildroot/lib/libatomic.so.1 /tmp/update_swu/libatomic.so.1
 cp /files/1-buildroot/lib/libc.so.0 /tmp/update_swu/libc.so.0
 cp /files/1-buildroot/lib/ld-uClibc.so.0 /tmp/update_swu/ld-uClibc
 
+
 # Patch dropbear to run sftp-server locally
 cat /files/1-buildroot/usr/sbin/dropbear |
     sed "s/\/lib\/ld-uClibc.so.0/\/tmp\/ssh\/\/ld-uClibc/g" |
@@ -28,20 +37,11 @@ cat /files/1-buildroot/usr/libexec/sftp-server |
     sed "s/\/lib\/ld-uClibc.so.0/\/tmp\/ssh\/\/ld-uClibc/g" \
     > /tmp/update_swu/sftp-server
 
-# Create the setup.tar.gz
-echo "Building update package..."
-
-mkdir -p /build/dist/update_swu
-rm -rf /build/dist/update_swu/*
-
-cd /tmp/update_swu
-tar -czf /build/dist/update_swu/setup.tar.gz --exclude='setup.tar.gz' .
-
 
 # Create the update.swu
-rm -rf /build/dist/update.swu
+echo "Building update package..."
 
-cd /build/dist
-zip -P U2FsdGVkX19deTfqpXHZnB5GeyQ/dtlbHjkUnwgCi+w= -r update.swu update_swu
+SWU_PATH=${1:-/build/dist/update.swu}
+build_swu $KOBRA_MODEL_CODE /tmp/update_swu $SWU_PATH
 
-echo "Done, your update package is ready: build/dist/update.swu"
+echo "Done, your update package is ready: $SWU_PATH"

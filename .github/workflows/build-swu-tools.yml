@@ -10,28 +10,29 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+
     - run: |
-        docker run --rm -v ${{ github.workspace }}/build:/build -v ${{ github.workspace }}/files:/files ghcr.io/jbatonnet/rinkhals/build /bin/bash -c "chmod +x /build/swu-tools/ssh/build-swu.sh && /build/swu-tools/ssh/build-swu.sh"
+        docker run --rm -e KOBRA_MODEL_CODE="K3" -v ${{ github.workspace }}/build:/build -v ${{ github.workspace }}/files:/files ghcr.io/jbatonnet/rinkhals/build /bin/bash -c "chmod +x /build/swu-tools/ssh/build-swu.sh && /build/swu-tools/ssh/build-swu.sh /build/dist/tool-ssh.swu"
+        docker run --rm -e KOBRA_MODEL_CODE="K3" -v ${{ github.workspace }}/build:/build -v ${{ github.workspace }}/files:/files ghcr.io/jbatonnet/rinkhals/build /bin/bash -c "chmod +x /build/swu-tools/backup-partitions/build-swu.sh && /build/swu-tools/backup-partitions/build-swu.sh /build/dist/tool-backup-partitions.swu"
+        docker run --rm -e KOBRA_MODEL_CODE="K3" -v ${{ github.workspace }}/build:/build -v ${{ github.workspace }}/files:/files ghcr.io/jbatonnet/rinkhals/build /bin/bash -c "chmod +x /build/swu-tools/debug-bundle/build-swu.sh && /build/swu-tools/debug-bundle/build-swu.sh /build/dist/tool-debug-bundle.swu"
+        docker run --rm -e KOBRA_MODEL_CODE="K3" -v ${{ github.workspace }}/build:/build -v ${{ github.workspace }}/files:/files ghcr.io/jbatonnet/rinkhals/build /bin/bash -c "chmod +x /build/swu-tools/cfg-reset/build-swu.sh && /build/swu-tools/cfg-reset/build-swu.sh /build/dist/tool-cfg-reset.swu"
+
     - name: Archive production artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: tools-ssh.swu
+        name: tools-k2p-k3
         path: |
-          build/dist/update.swu
+          build/dist/*.swu
+
     - run: |
-        docker run --rm -v ${{ github.workspace }}/build:/build -v ${{ github.workspace }}/files:/files ghcr.io/jbatonnet/rinkhals/build /bin/bash -c "chmod +x /build/swu-tools/backup-partitions/build-swu.sh && /build/swu-tools/backup-partitions/build-swu.sh"
+        docker run --rm -e KOBRA_MODEL_CODE="KS1" -v ${{ github.workspace }}/build:/build -v ${{ github.workspace }}/files:/files ghcr.io/jbatonnet/rinkhals/build /bin/bash -c "chmod +x /build/swu-tools/ssh/build-swu.sh && /build/swu-tools/ssh/build-swu.sh /build/dist/tool-ssh.swu"
+        docker run --rm -e KOBRA_MODEL_CODE="KS1" -v ${{ github.workspace }}/build:/build -v ${{ github.workspace }}/files:/files ghcr.io/jbatonnet/rinkhals/build /bin/bash -c "chmod +x /build/swu-tools/backup-partitions/build-swu.sh && /build/swu-tools/backup-partitions/build-swu.sh /build/dist/tool-backup-partitions.swu"
+        docker run --rm -e KOBRA_MODEL_CODE="KS1" -v ${{ github.workspace }}/build:/build -v ${{ github.workspace }}/files:/files ghcr.io/jbatonnet/rinkhals/build /bin/bash -c "chmod +x /build/swu-tools/debug-bundle/build-swu.sh && /build/swu-tools/debug-bundle/build-swu.sh /build/dist/tool-debug-bundle.swu"
+        docker run --rm -e KOBRA_MODEL_CODE="KS1" -v ${{ github.workspace }}/build:/build -v ${{ github.workspace }}/files:/files ghcr.io/jbatonnet/rinkhals/build /bin/bash -c "chmod +x /build/swu-tools/cfg-reset/build-swu.sh && /build/swu-tools/cfg-reset/build-swu.sh /build/dist/tool-cfg-reset.swu"
+
     - name: Archive production artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: tools-backup-partitions.swu
+        name: tools-ks1
         path: |
-          build/dist/update.swu
-    - run: |
-        docker run --rm -v ${{ github.workspace }}/build:/build -v ${{ github.workspace }}/files:/files ghcr.io/jbatonnet/rinkhals/build /bin/bash -c "chmod +x /build/swu-tools/debug-bundle/build-swu.sh && /build/swu-tools/debug-bundle/build-swu.sh"
-    - name: Archive production artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: tools-debug-bundle.swu
-        path: |
-          build/dist/update.swu
-  
+          build/dist/*.swu

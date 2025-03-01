@@ -27,11 +27,25 @@ for VERSION in $(ls -1d */); do
     cp /useremain/rinkhals/$VERSION/logs/*.log $TMP_PATH/$VERSION 2> /dev/null
 done
 
+# Collect general info
+cat /proc/cpuinfo > $TMP_PATH/cpuinfo.log 2> /dev/null
+cat /proc/meminfo > $TMP_PATH/meminfo.log 2> /dev/null
+ifconfig > $TMP_PATH/ifconfig.log 2> /dev/null
+uname -a > $TMP_PATH/uname.log 2> /dev/null
+
+# Collect partition structure
+find /userdata > $TMP_PATH/find-userdata.log 2> /dev/null
+find /useremain > $TMP_PATH/find-useremain.log 2> /dev/null
+find /oem > $TMP_PATH/find-oem.log 2> /dev/null
+find /ac_lib > $TMP_PATH/find-aclib.log 2> /dev/null
+
 # Collect basic printer info (firmware version, LAN mode, startup script)
 cp /useremain/dev/remote_ctrl_mode $TMP_PATH/ 2> /dev/null
 cp /useremain/dev/version $TMP_PATH/firmware_version 2> /dev/null
 cat -A /userdata/app/gk/start.sh > $TMP_PATH/start.sh 2> /dev/null
 cat -A /userdata/app/gk/restart_k3c.sh > $TMP_PATH/restart_k3c.sh 2> /dev/null
+cat /userdata/app/gk/printer.cfg > $TMP_PATH/original-printer.cfg 2> /dev/null
+cat /userdata/app/gk/printer_data/config/printer.cfg > $TMP_PATH/rinkhals-printer.cfg 2> /dev/null
 
 # Collect more information (free space, Rinkhals size, running processes)
 df -h > $TMP_PATH/df.log 2> /dev/null
@@ -42,8 +56,6 @@ netstat -tln > $TMP_PATH/netstat.log 2> /dev/null
 ps > $TMP_PATH/ps.log 2> /dev/null
 top -n 1 > $TMP_PATH/top.log 2> /dev/null
 dmesg > $TMP_PATH/dmesg.log 2> /dev/null
-cat /userdata/app/gk/printer.cfg > $TMP_PATH/original-printer.cfg 2> /dev/null
-cat /userdata/app/gk/printer_data/config/printer.cfg > $TMP_PATH/rinkhals-printer.cfg 2> /dev/null
 
 # Collect webcam path and video formats
 ls -al /dev/v4l/by-id/* > $TMP_PATH/ls-dev-v4l.log 2> /dev/null
