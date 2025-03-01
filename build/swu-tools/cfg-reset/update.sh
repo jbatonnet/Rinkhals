@@ -9,26 +9,8 @@ function beep() {
 UPDATE_PATH="/useremain/update_swu"
 
 
-# Check if the printer has a supported configuration
-KOBRA_MODEL=$(cat /userdata/app/gk/printer.cfg | grep device_type | awk -F':' '{print $2}' | xargs)
-KOBRA_VERSION=$(cat /useremain/dev/version)
-
-if [ "$KOBRA_MODEL" == "Anycubic Kobra 2 Pro" ]; then
-    if [ "$KOBRA_VERSION" != "3.1.2.3" ]; then
-        beep 100 && usleep 100000 && beep 100
-        exit 1
-    fi
-elif [ "$KOBRA_MODEL" == "Anycubic Kobra 3" ]; then
-    if [ "$KOBRA_VERSION" != "2.3.5.3" ]; then
-        beep 100 && usleep 100000 && beep 100
-        exit 1
-    fi
-elif [ "$KOBRA_MODEL" == "Anycubic Kobra S1" ]; then
-    if [ "$KOBRA_VERSION" != "2.4.6.6" ] && [ "$KOBRA_VERSION" != "2.4.8.3" ]; then
-        beep 100 && usleep 100000 && beep 100
-        exit 1
-    fi
-else
+# Check if the printer has Rinkhals installed
+if [ ! -e /useremain/rinkhals/.current ]; then
     beep 100 && usleep 100000 && beep 100
     exit 1
 fi
