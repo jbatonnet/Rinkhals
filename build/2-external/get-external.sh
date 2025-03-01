@@ -7,26 +7,26 @@ mkdir /work
 cd /work
 
 
-# Fluidd
-echo "Downloading Fluidd..."
-
-wget -O fluidd.zip https://github.com/fluidd-core/fluidd/releases/download/v1.31.2/fluidd.zip
-unzip -d fluidd fluidd.zip
-
-mkdir -p /files/2-external/usr/share/fluidd
-rm -rf /files/2-external/usr/share/fluidd/*
-cp -pr /work/fluidd/* /files/2-external/usr/share/fluidd
-
-
 # Mainsail
 echo "Downloading Mainsail..."
 
 wget -O mainsail.zip https://github.com/mainsail-crew/mainsail/releases/download/v2.13.1/mainsail.zip
 unzip -d mainsail mainsail.zip
 
-mkdir -p /files/2-external/usr/share/mainsail
-rm -rf /files/2-external/usr/share/mainsail/*
-cp -pr /work/mainsail/* /files/2-external/usr/share/mainsail
+mkdir -p /files/4-rinkhals/home/rinkhals/apps/mainsail/mainsail
+rm -rf /files/4-rinkhals/home/rinkhals/apps/mainsail/mainsail/*
+cp -pr /work/mainsail/* /files/4-rinkhals/home/rinkhals/apps/mainsail/mainsail
+
+
+# Fluidd
+echo "Downloading Fluidd..."
+
+wget -O fluidd.zip https://github.com/fluidd-core/fluidd/releases/download/v1.31.2/fluidd.zip
+unzip -d fluidd fluidd.zip
+
+mkdir -p /files/4-rinkhals/home/rinkhals/apps/fluidd/fluidd
+rm -rf /files/4-rinkhals/home/rinkhals/apps/fluidd/fluidd/*
+cp -pr /work/fluidd/* /files/4-rinkhals/home/rinkhals/apps/fluidd/fluidd
 
 
 # Moonraker
