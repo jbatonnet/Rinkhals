@@ -181,11 +181,7 @@ umount -l /userdata/app/gk/printer_data/gcodes 2> /dev/null
 mount --bind /useremain/app/gk/gcodes /userdata/app/gk/printer_data/gcodes
 
 [ -f /userdata/app/gk/printer_data/config/moonraker.conf ] || cp /userdata/app/gk/printer_data/config/default/moonraker.conf /userdata/app/gk/printer_data/config/
-
-if [ ! -f /userdata/app/gk/printer_data/config/printer.cfg ]; then
-    cp /userdata/app/gk/printer_data/config/default/printer.${KOBRA_MODEL_CODE}_${KOBRA_VERSION}.cfg /userdata/app/gk/printer_data/config/printer.cfg
-    cat /userdata/app/gk/printer_data/config/default/printer.cfg.patch >> /userdata/app/gk/printer_data/config/printer.cfg
-fi
+[ -f /userdata/app/gk/printer_data/config/printer.cfg ] || cp /userdata/app/gk/printer_data/config/default/printer.${KOBRA_MODEL_CODE}_${KOBRA_VERSION}.cfg /userdata/app/gk/printer_data/config/printer.cfg
 
 if [ -f /mnt/udisk/printer.cfg ]; then
     cp /userdata/app/gk/printer_data/config/printer.cfg /userdata/app/gk/printer_data/config/printer.cfg.bak

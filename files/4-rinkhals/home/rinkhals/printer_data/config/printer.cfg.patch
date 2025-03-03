@@ -1,7 +1,0 @@
-
-[display_status]
-
-[gcode_macro CANCEL_PRINT]
-rename_existing: CANCEL_PRINT_BASE
-gcode:
-  CANCEL_PRINT_BASE
