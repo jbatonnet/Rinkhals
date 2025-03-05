@@ -240,11 +240,14 @@ export LD_LIBRARY_PATH=/userdata/app/gk:$LD_LIBRARY_PATH
 
 ./gklib -a /tmp/unix_uds1 /userdata/app/gk/printer_data/config/printer.generated.cfg &> $RINKHALS_ROOT/logs/gklib.log &
 
-sleep 1
+sleep 2
 
 ./gkapi &> $RINKHALS_ROOT/logs/gkapi.log &
+./gkcam &> $RINKHALS_ROOT/logs/gkcam.log &
 
-if [ "$KOBRA_MODEL_CODE" == "K3" ]; then
+K3SYSUI_PATCH=/opt/rinkhals/ui/K3SysUi.${KOBRA_MODEL_CODE}_${KOBRA_VERSION}.patch
+
+if [ -f $K3SYSUI_PATCH ]; then
     # Little dance to patch K3SysUi
     # We should be able to delete the file after starting it, Linux will keep the inode alive until the process exits (https://stackoverflow.com/a/196910)
     # But K3SysUi checks for its binary location, so moving does the trick instead
@@ -252,13 +255,13 @@ if [ "$KOBRA_MODEL_CODE" == "K3" ]; then
 
     rm -rf K3SysUi.original 2> /dev/null
     mv K3SysUi K3SysUi.original
-    cp /opt/rinkhals/ui/K3SysUi.K3-2.3.5.3.patch K3SysUi
+    cp /opt/rinkhals/ui/K3SysUi.${KOBRA_MODEL_CODE}_${KOBRA_VERSION}.patch K3SysUi
     chmod +x K3SysUi
 fi
 
 ./K3SysUi &> $RINKHALS_ROOT/logs/K3SysUi.log &
 
-if [ "$KOBRA_MODEL_CODE" == "K3" ]; then
+if [ -f $K3SYSUI_PATCH ]; then
     rm -rf K3SysUi.patch 2> /dev/null
     mv K3SysUi K3SysUi.patch
     mv K3SysUi.original K3SysUi
