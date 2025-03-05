@@ -161,12 +161,6 @@ def main():
         monitor_thread = threading.Thread(target = monitor_k3sysui)
         monitor_thread.start()
 
-    # Capture previous FB
-    background = capture_fb()
-    draw = ImageDraw.Draw(background)
-    draw.rectangle((48, 24, SCREEN_WIDTH, SCREEN_HEIGHT), fill = (0, 0, 0))
-    draw.rectangle((0, 72, SCREEN_WIDTH, SCREEN_HEIGHT), fill = (0, 0, 0))
-
     # Load resources
     icon = Image.open(RINKHALS_ROOT + '/opt/rinkhals/ui/icon.bmp').convert('RGBA')
     icon = icon.rotate(90)
@@ -183,6 +177,12 @@ def main():
     color_subtitle = (160, 160, 160)
     color_disabled = (176, 176, 176)
     color_shadow = (96, 96, 96)
+
+    # Capture previous FB
+    background = capture_fb()
+    draw = ImageDraw.Draw(background)
+    draw.rectangle((0, 24, SCREEN_WIDTH, SCREEN_HEIGHT), fill = (0, 0, 0))
+    draw.text((32, 48), '<', fill = color_text, font = font_title, anchor = 'mm')
 
     # Main loop
     redraw = True
@@ -205,6 +205,7 @@ def main():
 
     if not SIMULATOR:
         touch_device = evdev.InputDevice('/dev/input/event0')
+        touch_device.grab()
 
     def on_touch_down(x, y):
         global screen, dialog, redraw
@@ -213,10 +214,6 @@ def main():
         if DEBUG:
             log(f'on_touch_down({x}, {y})')
         touch_down = (x, y)
-
-        if not dialog and screen == 'main' and x <= 48 and y >= 24 and y <= 72:
-            quit()
-            return
 
         redraw = True
 
@@ -284,39 +281,21 @@ def main():
 
     def show_screen(new_screen):
         global screen, dialog, redraw
-        global touch_device, touch_x, touch_y, touch_down, touch_down_builder, touch_actions    
 
-        old_screen = screen
         screen = new_screen
         dialog = None
-
-        if new_screen == 'main':
-            touch_device.ungrab()
-        elif old_screen == 'main':
-            try:
-                touch_device.grab()
-            except:
-                pass
 
         redraw = True
 
     def show_dialog(new_dialog):
-        global screen, dialog, redraw
-        global touch_device, touch_x, touch_y, touch_down, touch_down_builder, touch_actions    
+        global screen, dialog, redraw 
 
         dialog = new_dialog
-
-        if screen == 'main':
-            if new_dialog:
-                touch_device.grab()
-            else:
-                touch_device.ungrab()
 
         redraw = True
 
     def show_app(app):
         global screen, dialog, redraw, selected_app
-        global touch_device, touch_x, touch_y, touch_down, touch_down_builder, touch_actions    
 
         log('Selecting app ' + app)
 
@@ -457,6 +436,7 @@ def main():
         screen = None
         redraw = False
 
+        time.sleep(0.25)
         os.kill(os.getpid(), 9)
 
     while True:
@@ -468,6 +448,8 @@ def main():
         touch_actions = []
 
         if screen == 'main':
+            touch_actions.append(((0, 24, 48, 72), lambda: quit()))
+
             firmware = '2.3.5.3'
             if os.path.isfile('/useremain/dev/version'):
                 with open('/useremain/dev/version') as f:
