@@ -52,6 +52,22 @@ Rinkhals uses an overlay system to keep its modifications isolated from the stoc
 
 If needed, the stock firmwares are available over there: https://1drv.ms/f/s!Ag-0E4JXrqAlwbwl1zK9Le15gYv0sA?e=v2YMPT
 
+### Note for Kobra 2 Pro [Mainbord Trigorilla Spe **B** v1.0.x] with Firmware 3.1.4
+
+There are a number of issues with stock firmware 3.1.4 on the Kobra 2 Pro. You will need to downgrade to firmware 3.1.2.3 in order to install Rinkhals.
+
+Follow those steps to downgrade to 3.1.2.3:
+ - Download firmware from here: https://1drv.ms/f/s!Ag-0E4JXrqAlwbwl1zK9Le15gYv0sA?e=v2YMPT
+ - Format a USB drive as FAT32
+ - Create a directory named **update**
+ - Rename **K2P_3.1.2.3.swu** to **update.swu**
+ - Copy the **update.swu** file in the **update** directory
+ - Plug the USB drive in the printer
+ - Go to "About Machine" in the printer menu
+ - Click on the arrow next to the version number
+ - Confirm, wait for the installation to complete
+ - Then follow the Rinkhals installation steps listed above
+ 
 ## Touch UI
 
 _(Working for Kobra 3, Testing for Kobra 2 Pro and Kobra S1)_
