@@ -181,12 +181,12 @@ umount -l /userdata/app/gk/printer_data/gcodes 2> /dev/null
 mount --bind /useremain/app/gk/gcodes /userdata/app/gk/printer_data/gcodes
 
 [ -f /userdata/app/gk/printer_data/config/moonraker.conf ] || cp /userdata/app/gk/printer_data/config/default/moonraker.conf /userdata/app/gk/printer_data/config/
-[ -f /userdata/app/gk/printer_data/config/printer.cfg ] || cp /userdata/app/gk/printer_data/config/default/printer.${KOBRA_MODEL_CODE}_${KOBRA_VERSION}.cfg /userdata/app/gk/printer_data/config/printer.cfg
+[ -f /userdata/app/gk/printer_data/config/printer.custom.cfg ] || cp /userdata/app/gk/printer_data/config/default/printer.custom.cfg /userdata/app/gk/printer_data/config/
 
-if [ -f /mnt/udisk/printer.cfg ]; then
-    cp /userdata/app/gk/printer_data/config/printer.cfg /userdata/app/gk/printer_data/config/printer.cfg.bak
-    rm /userdata/app/gk/printer_data/config/printer.cfg
-    cp /mnt/udisk/printer.cfg /userdata/app/gk/printer_data/config/printer.cfg
+if [ -f /mnt/udisk/printer.custom.cfg ]; then
+    cp /userdata/app/gk/printer_data/config/printer.custom.cfg /userdata/app/gk/printer_data/config/printer.custom.cfg.bak
+    rm /userdata/app/gk/printer_data/config/printer.custom.cfg
+    cp /mnt/udisk/printer.custom.cfg /userdata/app/gk/printer_data/config/printer.custom.cfg
 fi
 
 
@@ -231,10 +231,14 @@ fi
 ################
 log "> Restarting Anycubic apps..."
 
+# Generate the printer.cfg file
+# TODO: Make the generated file readonly to avoid user issues?
+python /opt/rinkhals/scripts/process-cfg.py /userdata/app/gk/printer_data/config/default/printer.${KOBRA_MODEL_CODE}_${KOBRA_VERSION}.cfg /userdata/app/gk/printer_data/config/printer.generated.cfg
+
 cd /userdata/app/gk
 export LD_LIBRARY_PATH=/userdata/app/gk:$LD_LIBRARY_PATH
 
-./gklib -a /tmp/unix_uds1 /userdata/app/gk/printer_data/config/printer.cfg &> $RINKHALS_ROOT/logs/gklib.log &
+./gklib -a /tmp/unix_uds1 /userdata/app/gk/printer_data/config/printer.generated.cfg &> $RINKHALS_ROOT/logs/gklib.log &
 
 sleep 1
 
