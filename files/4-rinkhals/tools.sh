@@ -38,8 +38,8 @@ check_compatibility() {
             quit
         fi
     elif [ "$KOBRA_MODEL_CODE" == "K3" ]; then
-        if [ "$KOBRA_VERSION" != "2.3.5.3" ]; then
-            log "Your printer has firmware $KOBRA_VERSION. This Rinkhals version is only compatible with firmware 2.3.5.3 on the Kobra 3, stopping installation"
+        if [ "$KOBRA_VERSION" != "2.3.5.3" ] && [ "$KOBRA_VERSION" != "2.3.7.1" ]; then
+            log "Your printer has firmware $KOBRA_VERSION. This Rinkhals version is only compatible with firmwares 2.3.5.3 and 2.3.7.1 on the Kobra 3, stopping installation"
             quit
         fi
     elif [ "$KOBRA_MODEL_CODE" == "KS1" ]; then

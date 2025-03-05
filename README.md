@@ -13,7 +13,7 @@ By using Rinkhals, you will keep all stock Anycubic features (print screen, Anyc
 - [Apps system](https://github.com/jbatonnet/Rinkhals.apps) (OctoApp, ...)
 
 For now the following printers and firmwares are supported:
-- Kobra 3 (+ combo) with firmware 2.3.5.3
+- Kobra 3 (+ combo) with firmwares 2.3.5.3 and 2.3.7.1
 - Kobra 2 Pro with firmware 3.1.2.3 (with motherboard [Trigorilla Spe **B** v1.0.x](https://1coderookie.github.io/Kobra2ProInsights/hardware/mainboard/#trigorilla_spe_b_v10x-stock-new-revision))
 - Kobra S1 (+ combo) with firmwares 2.4.6.6 and 2.4.8.3
 - Other newer Kobra printers are not yet supported, but very well might be at some point
