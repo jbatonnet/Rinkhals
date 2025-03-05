@@ -10,13 +10,14 @@ By using Rinkhals, you will keep all stock Anycubic features (print screen, Anyc
 - USB camera support in Mainsail, Fluidd
 - Orca will show the print progress on the printer screen
 - SSH access for customization
-- [Apps system](https://github.com/jbatonnet/Rinkhals.apps) (OctoApp, ...)
+- [Apps system](https://github.com/jbatonnet/Rinkhals.apps) (OctoApp, Cloudflare, Tailscale, ...)
 
 For now the following printers and firmwares are supported:
-- Kobra 3 (+ combo) with firmware 2.3.5.3
-- Kobra 2 Pro with firmware 3.1.2.3 (with motherboard [Trigorilla Spe **B** v1.0.x](https://1coderookie.github.io/Kobra2ProInsights/hardware/mainboard/#trigorilla_spe_b_v10x-stock-new-revision))
-- Kobra S1 (+ combo) with firmwares 2.4.6.6 and 2.4.8.3
-- Other newer Kobra printers are not yet supported, but very well might be at some point
+| Model  | Firmwares | Notes |
+| -- | -- | -- |
+| Kobra 3 (+ combo) | `2.3.5.3` `2.3.7.1` |
+| Kobra 2 Pro | `3.1.2.3` | Only with mainboard [Trigorilla Spe **B** v1.0.x](https://1coderookie.github.io/Kobra2ProInsights/hardware/mainboard/#trigorilla_spe_b_v10x-stock-new-revision) |
+| Kobra S1 (+ combo) | `2.4.6.6` `2.4.8.3` |
 
 In case you're wondering this project is named after rinkhals, a sub-species of Cobras ... Kobra ... Rinkhals 👏
 
@@ -53,7 +54,7 @@ If needed, the stock firmwares are available over there: https://1drv.ms/f/s!Ag-
 
 ## Touch UI
 
-_(Exclusive to Kobra 3 for now)_
+_(Working for Kobra 3, Testing for Kobra 2 Pro and Kobra S1)_
 
 After installation, Rinkhals provides a touch UI accessible from the printer screen when you tap the Settings icon, then tap Rinkhals.
 
@@ -135,3 +136,4 @@ Thanks to the following projects/persons:
 - Anycubic for the cool printer and the few OSS items (https://github.com/ANYCUBIC-3D/Kobra)
 - Icon created by Freepik - Flaticon (https://www.flaticon.com/free-icons/snake)
 - moosbewohner for Kobra 2 Pro support (https://github.com/moosbewohner/Rinkhals)
+- Kalenell and woswai1337 for Kobra S1 support
