@@ -29,14 +29,14 @@ BUSYBOX_TARGET=busybox.rinkhals
 rm /tmp/update_swu/rinkhals/bin/busybox
 cp -r /files/1-buildroot/bin/busybox /tmp/update_swu/rinkhals/bin/$BUSYBOX_TARGET
 
-echo "Building layer 2/4 (external)..."
-cp -r /files/2-external/* /tmp/update_swu/rinkhals
+echo "Building layer 2/4 (python)..."
+cp -r /files/2-python/* /tmp/update_swu/rinkhals
 
-echo "Building layer 3/4 (python)..."
-cp -r /files/3-python/* /tmp/update_swu/rinkhals
+echo "Building layer 3/4 (rinkhals)..."
+cp -r /files/3-rinkhals/* /tmp/update_swu/rinkhals
 
-echo "Building layer 4/4 (rinkhals)..."
-cp -r /files/4-rinkhals/* /tmp/update_swu/rinkhals
+echo "Building layer 4/4 (apps)..."
+cp -r /files/4-apps/* /tmp/update_swu/rinkhals
 
 if [ "$VERSION" != "yyyymmdd_nn" ] && [ "$VERSION" != "" ]; then
     echo "$VERSION" > /tmp/update_swu/.version

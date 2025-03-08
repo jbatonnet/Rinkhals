@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <script>self["MonacoEnvironment"] = (function (paths) {
+          return {
+            globalAPI: false,
+            getWorkerUrl : function (moduleId, label) {
+              var result =  paths[label];
+              if (/^((http:)|(https:)|(file:)|(\/\/))/.test(result)) {
+                var currentUrl = String(window.location);
+                var currentOrigin = currentUrl.substr(0, currentUrl.length - window.location.hash.length - window.location.search.length - window.location.pathname.length);
+                if (result.substring(0, currentOrigin.length) !== currentOrigin) {
+                  var js = '/*' + label + '*/importScripts("' + result + '");';
+                  var blob = new Blob([js], { type: 'application/javascript' });
+                  return URL.createObjectURL(blob);
+                }
+              }
+              return result;
+            }
+          };
+        })({
+  "editorWorkerService": "./monacoeditorwork/editor.worker.bundle.js",
+  "json": "./monacoeditorwork/json.worker.bundle.js",
+  "css": "./monacoeditorwork/css.worker.bundle.js",
+  "less": "./monacoeditorwork/css.worker.bundle.js",
+  "scss": "./monacoeditorwork/css.worker.bundle.js"
+});</script>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <title>fluidd</title>
+    <meta name="description" content="The Klipper web interface for managing your 3d printer" />
+
+    <link rel="icon" type="image/png" sizes="32x32" href="./img/icons/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="./img/icons/favicon-16x16.png" />
+    <meta name="theme-color" content="#2196F3" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <meta name="apple-mobile-web-app-title" content="fluidd" />
+    <link rel="apple-touch-icon" sizes="180x180" href="./img/icons/apple-touch-icon-180x180.png" />
+    <link rel="mask-icon" href="./img/icons/safari-pinned-tab.svg" color="#000000" />
+    <meta name="msapplication-TileImage" content="./img/icons/mstile-150x150.png" />
+    <meta name="msapplication-TileColor" content="#000000" />
+
+    <script type="module" crossorigin src="./assets/index-B6qYYCY3.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-C3-bu5ur.css">
+  <link rel="manifest" href="./manifest.webmanifest"></head>
+  <body style="background-color: #1E1E20">
+    <noscript>
+      <strong>We're sorry, but fluidd doesn't work properly without JavaScript enabled. Please enable it to continue.</strong>
+    </noscript>
+    <div id="app"></div>
+    <!-- built files will be auto injected -->
+  </body>
+</html>

@@ -1,0 +1,13 @@
+{
+    "$version": "1",
+
+    "name": "Fluidd",
+    "description": "Fluidd web interface for Moonraker, listening on port 4408",
+    "version": "1.31.2",
+
+    "requirements":
+    {
+        "memory": 1,
+        "cpu": 4
+    }
+}
