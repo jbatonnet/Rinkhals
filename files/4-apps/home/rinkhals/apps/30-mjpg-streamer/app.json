@@ -1,0 +1,7 @@
+{
+    "$version": "1",
+
+    "name": "mjpg-streamer",
+    "description": "Replaces the default Anycubic camera stream with mjpg-streamer for Mainsail, Fluidd and other Moonraker clients",
+    "version": "0.1"
+}

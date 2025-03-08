@@ -1,1 +1,0 @@
-# Assets Package Definition

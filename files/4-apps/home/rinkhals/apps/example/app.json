@@ -1,0 +1,14 @@
+{
+    "$version": "1", // Schema version
+
+    "name": "Example app",
+    "description": "Simple example app to showcase the app system",
+    "version": "1.0",
+    "depends": [], // TODO: Not supported yet
+
+    "requirements":
+    {
+        "cpu": 0, // CPU usage in %
+        "memory": 0 // Memory usage in MB
+    }
+}
