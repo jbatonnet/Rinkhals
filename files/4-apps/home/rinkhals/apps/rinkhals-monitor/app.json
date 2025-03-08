@@ -1,0 +1,12 @@
+{
+    "$version": "1",
+
+    "name": "Rinkhals monitor",
+    "description": "Collects system performance metrics and push them to the internal MQTT broker",
+    "version": "0.1",
+
+    "requirements":
+    {
+        "memory": 8
+    }
+}

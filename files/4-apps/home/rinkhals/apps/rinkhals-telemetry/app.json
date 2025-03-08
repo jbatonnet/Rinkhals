@@ -1,0 +1,7 @@
+{
+    "$version": "1",
+
+    "name": "Rinkhals telemetry",
+    "description": "Helps Rinkhals developer by sending installed version to Application Insights",
+    "version": "0.1"
+}

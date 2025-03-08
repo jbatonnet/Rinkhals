@@ -1,0 +1,3 @@
+[console_scripts]
+preprocess_cancellation=preprocess_cancellation:_main
+

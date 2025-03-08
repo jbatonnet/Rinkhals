@@ -1,0 +1,76 @@
+Metadata-Version: 2.1
+Name: evdev
+Version: 1.7.1
+Summary: Bindings to the Linux input handling subsystem
+Author-email: Georgi Valkov <georgi.t.valkov@gmail.com>
+Maintainer-email: Tobi <proxima@sezanzeb.de>
+License: Copyright (c) 2012-2023 Georgi Valkov. All rights reserved.
+        
+        Redistribution and use in source and binary forms, with or without
+        modification, are permitted provided that the following conditions are
+        met:
+        
+          1. Redistributions of source code must retain the above copyright
+             notice, this list of conditions and the following disclaimer.
+        
+          2. Redistributions in binary form must reproduce the above copyright
+             notice, this list of conditions and the following disclaimer in
+             the documentation and/or other materials provided with the
+             distribution.
+        
+          3. Neither the name of author nor the names of its contributors may
+             be used to endorse or promote products derived from this software
+             without specific prior written permission.
+        
+        THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+        "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+        LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+        A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE AUTHORS OR
+        COPYRIGHT HOLDERS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+        SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+        LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+        DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+        THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+        (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+        OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+        
+Project-URL: Homepage, https://github.com/gvalkov/python-evdev
+Keywords: evdev,input,uinput
+Classifier: Development Status :: 5 - Production/Stable
+Classifier: Programming Language :: Python :: 3
+Classifier: Operating System :: POSIX :: Linux
+Classifier: Intended Audience :: Developers
+Classifier: Topic :: Software Development :: Libraries
+Classifier: License :: OSI Approved :: BSD License
+Classifier: Programming Language :: Python :: Implementation :: CPython
+Requires-Python: >=3.6
+Description-Content-Type: text/markdown
+License-File: LICENSE
+
+# evdev
+
+<p>
+    <a href="https://pypi.python.org/pypi/evdev"><img alt="pypi version" src="https://img.shields.io/pypi/v/evdev.svg"></a>
+    <a href="https://github.com/gvalkov/python-evdev/blob/main/LICENSE"><img alt="License" src="https://img.shields.io/pypi/l/evdev"></a>
+</p>
+
+This package provides bindings to the generic input event interface in Linux.
+The *evdev* interface serves the purpose of passing events generated in the
+kernel directly to userspace through character devices that are typically
+located in `/dev/input/`.
+
+This package also comes with bindings to *uinput*, the userspace input
+subsystem. *Uinput* allows userspace programs to create and handle input devices
+that can inject events directly into the input subsystem.
+
+***Documentation:***  
+https://python-evdev.readthedocs.io/en/latest/
+
+***Development:***  
+https://github.com/gvalkov/python-evdev
+
+***Package:***  
+https://pypi.python.org/pypi/evdev
+
+***Changelog:***  
+https://python-evdev.readthedocs.io/en/latest/changelog.html

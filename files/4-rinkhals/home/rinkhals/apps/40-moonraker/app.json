@@ -1,7 +1,0 @@
-{
-    "$version": "1",
-
-    "name": "Moonraker",
-    "description": "Moonraker web server for Klipper and moonraker-proxy for better Kobra compatibility",
-    "version": "0.1"
-}

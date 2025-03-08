@@ -34,14 +34,14 @@ rm -rf /tmp/target/*
 echo "Building layer 1/4 (buildroot)..."
 cp -pr /files/1-buildroot/* /tmp/target
 
-echo "Building layer 2/4 (external)..."
-cp -pr /files/2-external/* /tmp/target
+echo "Building layer 2/4 (python)..."
+cp -pr /files/2-python/* /tmp/target
 
-echo "Building layer 3/4 (python)..."
-cp -pr /files/3-python/* /tmp/target
+echo "Building layer 3/4 (rinkhals)..."
+cp -pr /files/3-rinkhals/* /tmp/target
 
-echo "Building layer 4/4 (rinkhals)..."
-cp -pr /files/4-rinkhals/* /tmp/target
+echo "Building layer 4/4 (apps)..."
+cp -pr /files/4-apps/* /tmp/target
 
 echo "dev" > /tmp/target/.version
 
