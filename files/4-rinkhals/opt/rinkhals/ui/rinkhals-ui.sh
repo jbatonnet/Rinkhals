@@ -23,6 +23,6 @@ echo
 
 # Start Python UI
 kill_by_name rinkhals-ui.py
-python $RINKHALS_ROOT/opt/rinkhals/ui/rinkhals-ui.py >> $RINKHALS_ROOT/logs/rinkhals-ui.log 2>&1
+python $RINKHALS_ROOT/opt/rinkhals/ui/rinkhals-ui.py | tee -a $RINKHALS_ROOT/logs/rinkhals-ui.log 2>&1
 
 echo "Done!"
