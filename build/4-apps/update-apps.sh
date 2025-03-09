@@ -13,8 +13,8 @@ echo "Downloading Mainsail..."
 wget -O mainsail.zip https://github.com/mainsail-crew/mainsail/releases/download/v2.13.2/mainsail.zip
 unzip -d mainsail mainsail.zip
 
-mkdir -p /files/4-rinkhals/home/rinkhals/apps/mainsail/mainsail
-rm -rf /files/4-rinkhals/home/rinkhals/apps/mainsail/mainsail/*
+mkdir -p /files/4-rinkhals/home/rinkhals/apps/25-mainsail/mainsail
+rm -rf /files/4-rinkhals/home/rinkhals/apps/25-mainsail/mainsail/*
 cp -pr /work/mainsail/* /files/4-apps/home/rinkhals/apps/25-mainsail/mainsail
 
 
@@ -24,17 +24,17 @@ echo "Downloading Fluidd..."
 wget -O fluidd.zip https://github.com/fluidd-core/fluidd/releases/download/v1.32.6/fluidd.zip
 unzip -d fluidd fluidd.zip
 
-mkdir -p /files/4-rinkhals/home/rinkhals/apps/fluidd/fluidd
-rm -rf /files/4-rinkhals/home/rinkhals/apps/fluidd/fluidd/*
+mkdir -p /files/4-rinkhals/home/rinkhals/apps/26-fluidd/fluidd
+rm -rf /files/4-rinkhals/home/rinkhals/apps/26-fluidd/fluidd/*
 cp -pr /work/fluidd/* /files/4-apps/home/rinkhals/apps/26-fluidd/fluidd
 
 
 # Moonraker
 echo "Downloading Moonraker..."
 
-wget -O moonraker.zip https://github.com/utkabobr/moonraker/archive/refs/heads/duckpro.zip
+wget -O moonraker.zip https://github.com/jbatonnet/Rinkhals.Moonraker/archive/refs/heads/rinkhals-fixes.zip
 unzip -d moonraker moonraker.zip
 
-mkdir -p /files/2-external/usr/share/moonraker
-rm -rf /files/2-external/usr/share/moonraker/*
+mkdir -p /files/4-rinkhals/home/rinkhals/apps/40-moonraker/moonraker
+rm -rf /files/4-rinkhals/home/rinkhals/apps/40-moonraker/moonraker/*
 cp -pr /work/moonraker/*/* /files/4-apps/home/rinkhals/apps/40-moonraker/moonraker

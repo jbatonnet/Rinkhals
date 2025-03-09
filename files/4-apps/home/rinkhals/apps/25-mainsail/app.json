@@ -3,7 +3,7 @@
 
     "name": "Mainsail",
     "description": "Mainsail web interface for Moonraker, listening on port 4409",
-    "version": "2.13.1",
+    "version": "2.13.2",
 
     "requirements":
     {
