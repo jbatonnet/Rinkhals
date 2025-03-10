@@ -3,7 +3,7 @@
 
     "name": "Fluidd",
     "description": "Fluidd web interface for Moonraker, listening on port 4408",
-    "version": "1.31.2",
+    "version": "1.32.6",
 
     "requirements":
     {
