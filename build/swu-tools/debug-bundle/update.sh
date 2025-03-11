@@ -23,7 +23,7 @@ cp /userdata/app/gk/printer_data/logs/*.log $TMP_PATH/moonraker/ 2> /dev/null
 cd /useremain/rinkhals
 for VERSION in $(ls -1d */); do
     mkdir -p $TMP_PATH/$VERSION
-    cp /useremain/rinkhals/$VERSION*.log $TMP_PATH/$VERSION 2> /dev/null
+    cp /useremain/rinkhals/$VERSION/*.log $TMP_PATH/$VERSION 2> /dev/null
     cp /useremain/rinkhals/$VERSION/logs/*.log $TMP_PATH/$VERSION 2> /dev/null
 done
 
@@ -32,6 +32,12 @@ cat /proc/cpuinfo > $TMP_PATH/cpuinfo.log 2> /dev/null
 cat /proc/meminfo > $TMP_PATH/meminfo.log 2> /dev/null
 ifconfig > $TMP_PATH/ifconfig.log 2> /dev/null
 uname -a > $TMP_PATH/uname.log 2> /dev/null
+df -h > $TMP_PATH/df.log 2> /dev/null
+netstat -tln > $TMP_PATH/netstat.log 2> /dev/null
+ps > $TMP_PATH/ps.log 2> /dev/null
+top -n 1 > $TMP_PATH/top.log 2> /dev/null
+dmesg > $TMP_PATH/dmesg.log 2> /dev/null
+iostat > $TMP_PATH/iostat.log 2> /dev/null
 
 # Collect partition structure
 find /userdata > $TMP_PATH/find-userdata.log 2> /dev/null
@@ -42,23 +48,20 @@ find /bin > $TMP_PATH/find-bin.log 2> /dev/null
 find /usr > $TMP_PATH/find-usr.log 2> /dev/null
 find /lib > $TMP_PATH/find-lib.log 2> /dev/null
 
-# Collect basic printer info (firmware version, LAN mode, startup script)
+# Collect printer info (firmware version, LAN mode, startup script)
 cp /useremain/dev/remote_ctrl_mode $TMP_PATH/ 2> /dev/null
 cp /useremain/dev/version $TMP_PATH/firmware_version 2> /dev/null
 cat -A /userdata/app/gk/start.sh > $TMP_PATH/start.sh 2> /dev/null
 cat -A /userdata/app/gk/restart_k3c.sh > $TMP_PATH/restart_k3c.sh 2> /dev/null
 cat /userdata/app/gk/printer.cfg > $TMP_PATH/original-printer.cfg 2> /dev/null
-cat /userdata/app/gk/printer_data/config/printer.cfg > $TMP_PATH/rinkhals-printer.cfg 2> /dev/null
 
-# Collect more information (free space, Rinkhals size, running processes)
-df -h > $TMP_PATH/df.log 2> /dev/null
+# Collect Rinkhals info
 du -sh /useremain/rinkhals/* > $TMP_PATH/du.log 2> /dev/null
 ls -al /useremain > $TMP_PATH/ls-useremain.log 2> /dev/null
 ls -al /useremain/rinkhals > $TMP_PATH/ls-rinkhals.log 2> /dev/null
-netstat -tln > $TMP_PATH/netstat.log 2> /dev/null
-ps > $TMP_PATH/ps.log 2> /dev/null
-top -n 1 > $TMP_PATH/top.log 2> /dev/null
-dmesg > $TMP_PATH/dmesg.log 2> /dev/null
+
+mkdir -p $TMP_PATH/config
+cp /userdata/app/gk/printer_data/config/* $TMP_PATH/config/ 2> /dev/null
 
 # Collect webcam path and video formats
 ls -al /dev/v4l/by-id/* > $TMP_PATH/ls-dev-v4l.log 2> /dev/null

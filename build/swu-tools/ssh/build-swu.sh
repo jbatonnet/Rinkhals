@@ -19,7 +19,7 @@ mkdir -p /tmp/update_swu
 rm -rf /tmp/update_swu/*
 
 cp /build/swu-tools/ssh/update.sh /tmp/update_swu/update.sh
-cp /files/4-rinkhals/usr/local/etc/dropbear/dropbear_rsa_host_key /tmp/update_swu/dropbear_rsa_host_key
+cp /files/3-rinkhals/usr/local/etc/dropbear/dropbear_rsa_host_key /tmp/update_swu/dropbear_rsa_host_key
 cp /files/1-buildroot/usr/lib/libcrypto.so.1.1 /tmp/update_swu/libcrypto.so.1.1
 cp /files/1-buildroot/usr/lib/libssl.so.1.1 /tmp/update_swu/libssl.so.1.1
 cp /files/1-buildroot/lib/libatomic.so.1 /tmp/update_swu/libatomic.so.1
