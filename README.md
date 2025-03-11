@@ -9,7 +9,7 @@ By using Rinkhals, you will keep all stock Anycubic features (print screen, Anyc
 - Mainsail, Fluidd (with Moonraker)
 - USB camera support in Mainsail, Fluidd
 - Orca will show the print progress on the printer screen
-- SSH access for customization
+- SSH access for customization (user: **root**, password: **rockchip**)
 - [Apps system](https://github.com/jbatonnet/Rinkhals.apps) (OctoApp, Cloudflare, Tailscale, ...)
 
 For now the following printers and firmwares are supported:
