@@ -20,9 +20,9 @@ fi
 RINKHALS_HOME=/useremain/home/rinkhals
 
 if [ -e $RINKHALS_HOME/printer_data/config/printer.cfg ]; then
-    rm $RINKHALS_HOME/printer_data/config/printer.cfg.bak
-    cp $RINKHALS_HOME/printer_data/config/printer.cfg $RINKHALS_HOME/printer_data/config/printer.cfg.bak
-    rm $RINKHALS_HOME/printer_data/config/printer.cfg
+    rm $RINKHALS_HOME/printer_data/config/printer.custom.cfg.bak
+    cp $RINKHALS_HOME/printer_data/config/printer.custom.cfg $RINKHALS_HOME/printer_data/config/printer.custom.cfg.bak
+    rm $RINKHALS_HOME/printer_data/config/printer.custom.cfg
 fi
 
 rm /useremain/rinkhals/.disable-rinkhals
