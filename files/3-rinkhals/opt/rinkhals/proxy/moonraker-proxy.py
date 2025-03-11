@@ -160,7 +160,7 @@ async def http_handler(request):
 
 # Websockets proxy
 async def websocket_handler(request):
-    client_ws = aiohttp.web.WebSocketResponse()
+    client_ws = aiohttp.web.WebSocketResponse(heartbeat=10)
     await client_ws.prepare(request)
 
     async with websockets.connect('ws://' + PRINTER_IP + ':' + MOONRAKER_PORT + '/websocket') as backend_ws:
