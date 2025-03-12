@@ -27,7 +27,7 @@ start() {
         echo $PID > /tmp/rinkhals-mainsail.pid
     fi
 
-    lighttpd -D -f $APP_ROOT/lighttpd-80.conf &> /dev/null &
+    socat TCP-LISTEN:80,reuseaddr,fork TCP:localhost:4409 &> /dev/null &
     PID=$!
     if [ "$?" == 0 ]; then
         echo $PID > /tmp/rinkhals-mainsail-80.pid
