@@ -61,7 +61,7 @@ if USING_SIMULATOR:
     RINKHALS_VERSION = 'dev'
     KOBRA_MODEL = 'Anycubic Kobra'
     KOBRA_VERSION = '1.2.3.4'
-    KOBRA_MODEL_CODE = 'KS1'
+    KOBRA_MODEL_CODE = 'K3'
 else:
     command = f'source {RINKHALS_ROOT}/tools.sh && python -c "import os, json; print(json.dumps(dict(os.environ)))"'
     environment = subprocess.check_output(['sh', '-c', command])
@@ -129,6 +129,7 @@ class Program:
     dialog = None
     selected_app = None
     touch_actions = []
+    apps_page = 0
 
     # Assets
     font_title = None
@@ -145,6 +146,7 @@ class Program:
             self.touch_last_x = 0
             self.touch_last_y = 0
             self.touch_down_builder = None
+            self.touch_device.grab()
         else:
             def on_closing():
                 self.window.destroy()
@@ -422,7 +424,11 @@ class Program:
 
         current_y = 96
 
-        for app in apps:
+        apps_on_screen = round((SCREEN_HEIGHT - current_y) / 44) - 1
+        page_start = self.apps_page * apps_on_screen
+        page_end = min(page_start + apps_on_screen, len(apps))
+
+        for app in apps[page_start:page_end]:
 
             user_app_root = f'{USER_APP_PATH}/{app}'
             builtin_app_root = f'{BUILTIN_APP_PATH}/{app}'
@@ -465,6 +471,21 @@ class Program:
             self.touch_actions.append(((SCREEN_WIDTH - 60, current_y - 22, SCREEN_WIDTH, current_y + 22), lambda app = app: self.toggle_app(app, start_stop=True)))
 
             current_y = current_y + 44
+
+        if page_start > 0:
+            button_rect = (SCREEN_WIDTH * 1 / 3 - 32, SCREEN_HEIGHT - 48, SCREEN_WIDTH * 1 / 3 + 32, SCREEN_HEIGHT - 16)
+            draw.rounded_rectangle(button_rect, radius = 8, fill = COLOR_SECONDARY)
+            draw.text((SCREEN_WIDTH * 1 / 3, SCREEN_HEIGHT - 32), '^', fill = COLOR_TEXT, font = self.font_text, anchor = 'mm')
+            def page_up():
+                self.apps_page = self.apps_page - 1
+            self.touch_actions.append((button_rect, lambda: page_up()))
+        if len(apps) > page_end:
+            button_rect = (SCREEN_WIDTH * 2 / 3 - 32, SCREEN_HEIGHT - 48, SCREEN_WIDTH * 2 / 3 + 32, SCREEN_HEIGHT - 16)
+            draw.rounded_rectangle(button_rect, radius = 8, fill = COLOR_SECONDARY)
+            draw.text((SCREEN_WIDTH * 2 / 3, SCREEN_HEIGHT - 32), 'v', fill = COLOR_TEXT, font = self.font_text, anchor = 'mm')
+            def page_down():
+                self.apps_page = self.apps_page + 1
+            self.touch_actions.append((button_rect, lambda: page_down()))
 
         pass
     def draw_app_screen(self, buffer, draw):
@@ -553,6 +574,7 @@ class Program:
     def show_screen(self, screen):
         self.screen = screen
         self.dialog = None
+        self.apps_page = 0
         self.redraw = True
     def show_dialog(self, dialog):
         self.dialog = dialog
@@ -696,8 +718,9 @@ class Program:
             else:
                 if os.path.exists(f'{RINKHALS_HOME}/apps/{app}.disabled'):
                     os.remove(f'{RINKHALS_HOME}/apps/{app}.disabled')
-                with open(f'{RINKHALS_HOME}/apps/{app}.enabled', 'wb'):
-                    pass
+                if not os.path.exists(f'{app_root}/.enabled'):
+                    with open(f'{RINKHALS_HOME}/apps/{app}.enabled', 'wb'):
+                        pass
 
         # If this is a user app, let's use HOME/apps/app/.enabled
         else:
