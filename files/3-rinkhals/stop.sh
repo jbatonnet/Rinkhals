@@ -60,15 +60,6 @@ cd $RINKHALS_ROOT
 
 
 ################
-log "> Stopping Rinkhals..."
-
-kill_by_name moonraker.py
-kill_by_name moonraker-proxy.py
-kill_by_name nginx
-kill_by_name mjpg_streamer
-
-
-################
 log "> Cleaning overlay..."
 
 cd /useremain/rinkhals/.current
@@ -90,7 +81,7 @@ log "> Restarting Anycubic apps..."
 touch /useremain/rinkhals/.disable-rinkhals
 
 cd /userdata/app/gk
-./restart_k3c.sh &> /dev/null
+./start.sh &> /dev/null
 
 rm /useremain/rinkhals/.disable-rinkhals
 

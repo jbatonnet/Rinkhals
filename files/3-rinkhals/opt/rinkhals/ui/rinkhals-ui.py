@@ -462,7 +462,7 @@ class Program:
             draw.rounded_rectangle((position - 9, current_y - 9, position + 9, current_y + 9), 9, fill = COLOR_TEXT if app_enabled else COLOR_DISABLED)
 
             self.touch_actions.append(((0, current_y - 22, SCREEN_WIDTH - 60, current_y + 22), lambda app = app: self.show_app(app)))
-            self.touch_actions.append(((SCREEN_WIDTH - 60, current_y - 22, SCREEN_WIDTH, current_y + 22), lambda app = app: self.toggle_app(app)))
+            self.touch_actions.append(((SCREEN_WIDTH - 60, current_y - 22, SCREEN_WIDTH, current_y + 22), lambda app = app: self.toggle_app(app, start_stop=True)))
 
             current_y = current_y + 44
 
@@ -675,7 +675,7 @@ class Program:
 
         app_root = user_app_root if os.path.exists(user_app_root) else builtin_app_root
         return app_root
-    def toggle_app(self, app, app_root = None):
+    def toggle_app(self, app, app_root = None, start_stop = False):
         if USING_SIMULATOR:
             return
         if not app_root:
@@ -719,6 +719,13 @@ class Program:
                     os.remove(f'{RINKHALS_HOME}/apps/{app}/.disabled')
                 with open(f'{RINKHALS_HOME}/apps/{app}/.enabled', 'wb'):
                     pass
+
+        if enabled:
+            self.stop_app(app, app_root)
+        else:
+            self.start_app(app, app_root)
+
+        pass
     def start_app(self, app, app_root = None):
         if not app_root:
             app_root = self.get_app_root(app)
