@@ -3,7 +3,7 @@ source /useremain/rinkhals/.current/tools.sh
 APP_ROOT=$(dirname $(realpath $0))
 
 status() {
-    PIDS=$(get_by_name moonraker.sh)
+    PIDS=$(get_by_name moonraker.py)
 
     if [ "$PIDS" == "" ]; then
         report_status $APP_STATUS_STOPPED
@@ -15,12 +15,23 @@ start() {
     stop
     
     cd $APP_ROOT
-    chmod +x moonraker.sh
-    ./moonraker.sh &
+    HOME=/userdata/app/gk python ./moonraker/moonraker/moonraker.py >> $RINKHALS_ROOT/logs/app-moonraker.log 2>&1 &
+
+    PID=$(get_by_name moonraker-proxy.py)
+    if [ "$PID" = "" ]; then
+        socat TCP-LISTEN:7125,reuseaddr,fork TCP:localhost:7126 &> /dev/null &
+    fi
 }
 stop() {
     kill_by_name moonraker.py
-    kill_by_name moonraker-proxy.py
+
+    PID=$(get_by_port 7125)
+    if [ "$PID" != "" ]; then
+        CMDLINE=$(get_command_line $PID)
+        if [ "$(echo $CMDLINE | grep socat)" != "" ]; then
+            kill -9 $PID
+        fi
+    fi
 }
 
 case "$1" in
