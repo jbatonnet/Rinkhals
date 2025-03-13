@@ -1,0 +1,102 @@
+From 307dec976ac87a88acc327b94e0d29df639a4230 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Tobias=20G=C3=B6bel?= <kubax1983@gmail.com>
+Date: Mon, 10 Mar 2025 19:50:50 +0100
+Subject: [PATCH] - added overlay for udhcpc default.script.d to save the data
+ returned   from the dhcp server to get the NTP Server - modified start.sh to
+ chmod +x new lease-file.script and run udhcpd to   generate dhcp.lease file -
+ modified ntpclient.sh to extract data from the lease file and use the ntp
+ server received from the dhcp server with a fallback to pool.ntp.org
+
+---
+ .../opt/rinkhals/scripts/ntpclient.sh         | 18 ++++++++++---
+ files/4-rinkhals/start.sh                     |  4 +++
+ .../udhcpc/default.script.d/lease-file.script | 26 +++++++++++++++++++
+ 3 files changed, 45 insertions(+), 3 deletions(-)
+ create mode 100644 files/3-rinkhals/usr/share/udhcpc/default.script.d/lease-file.script
+
+diff --git a/files/3-rinkhals/opt/rinkhals/scripts/ntpclient.sh b/files/3-rinkhals/opt/rinkhals/scripts/ntpclient.sh
+index 82cd1869..830f3f5a 100644
+--- a/files/3-rinkhals/opt/rinkhals/scripts/ntpclient.sh
++++ b/files/3-rinkhals/opt/rinkhals/scripts/ntpclient.sh
+@@ -1,12 +1,24 @@
+ export TZ=UTC
+ 
+-while [ 1 ]; do
+-    timeout -t 5 sh -c "ntpclient -s -h pool.ntp.org"
++LEASE_FILE="/useremain/home/rinkhals/dhcp.lease"
++
++NTP_SERVER="pool.ntp.org"
++
++if [ -f "$LEASE_FILE" ]; then
++    LEASE_NTP=$(grep "NTP-Server:" "$LEASE_FILE" | awk '{print $2}')
+     
++    if [ -n "$LEASE_NTP" ] && [ "$LEASE_NTP" != "NONE" ]; then
++        NTP_SERVER="$LEASE_NTP"
++    fi
++fi
++
++while true; do
++    timeout -t 5 sh -c "ntpclient -s -h $NTP_SERVER"
++
+     YEAR=$(date +%Y)
+     if [ "$YEAR" -ne "1970" ]; then
+         break
+     fi
+ 
+-	sleep 5
++    sleep 5
+ done
+diff --git a/files/3-rinkhals/start.sh b/files/3-rinkhals/start.sh
+index 1c5aabfd..df81f6cf 100644
+--- a/files/3-rinkhals/start.sh
++++ b/files/3-rinkhals/start.sh
+@@ -90,6 +90,7 @@ chmod +x ./usr/bin/* 2> /dev/null
+ chmod +x ./usr/sbin/* 2> /dev/null
+ chmod +x ./usr/libexec/* 2> /dev/null
+ chmod +x ./usr/share/scripts/* 2> /dev/null
++chmod +x ./usr/share/udhcpc/default.script.d/lease-file.script
+ chmod +x ./usr/libexec/gcc/arm-buildroot-linux-uclibcgnueabihf/11.4.0/* 2> /dev/null
+ chmod +x ./opt/rinkhals/*/*.sh 2> /dev/null
+ 
+@@ -138,6 +139,9 @@ for DIRECTORY in $DIRECTORIES; do
+     mount --bind $MERGED_DIRECTORY $DIRECTORY
+ done
+ 
++# generate dhcp.lease file with a new dhcp request
++/sbin/udhcpc -i wlan0
++
+ # Sync time
+ $RINKHALS_ROOT/opt/rinkhals/scripts/ntpclient.sh &
+ 
+diff --git a/files/3-rinkhals/usr/share/udhcpc/default.script.d/lease-file.script b/files/3-rinkhals/usr/share/udhcpc/default.script.d/lease-file.script
+new file mode 100644
+index 00000000..2b4a71bc
+--- /dev/null
++++ b/files/4-rinkhals/usr/share/udhcpc/default.script.d/lease-file.script
+@@ -0,0 +1,26 @@
++#!/bin/sh
++
++LEASE_FILE="/useremain/home/rinkhals/dhcp.lease"
++
++case "$1" in
++	deconfig)
++	        echo "DHCP-Lease lost or resetted" > $LEASE_FILE
++		;;
++
++	renew|bound)
++	        echo "DHCP-Lease received or renewed" > $LEASE_FILE
++	        echo "Interface: $interface" >> $LEASE_FILE
++	        echo "IP-Adresse: $ip" >> $LEASE_FILE
++	        echo "Subnetzmaske: $subnet" >> $LEASE_FILE
++	        echo "Gateway: $router" >> $LEASE_FILE
++	        echo "DNS-Server: $dns" >> $LEASE_FILE
++	
++	        if [ -n "$ntpsrv" ]; then
++	            echo "NTP-Server: $ntpsrv" >> $LEASE_FILE
++	        else
++	            echo "NTP-Server: NONE" >> $LEASE_FILE
++	        fi
++	        ;;
++esac
++
++exit 0
