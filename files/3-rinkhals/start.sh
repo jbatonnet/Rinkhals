@@ -90,6 +90,7 @@ chmod +x ./usr/bin/* 2> /dev/null
 chmod +x ./usr/sbin/* 2> /dev/null
 chmod +x ./usr/libexec/* 2> /dev/null
 chmod +x ./usr/share/scripts/* 2> /dev/null
+chmod +x ./usr/share/udhcpc/default.script.d/lease-file.script
 chmod +x ./usr/libexec/gcc/arm-buildroot-linux-uclibcgnueabihf/11.4.0/* 2> /dev/null
 chmod +x ./opt/rinkhals/*/*.sh 2> /dev/null
 
@@ -137,6 +138,9 @@ for DIRECTORY in $DIRECTORIES; do
 
     mount --bind $MERGED_DIRECTORY $DIRECTORY
 done
+
+# generate dhcp.lease file with a new dhcp request
+/sbin/udhcpc -i wlan0
 
 # Sync time
 $RINKHALS_ROOT/opt/rinkhals/scripts/ntpclient.sh &

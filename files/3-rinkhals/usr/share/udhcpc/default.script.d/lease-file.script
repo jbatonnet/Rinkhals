@@ -1,0 +1,26 @@
+#!/bin/sh
+
+LEASE_FILE="/useremain/home/rinkhals/dhcp.lease"
+
+case "$1" in
+	deconfig)
+	        echo "DHCP-Lease lost or resetted" > $LEASE_FILE
+		;;
+
+	renew|bound)
+	        echo "DHCP-Lease received or renewed" > $LEASE_FILE
+	        echo "Interface: $interface" >> $LEASE_FILE
+	        echo "IP-Adresse: $ip" >> $LEASE_FILE
+	        echo "Subnetzmaske: $subnet" >> $LEASE_FILE
+	        echo "Gateway: $router" >> $LEASE_FILE
+	        echo "DNS-Server: $dns" >> $LEASE_FILE
+	
+	        if [ -n "$ntpsrv" ]; then
+	            echo "NTP-Server: $ntpsrv" >> $LEASE_FILE
+	        else
+	            echo "NTP-Server: NONE" >> $LEASE_FILE
+	        fi
+	        ;;
+esac
+
+exit 0
