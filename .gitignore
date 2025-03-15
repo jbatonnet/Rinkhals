@@ -1,7 +1,10 @@
 build/tmp
 scripts/tmp
 build/dist
-files/4-rinkhals/usr/share/data/framebuffer.bmp
 *.env
-files/4-rinkhals/opt/rinkhals/ui/K3SysUi*.[!p]
 build/.README.md
+files/3-rinkhals/opt/rinkhals/patches/K3SysUi.*.[0-9]
+files/3-rinkhals/opt/rinkhals/patches/K3SysUi.*.patch
+files/3-rinkhals/opt/rinkhals/patches/gk*.*.[0-9]
+files/3-rinkhals/opt/rinkhals/patches/gk*.*.patch
+files/3-rinkhals/opt/rinkhals/patches/cache_*.json
