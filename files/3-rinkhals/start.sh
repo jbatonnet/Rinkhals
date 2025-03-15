@@ -198,48 +198,44 @@ fi
 log "> Restarting Anycubic apps..."
 
 # Generate the printer.cfg file
-# TODO: Make the generated file readonly to avoid user issues?
-python /opt/rinkhals/scripts/process-cfg.py /userdata/app/gk/printer_data/config/default/printer.${KOBRA_MODEL_CODE}_${KOBRA_VERSION}.cfg /userdata/app/gk/printer_data/config/printer.generated.cfg
+python /opt/rinkhals/scripts/process-cfg.py /userdata/app/gk/printer.cfg $RINKHALS_ROOT/home/rinkhals/printer_data/config/printer.rinkhals.cfg > /userdata/app/gk/printer_data/config/printer.generated.cfg
 
 cd /userdata/app/gk
+
+export USE_MUTABLE_CONFIG=1
 export LD_LIBRARY_PATH=/userdata/app/gk:$LD_LIBRARY_PATH
 
-./gklib -a /tmp/unix_uds1 /userdata/app/gk/printer_data/config/printer.generated.cfg &> $RINKHALS_ROOT/logs/gklib.log &
+#TARGETS="gklib gkapi gkcam K3SysUi"
+TARGETS="K3SysUi"
 
+for TARGET in $TARGETS; do
+    TARGET_PATCH=/opt/rinkhals/patches/${TARGET}.${KOBRA_MODEL_CODE}_${KOBRA_VERSION}.sh
+
+    if [ -f $TARGET_PATCH ]; then
+        # Little dance to patch binaries
+        # We should be able to delete the file after starting it, Linux will keep the inode alive until the process exits (https://stackoverflow.com/a/196910)
+        # But those binaries checks for their location, so moving does the trick instead
+        # Then directly restore the original file to keep everything tidy
+
+        rm -rf $TARGET.original 2> /dev/null
+        mv $TARGET $TARGET.original
+        cp $TARGET.original $TARGET
+        $TARGET_PATCH $TARGET &> /dev/null
+        chmod +x $TARGET
+    fi
+done
+
+./gklib -a /tmp/unix_uds1 /userdata/app/gk/printer_data/config/printer.generated.cfg >> $RINKHALS_ROOT/logs/gklib.log 2>&1 &
 sleep 2
+./K3SysUi >> $RINKHALS_ROOT/logs/K3SysUi.log 2>&1 &
 
-./gkapi &> $RINKHALS_ROOT/logs/gkapi.log &
-./gkcam &> $RINKHALS_ROOT/logs/gkcam.log &
-
-K3SYSUI_PATCH=/opt/rinkhals/ui/K3SysUi.${KOBRA_MODEL_CODE}_${KOBRA_VERSION}.patch
-
-if [ -f $K3SYSUI_PATCH ]; then
-    # Little dance to patch K3SysUi
-    # We should be able to delete the file after starting it, Linux will keep the inode alive until the process exits (https://stackoverflow.com/a/196910)
-    # But K3SysUi checks for its binary location, so moving does the trick instead
-    # Then directly restore the original file to keep everything tidy
-
-    rm -rf K3SysUi.original 2> /dev/null
-    mv K3SysUi K3SysUi.original
-    cp /opt/rinkhals/ui/K3SysUi.${KOBRA_MODEL_CODE}_${KOBRA_VERSION}.patch K3SysUi
-    chmod +x K3SysUi
-fi
-
-./K3SysUi &> $RINKHALS_ROOT/logs/K3SysUi.log &
-
-if [ -f $K3SYSUI_PATCH ]; then
-    rm -rf K3SysUi.patch 2> /dev/null
-    mv K3SysUi K3SysUi.patch
-    mv K3SysUi.original K3SysUi
-fi
-
-cd $RINKHALS_ROOT
-
-sleep 1
-
-assert_by_name gklib
-assert_by_name gkapi
-#assert_by_name K3SysUi
+for TARGET in $TARGETS; do
+    if [ -f $TARGET.original ]; then
+        rm -rf $TARGET.patch 2> /dev/null
+        mv $TARGET $TARGET.patch
+        mv $TARGET.original $TARGET
+    fi
+done
 
 wait_for_socket /tmp/unix_uds1 30000 "/!\ Timeout waiting for gklib to start"
 

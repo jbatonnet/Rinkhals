@@ -47,9 +47,12 @@ else
 fi
 
 
-# Recreate symbolic links to save space and remove .pyc files
 echo "Optimizing size..."
 
+# Remove binary patches to keep only shell patches
+find /tmp/update_swu/rinkhals/opt/rinkhals/patches -type f ! -name "*.sh" -exec rm {} +
+
+# Recreate symbolic links to save space and remove .pyc files
 cd /tmp/update_swu/rinkhals
 
 for FILE in $(find -type f -name "*.so*"); do
