@@ -19,7 +19,18 @@ echo "Root: $RINKHALS_ROOT"
 echo
 
 # Add icon overlay while Python is loading
-/ac_lib/lib/third_bin/ffmpeg -f fbdev -i /dev/fb0 -i $RINKHALS_ROOT/opt/rinkhals/ui/icon.bmp -frames:v 1 -filter_complex "[0:v] drawbox=x=0:y=0:w=iw-24:h=ih:t=fill:color=black [page]; [page][1:v] overlay=208:104" -pix_fmt bgra -f fbdev /dev/fb0 1>/dev/null 2>/dev/null &
+if [ "$KOBRA_MODEL_CODE" = "KS1" ]; then
+    SCALE="0.75"
+    ROTATION="0"
+    FILTER="[0:v] drawbox=x=0:y=0:w=iw:h=ih:t=fill:c=black"
+else
+    SCALE="0.5"
+    ROTATION="PI/2"
+    FILTER="[0:v] drawbox=x=0:y=0:w=iw-24:h=ih:t=fill:c=black"
+fi
+
+FILTER="$FILTER [1a]; [1:v] rotate=a=${ROTATION} [1b]; [1b] scale=w=iw*${SCALE}:h=ih*${SCALE} [1c]; [1a][1c] overlay=(main_w-overlay_w)/2:(main_h-overlay_h)/2"
+/ac_lib/lib/third_bin/ffmpeg -f fbdev -i /dev/fb0 -i $RINKHALS_ROOT/opt/rinkhals/ui/icon.bmp -frames:v 1 -filter_complex "$FILTER" -pix_fmt bgra -f fbdev /dev/fb0 1>/dev/null 2>/dev/null &
 
 # Start Python UI
 kill_by_name rinkhals-ui.py
