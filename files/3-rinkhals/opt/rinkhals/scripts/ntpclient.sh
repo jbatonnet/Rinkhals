@@ -13,7 +13,7 @@ if [ -f "$LEASE_FILE" ]; then
 fi
 
 while true; do
-    timeout -t 5 sh -c "ntpclient -s -h $NTP_SERVER"
+    timeout -t 5 sh -c "ntpclient -s -h $NTP_SERVER" > /dev/null 2>&1
 
     YEAR=$(date +%Y)
     if [ "$YEAR" -ne "1970" ]; then

@@ -47,7 +47,7 @@ echo "dev" > /tmp/target/.version
 
 # Push to the Kobra
 rclone -v sync --absolute --sftp-disable-hashcheck \
-    --filter "- *.log" --filter "- *.pyc" --filter "- .env" --filter "- __pycache__/**" \
+    --filter "- *.log" --filter "- *.pyc" --filter "- .env" --filter "- .patch" --filter "- cache_*.json" --filter "- __pycache__/**" \
     --filter "+ /*.*" --filter "+ /bin/**" --filter "+ /sbin/**" --filter "+ /usr/**" --filter "+ /etc/**" --filter "+ /opt/**" --filter "+ /home/**" --filter "+ /lib/**" --filter "+ /.version" \
     --filter "- *" \
     /tmp/target Kobra:/useremain/rinkhals/dev

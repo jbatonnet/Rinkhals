@@ -168,12 +168,12 @@ async def websocket_handler(request):
             async def client_loop():
                 async for msg in client_ws:
                     if msg.type == aiohttp.WSMsgType.ERROR:
-                        print('ws connection closed with exception %s' % ws.exception())
+                        print('ws connection closed with exception %s' % client_ws.exception())
                         return
 
                     if msg.type == aiohttp.WSMsgType.TEXT:
                         if msg.data == 'close':
-                            await ws.close()
+                            await client_ws.close()
                             return
 
                         if DEBUG:

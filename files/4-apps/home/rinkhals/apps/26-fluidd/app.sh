@@ -36,11 +36,11 @@ start() {
 stop() {
     PID=$(cat /tmp/rinkhals-fluidd.pid 2> /dev/null)
     kill_by_id $PID
-    rm /tmp/rinkhals-fluidd.pid
+    rm /tmp/rinkhals-fluidd.pid 2> /dev/null
 
     PID=$(cat /tmp/rinkhals-fluidd-80.pid 2> /dev/null)
     kill_by_id $PID
-    rm /tmp/rinkhals-fluidd-80.pid
+    rm /tmp/rinkhals-fluidd-80.pid 2> /dev/null
 }
 
 case "$1" in

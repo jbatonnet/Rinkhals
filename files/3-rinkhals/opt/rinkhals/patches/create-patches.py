@@ -56,6 +56,9 @@ def getGoFunctions(binary):
 
 def patch_K3SysUi(binaryPath, modelCode, version):
 
+    if os.path.isfile(f'{binaryPath}.patch'):
+        return
+        
     k3sysui = ELF(binaryPath)
 
 
@@ -260,6 +263,9 @@ def patch_K3SysUi(binaryPath, modelCode, version):
     k3sysui.save(binaryPath + '.patch')
 
 def patch_gkapi(binaryPath, modelCode, version):
+
+    if os.path.isfile(f'{binaryPath}.patch'):
+        return
 
     gkapi = ELF(binaryPath)
 

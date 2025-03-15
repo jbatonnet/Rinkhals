@@ -32,25 +32,30 @@ quit() {
 }
 
 check_compatibility() {
-    if [ "$KOBRA_MODEL_CODE" == "K2P" ]; then
-        if [ "$KOBRA_VERSION" != "3.1.2.3" ]; then
-            log "Your printer has firmware $KOBRA_VERSION. This Rinkhals version is only compatible with firmware 3.1.2.3 on the Kobra 2 Pro, stopping installation"
-            quit
-        fi
-    elif [ "$KOBRA_MODEL_CODE" == "K3" ]; then
-        if [ "$KOBRA_VERSION" != "2.3.5.3" ] && [ "$KOBRA_VERSION" != "2.3.7.1" ]; then
-            log "Your printer has firmware $KOBRA_VERSION. This Rinkhals version is only compatible with firmwares 2.3.5.3 and 2.3.7.1 on the Kobra 3, stopping installation"
-            quit
-        fi
-    elif [ "$KOBRA_MODEL_CODE" == "KS1" ]; then
-        if [ "$KOBRA_VERSION" != "2.4.6.6" ] && [ "$KOBRA_VERSION" != "2.4.8.3" ]; then
-            log "Your printer has firmware $KOBRA_VERSION. This Rinkhals version is only compatible with firmwares 2.4.6.6 and 2.4.8.3 on the Kobra S1, stopping installation"
-            quit
-        fi
-    else
+    if [ "$KOBRA_MODEL_CODE" != "K2P" ] && [ "$KOBRA_MODEL_CODE" == "K3" ] && [ "$KOBRA_MODEL_CODE" == "KS1" ]; then
         log "Your printer's model is not recognized, exiting"
         quit
     fi
+}
+is_verified_firmware() {
+    if [ "$KOBRA_MODEL_CODE" = "K2P" ]; then
+        if [ "$KOBRA_VERSION" = "3.1.2.3" ]; then
+            echo 1
+            return
+        fi
+    elif [ "$KOBRA_MODEL_CODE" = "K3" ]; then
+        if [ "$KOBRA_VERSION" = "2.3.5.3" ] || [ "$KOBRA_VERSION" = "2.3.7.1" ] || [ "$KOBRA_VERSION" = "2.3.8" ]; then
+            echo 1
+            return
+        fi
+    elif [ "$KOBRA_MODEL_CODE" = "KS1" ]; then
+        if [ "$KOBRA_VERSION" = "2.4.6.6" ] || [ "$KOBRA_VERSION" = "2.4.8.3" ]; then
+            echo 1
+            return
+        fi
+    fi
+
+    echo 0
 }
 
 install_swu() {
@@ -218,4 +223,128 @@ report_status() {
 
     echo "Status: $APP_STATUS"
     echo "PIDs: $APP_PIDS"
+}
+get_status() {
+    app=$1
+    app_root=$2
+
+    if [ -z "$app_root" ]; then
+        app_root=$(get_app_root "$app")
+    fi
+
+    chmod +x $app_root/app.sh
+    app_status=$($app_root/app.sh status | grep Status | awk '{print $2}')
+
+    echo $app_status
+}
+
+BUILTIN_APP_PATH="$RINKHALS_ROOT/home/rinkhals/apps"
+USER_APP_PATH="$RINKHALS_HOME/apps"
+
+list_apps() {
+    BUILTIN_APPS=$(find $BUILTIN_APP_PATH -type d -mindepth 1 -maxdepth 1 -exec basename {} \; 2> /dev/null)
+    USER_APPS=$(find $USER_APP_PATH -type d -mindepth 1 -maxdepth 1 -exec basename {} \; 2> /dev/null)
+
+    APPS=$(printf "$BUILTIN_APPS\n$USER_APPS" | sort -uV)
+    echo $APPS
+}
+get_app_root() {
+    APP=$1
+    
+    USER_APP_ROOT=$USER_APP_PATH/$APP
+    BUILTIN_APP_ROOT=$BUILTIN_APP_PATH/$APP
+
+    if [ -e "$USER_APP_ROOT" ]; then
+        echo "$USER_APP_ROOT"
+    else
+        echo "$BUILTIN_APP_ROOT"
+    fi
+}
+is_app_enabled() {
+    app=$1
+    app_root=$(get_app_root $app)
+
+    if ([ -f $app_root/.enabled ] || [ -f $RINKHALS_HOME/apps/$app.enabled ]) && [ ! -f $app_root/.disabled ] && [ ! -f $RINKHALS_HOME/apps/$app.disabled ]; then
+        echo 1
+    else
+        echo 0
+    fi
+}
+enable_app() {
+    app=$1
+    app_root=$(get_app_root $app)
+
+    if [ ! -d $RINKHALS_HOME/apps ]; then
+        mkdir -p $RINKHALS_HOME/apps
+    fi
+
+    # If this is a built-in app, handle app.enabled / app.disabled
+    if [[ "$app_root" == "$BUILTIN_APP_PATH"* ]]; then
+        if [ -e $RINKHALS_HOME/apps/$app.disabled ]; then
+            rm $RINKHALS_HOME/apps/$app.disabled
+        fi
+        if [ ! -e $app_root/.enabled ]; then
+            touch $RINKHALS_HOME/apps/$app.enabled
+        fi
+
+    # If this is a user app, handle app/.enabled / app/.disabled
+    else
+        rm -f $RINKHALS_HOME/apps/$app.enabled
+        rm -f $RINKHALS_HOME/apps/$app.disabled
+        rm -f $RINKHALS_HOME/apps/$app/.disabled
+        touch $RINKHALS_HOME/apps/$app/.enabled
+    fi
+}
+disable_app() {
+    app=$1
+    app_root=$(get_app_root $app)
+
+    if [ ! -d $RINKHALS_HOME/apps ]; then
+        mkdir -p $RINKHALS_HOME/apps
+    fi
+
+    # If this is a built-in app, handle app.enabled / app.disabled
+    if [[ "$app_root" == "$BUILTIN_APP_PATH"* ]]; then
+        if [ -e $RINKHALS_HOME/apps/$app.enabled ]; then
+            rm $RINKHALS_HOME/apps/$app.enabled
+        fi
+        touch $RINKHALS_HOME/apps/$app.disabled
+
+    # If this is a user app, handle app/.enabled / app/.disabled
+    else
+        rm -f $RINKHALS_HOME/apps/$app.enabled
+        rm -f $RINKHALS_HOME/apps/$app.disabled
+        rm -f $RINKHALS_HOME/apps/$app/.enabled
+        touch $RINKHALS_HOME/apps/$app/.disabled
+    fi
+}
+start_app() {
+    APP=$1
+    TIMEOUT=$2
+
+    APP_ROOT=$(get_app_root $APP)
+
+    PWD=$(pwd)
+    cd $APP_ROOT
+    chmod +x $APP_ROOT/app.sh
+
+    if [ "$TIMEOUT" = "" ]; then
+        $APP_ROOT/app.sh start
+    else
+        timeout -t $TIMEOUT sh -c "$APP_ROOT/app.sh start"
+
+        if [ "$?" != "0" ]; then
+            log "/!\ Timeout while starting $APP ($APP_ROOT)"
+            stop_app $APP
+        fi
+    fi
+
+    cd $PWD
+}
+stop_app() {
+    APP=$1
+    APP_ROOT=$(get_app_root $APP)
+
+    chmod +x $APP_ROOT/app.sh
+    $APP_ROOT/app.sh stop
 }

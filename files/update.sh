@@ -67,7 +67,7 @@ fb_capture
 progress 0
 
 
-# Make sure we install on the right compatible version
+# Make sure we install on a compatible model
 check_compatibility
 
 
@@ -119,7 +119,7 @@ cp $UPDATE_PATH/start.sh.patch /useremain/rinkhals/start.sh.patch
 
 echo $RINKHALS_VERSION > /useremain/rinkhals/.version
 
-rm /useremain/rinkhals/.disable-rinkhals
+rm /useremain/rinkhals/.disable-rinkhals 2> /dev/null
 
 
 # Install Rinkhals loader

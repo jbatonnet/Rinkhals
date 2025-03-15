@@ -12,10 +12,10 @@ By using Rinkhals, you will keep all stock Anycubic features (print screen, Anyc
 - SSH access for customization (user: **root**, password: **rockchip**)
 - [Apps system](https://github.com/jbatonnet/Rinkhals.apps) (OctoApp, Cloudflare, Tailscale, ...)
 
-For now the following printers and firmwares are supported:
-| Model  | Firmwares | Notes |
+For now the following printers and firmwares are tested / supported:
+| Model  | Tested firmwares | Notes |
 | -- | -- | -- |
-| Kobra 3 (+ combo) | `2.3.5.3` `2.3.7.1` |
+| Kobra 3 (+ combo) | `2.3.5.3` `2.3.8` | `2.3.7` and `2.3.7.1` have some instabilities |
 | Kobra 2 Pro | `3.1.2.3` | Only with mainboard [Trigorilla Spe **B** v1.0.x](https://1coderookie.github.io/Kobra2ProInsights/hardware/mainboard/#trigorilla_spe_b_v10x-stock-new-revision) |
 | Kobra S1 (+ combo) | `2.4.6.6` `2.4.8.3` |
 
@@ -38,39 +38,13 @@ Since people have been asking, I accept donations but please remember that I wor
 
 Rinkhals uses an overlay system to keep its modifications isolated from the stock firmware. This way it's easier to revert back to stock if needed, or use multiple versions in parrallel.
 
-- Make sure your printer uses one of the supported firmwares ([how to install firmware](https://github.com/jbatonnet/Rinkhals/wiki/Firmware#how-to-install-a-firmware))
-    - Installation will simply fail without touching your printer if you are using some other version
-- Format a USB drive as FAT32
-- Create a directory named **aGVscF9zb3Nf**
-- Download the version of Rinkhals you want to install from the [Releases](https://github.com/jbatonnet/Rinkhals/releases)
-- Copy the **update.swu** file in the **aGVscF9zb3Nf** directory
-- Plug the USB drive in the printer
-- You should hear a beep, meaning the printer detected the update file
-- After about 20 seconds (the time for the printer to prepare the update), you will see a progress bar on the screen
-    - If the progress bar turns green and you ear 2 beeps, the pritner reboots and Rinkhals is installed
-    - If the progress bar turns red and you ear 3 beeps, the installation failed but everyhting should still work as usual. You will then find more information in the **aGVscF9zb3Nf/install.log** file on the USB drive
+Download the release you want from the [Releases](https://github.com/jbatonnet/Rinkhals/releases) page, rename it as **update.swu** in a directory named **aGVscF9zb3Nf** on a FAT32 USB drive.
 
-If needed, the stock firmwares are available over there: https://1drv.ms/f/s!Ag-0E4JXrqAlwbwl1zK9Le15gYv0sA?e=v2YMPT
+For more information about installation, firmware updates and details about specific situations, go to https://github.com/jbatonnet/Rinkhals/wiki/Rinkhals-%E2%80%90-Installation-and-firmware-updates
 
-### Note for Kobra 2 Pro [Mainbord Trigorilla Spe **B** v1.0.x] with Firmware 3.1.4
-
-There are a number of issues with stock firmware 3.1.4 on the Kobra 2 Pro. You will need to downgrade to firmware 3.1.2.3 in order to install Rinkhals.
-
-Follow those steps to downgrade to 3.1.2.3:
- - Download firmware from here: https://1drv.ms/f/s!Ag-0E4JXrqAlwbwl1zK9Le15gYv0sA?e=v2YMPT
- - Format a USB drive as FAT32
- - Create a directory named **update**
- - Rename **K2P_3.1.2.3.swu** to **update.swu**
- - Copy the **update.swu** file in the **update** directory
- - Plug the USB drive in the printer
- - Go to "About Machine" in the printer menu
- - Click on the arrow next to the version number
- - Confirm, wait for the installation to complete
- - Then follow the Rinkhals installation steps listed above
- 
 ## Touch UI
 
-_(Working for Kobra 3, Testing for Kobra 2 Pro and Kobra S1)_
+_(Working for Kobra 2 Pro and Kobra 3, testing for Kobra S1)_
 
 After installation, Rinkhals provides a touch UI accessible from the printer screen when you tap the Settings icon, then tap Rinkhals.
 
