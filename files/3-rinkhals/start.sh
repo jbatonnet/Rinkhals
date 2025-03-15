@@ -61,12 +61,6 @@ log "| Rinkhals home: $RINKHALS_HOME"
 log " --------------------------------------------------"
 echo
 
-REMOTE_MODE=$(cat /useremain/dev/remote_ctrl_mode)
-if [ "$REMOTE_MODE" != "lan" ]; then
-    log "/!\ LAN mode is disabled, some functions might not work properly"
-    echo
-fi
-
 touch /useremain/rinkhals/.disable-rinkhals
 
 
@@ -74,8 +68,6 @@ touch /useremain/rinkhals/.disable-rinkhals
 log "> Stopping Anycubic apps..."
 
 kill_by_name K3SysUi
-kill_by_name gkcam
-kill_by_name gkapi
 kill_by_name gklib
 
 if [ -f /ac_lib/lib/third_bin/ffmpeg ]; then
@@ -94,7 +86,7 @@ if [ -f /ac_lib/lib/third_bin/ffmpeg ]; then
     FILTER="$FILTER [4a]; [0:v] drawbox=x=0:y=0:w=iw:h=ih:t=fill:c=black [4b]; [4b][4a] overlay=(main_w-overlay_w)/2:(main_h-overlay_h)/2"
 
     /ac_lib/lib/third_bin/ffmpeg -f fbdev -i /dev/fb0 -i $RINKHALS_ROOT/opt/rinkhals/ui/icon.bmp -i $RINKHALS_ROOT/opt/rinkhals/ui/version-warning.bmp -frames:v 1 -filter_complex "$FILTER" -pix_fmt bgra -f fbdev /dev/fb0 \
-        1>/dev/null 2>/dev/null &
+        1>/dev/null 2>/dev/null
 fi
 
 
@@ -158,10 +150,11 @@ for DIRECTORY in $DIRECTORIES; do
     mount --bind $MERGED_DIRECTORY $DIRECTORY
 done
 
-# generate dhcp.lease file with a new dhcp request
-/sbin/udhcpc -i wlan0
+# Re-source profile with overlay
+source /etc/profile
 
-# Sync time
+# Start time synchronization
+/sbin/udhcpc -i wlan0
 $RINKHALS_ROOT/opt/rinkhals/scripts/ntpclient.sh &
 
 
@@ -264,16 +257,10 @@ log "> Starting apps..."
 OLD_LD_LIBRARY_PATH=$LD_LIBRARY_PATH
 export LD_LIBRARY_PATH=/lib:/usr/lib:$LD_LIBRARY_PATH
 
-BUILTIN_APPS=$(find $RINKHALS_ROOT/home/rinkhals/apps -type d -mindepth 1 -maxdepth 1 -exec basename {} \; 2> /dev/null)
-USER_APPS=$(find $RINKHALS_HOME/apps -type d -mindepth 1 -maxdepth 1 -exec basename {} \; 2> /dev/null)
-
-APPS=$(printf "$BUILTIN_APPS\n$USER_APPS" | sort -uV)
+APPS=$(list_apps)
 
 for APP in $APPS; do
-    BUITLIN_APP_ROOT=$(ls -d1 $RINKHALS_ROOT/home/rinkhals/apps/$APP 2> /dev/null)
-    USER_APP_ROOT=$(ls -d1 $RINKHALS_HOME/apps/$APP 2> /dev/null)
-
-    APP_ROOT=${USER_APP_ROOT:-${BUITLIN_APP_ROOT}}
+    APP_ROOT=$(get_app_root $APP)
 
     if [ ! -f $APP_ROOT/app.sh ] || [ ! -f $APP_ROOT/app.json ]; then
         continue
@@ -285,23 +272,17 @@ for APP in $APPS; do
         continue
     fi
 
-    cd $APP_ROOT
-    chmod +x $APP_ROOT/app.sh
+    APP_ENABLED=$(is_app_enabled $APP)
 
-    if ([ -f $APP_ROOT/.enabled ] || [ -f $RINKHALS_HOME/apps/$APP.enabled ]) && [ ! -f $APP_ROOT/.disabled ] && [ ! -f $RINKHALS_HOME/apps/$APP.disabled ]; then
+    if [ "$APP_ENABLED" = "1" ]; then
         log "  - Starting $APP ($APP_ROOT)..."
-        timeout -t 5 sh -c "$APP_ROOT/app.sh start"
-
-        if [ "$?" != "0" ]; then
-            log "/!\ Timeout while starting $APP ($APP_ROOT)"
-            $APP_ROOT/app.sh stop
-        fi
+        start_app $APP 5
     else
-        APP_STATUS=$($APP_ROOT/app.sh status | grep Status | awk '{print $1}')
+        APP_STATUS=$(get_status $APP)
 
         if [ "$APP_STATUS" == "$APP_STATUS_STARTED" ]; then
             log "  - Stopping $APP ($APP_ROOT) as it is not enabled..."
-            $APP_ROOT/app.sh stop
+            stop_app $APP
         else
             log "  - Skipping $APP ($APP_ROOT) as it is not enabled"
         fi

@@ -67,7 +67,7 @@ fb_capture
 progress 0
 
 
-# Make sure we install on the right compatible version
+# Make sure we install on a compatible model
 check_compatibility
 
 
