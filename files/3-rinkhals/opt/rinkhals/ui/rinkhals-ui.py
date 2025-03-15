@@ -186,7 +186,9 @@ class Program:
             monitor_thread = threading.Thread(target = self.monitor_k3sysui)
             monitor_thread.start()
 
-        self.icon_rinkhals = Image.open(RINKHALS_ROOT + '/opt/rinkhals/ui/icon.bmp').convert('RGBA').rotate(90)
+        icon_scale = 0.75 if KOBRA_MODEL_CODE == 'KS1' else 0.5
+        self.icon_rinkhals = Image.open(RINKHALS_ROOT + '/opt/rinkhals/ui/icon.bmp').convert('RGBA')
+        self.icon_rinkhals = self.icon_rinkhals.resize((int(self.icon_rinkhals.width * icon_scale), int(self.icon_rinkhals.height * icon_scale)))
 
         font_path = RINKHALS_ROOT + '/opt/rinkhals/ui/AlibabaSans-Regular.ttf'
         self.font_title = ImageFont.truetype(font_path, 24 if KOBRA_MODEL_CODE == 'KS1' else 16)
@@ -280,7 +282,7 @@ class Program:
             self.touch_actions.append(((0, 0, SCREEN_WIDTH, SCREEN_HEIGHT), lambda: self.quit()))
             return
 
-        icon_x = ((SCREEN_WIDTH / 4) if KOBRA_MODEL_CODE == 'KS1' else (SCREEN_WIDTH / 2)) - 32
+        icon_x = ((SCREEN_WIDTH / 4) if KOBRA_MODEL_CODE == 'KS1' else (SCREEN_WIDTH / 2)) - self.icon_rinkhals.width / 2
         icon_y = 116 if KOBRA_MODEL_CODE == 'KS1' else 56
         buffer.alpha_composite(self.icon_rinkhals, (int(icon_x), int(icon_y)))
 

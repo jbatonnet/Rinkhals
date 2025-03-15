@@ -78,6 +78,25 @@ kill_by_name gkcam
 kill_by_name gkapi
 kill_by_name gklib
 
+if [ -f /ac_lib/lib/third_bin/ffmpeg ]; then
+    ROTATION="PI/2"
+    SCALE="0.5"
+
+    FILTER="[0:v] drawbox=x=0:y=0:w=iw:h=ih:t=fill:c=black"
+    FILTER="$FILTER [1a]; [1:v] scale=w=iw*${SCALE}:h=ih*${SCALE} [1b]; [1a][1b] overlay=(main_w-overlay_w)/2:(main_h-overlay_h)/2"
+    
+    VERIFIED_FIRMWARE=$(is_verified_firmware)
+    if [ "$VERIFIED_FIRMWARE" != "1" ]; then
+        FILTER="$FILTER [2a]; [2:v] scale=w=iw*${SCALE}:h=ih*${SCALE} [2b]; [2a][2b] overlay=(main_w-overlay_w)/2:(main_h-overlay_h)/2+72"
+    fi
+
+    FILTER="$FILTER [3a]; [3a] rotate=a=${ROTATION}:ow=rotw(${ROTATION}):oh=roth(${ROTATION})"
+    FILTER="$FILTER [4a]; [0:v] drawbox=x=0:y=0:w=iw:h=ih:t=fill:c=black [4b]; [4b][4a] overlay=(main_w-overlay_w)/2:(main_h-overlay_h)/2"
+
+    /ac_lib/lib/third_bin/ffmpeg -f fbdev -i /dev/fb0 -i $RINKHALS_ROOT/opt/rinkhals/ui/icon.bmp -i $RINKHALS_ROOT/opt/rinkhals/ui/version-warning.bmp -frames:v 1 -filter_complex "$FILTER" -pix_fmt bgra -f fbdev /dev/fb0 \
+        1>/dev/null 2>/dev/null &
+fi
+
 
 ################
 log "> Fixing permissions..."
