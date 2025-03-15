@@ -35,16 +35,15 @@ def readSections(path, hintPath = None):
 
 
 def main():
-
     args = sys.argv
-    if len(args) != 3:
-        print(f'Error: {args[0]} needs 2 arguments, source and destination config path')
 
-    sourceConfigPath = args[1]
-    destinationConfigPath = args[2]
+    sourceConfigFiles = args[1:]
 
     # Read all sections and resolve includes
-    sections = readSections(sourceConfigPath)
+    sections = []
+    for sourceConfigFile in sourceConfigFiles:
+        for section in readSections(sourceConfigFile):
+            sections.append(section)
 
     # Decode sections content
     sections = [ ( s[0], re.findall('(?:^|\n)([^\[\]\s:]+[^\[\]:]+):((?:.|\n)*?)(?=\n[^\[\]\s#:]|\n\[|$)', s[1]) ) for s in sections ]
@@ -80,16 +79,15 @@ def main():
             resolvedSections[sectionName][key.lstrip()] = value
 
     # Write resolved sections to destination file
-    with open(destinationConfigPath, 'w') as f:
-        f.write('# This file is generated automatically on every Rinkhals startup\n')
-        f.write('# To modify its content, please use the printer.custom.cfg instead\n')
-        f.write('\n')
+    print('# This file is generated automatically on every Rinkhals startup')
+    print('# To modify its content, please use the printer.custom.cfg instead')
+    print('')
 
-        for name, content in resolvedSections.items():
-            f.write(f'[{name}]\n')
-            for key, value in content.items():
-                f.write(f'{key}:{value}\n')
-            f.write('\n')
+    for name, content in resolvedSections.items():
+        print(f'[{name}]')
+        for key, value in content.items():
+            print(f'{key}:{value}')
+        print('')
 
     
 if __name__ == "__main__":
