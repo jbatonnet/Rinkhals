@@ -73,10 +73,13 @@ else:
     KOBRA_MODEL_CODE = environment['KOBRA_MODEL_CODE']
     KOBRA_VERSION = environment['KOBRA_VERSION']
 
-    
+
+# TODO: Read that from QT_QPA_PLATFORM
+# For example: QT_QPA_PLATFORM=linuxfb:fb=/dev/fb0:size=800x480:rotation=180:offset=0x0:nographicsmodeswitch
+
 SCREEN_WIDTH = 800 if KOBRA_MODEL_CODE == 'KS1' else 272
 SCREEN_HEIGHT = 480
-SCREEN_ROTATION = 0 if KOBRA_MODEL_CODE == 'KS1' else 90
+SCREEN_ROTATION = 180 if KOBRA_MODEL_CODE == 'KS1' else 90
 
 BUILTIN_APP_PATH = f'{RINKHALS_ROOT}/home/rinkhals/apps'
 USER_APP_PATH = f'{RINKHALS_HOME}/apps'
@@ -611,7 +614,7 @@ class Program:
             self.window_panel.config(image = imageTk)
             self.window.update()
         else:
-            image_bytes = image.rotate(-90, expand = True).tobytes('raw', 'BGRA')
+            image_bytes = image.rotate(-SCREEN_ROTATION, expand = True).tobytes('raw', 'BGRA')
             with open('/dev/fb0', 'wb') as fb:
                 fb.write(image_bytes)
     def clear(self):

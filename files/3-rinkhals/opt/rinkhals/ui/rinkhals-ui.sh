@@ -21,7 +21,7 @@ echo
 # Add icon overlay while Python is loading
 if [ "$KOBRA_MODEL_CODE" = "KS1" ]; then
     SCALE="0.75"
-    ROTATION="0"
+    ROTATION="PI"
     FILTER="[0:v] drawbox=x=0:y=0:w=iw:h=ih:t=fill:c=black"
 else
     SCALE="0.5"
