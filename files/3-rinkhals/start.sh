@@ -129,7 +129,6 @@ umount -l /usr 2> /dev/null
 umount -l /lib 2> /dev/null
 
 DIRECTORIES="/lib /usr /bin /sbin /opt /etc"
-ORIGINAL_ROOT=/tmp/rinkhals/original
 MERGED_ROOT=/tmp/rinkhals/merged
 
 # Backup original directories

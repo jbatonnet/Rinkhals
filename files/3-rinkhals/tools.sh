@@ -13,6 +13,8 @@ elif [ "$KOBRA_MODEL" == "Anycubic Kobra S1" ]; then
     export KOBRA_MODEL_CODE=KS1
 fi
 
+export ORIGINAL_ROOT=/tmp/rinkhals/original
+
 msleep() {
     usleep $(($1 * 1000))
 }
