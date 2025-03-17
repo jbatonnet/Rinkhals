@@ -69,9 +69,11 @@ else:
 
     RINKHALS_HOME = environment['RINKHALS_HOME']
     RINKHALS_VERSION = environment['RINKHALS_VERSION']
+    KOBRA_MODEL_ID = environment['KOBRA_MODEL_ID']
     KOBRA_MODEL = environment['KOBRA_MODEL']
     KOBRA_MODEL_CODE = environment['KOBRA_MODEL_CODE']
     KOBRA_VERSION = environment['KOBRA_VERSION']
+    KOBRA_DEVICE_ID = environment['KOBRA_DEVICE_ID']
 
 
 # TODO: Read that from QT_QPA_PLATFORM
@@ -214,7 +216,7 @@ class Program:
                 self.quit()
     def monitor_mqtt(self):
         def mqtt_on_connect(client, userdata, flags, reason_code, properties):
-            client.subscribe(f'anycubic/anycubicCloud/v1/slicer/printer/20024/{PRINTER_ID}/print')
+            client.subscribe(f'anycubic/anycubicCloud/v1/+/printer/{KOBRA_MODEL_ID}/{KOBRA_DEVICE_ID}/print')
             log(LOG_INFO, 'Monitoring MQTT...')
         def mqtt_on_connect_fail(client, userdata):
             log(LOG_INFO, 'MQTT connection failed')
@@ -230,9 +232,6 @@ class Program:
 
             mqtt_username = data['username']
             mqtt_password = data['password']
-
-        with open('/useremain/dev/device_id', 'r') as f:
-            PRINTER_ID = f.read().strip()
 
         client = paho.Client(protocol = paho.MQTTv5)
         client.on_connect = mqtt_on_connect

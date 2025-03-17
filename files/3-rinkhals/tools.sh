@@ -2,16 +2,21 @@ export RINKHALS_ROOT=$(realpath /useremain/rinkhals/.current)
 export RINKHALS_VERSION=$(cat $RINKHALS_ROOT/.version)
 export RINKHALS_HOME=/useremain/home/rinkhals
 
-export KOBRA_MODEL=$(cat /userdata/app/gk/printer.cfg | grep device_type | awk -F':' '{print $2}' | xargs)
-export KOBRA_VERSION=$(cat /useremain/dev/version)
+export KOBRA_MODEL_ID=$(cat /userdata/app/gk/config/api.cfg | sed -nr 's/.*"modelId"\s*:\s*"([0-9]+)".*/\1/p')
 
-if [ "$KOBRA_MODEL" == "Anycubic Kobra 2 Pro" ]; then
+if [ "$KOBRA_MODEL_ID" == "20021" ]; then
+    export KOBRA_MODEL="Anycubic Kobra 2 Pro"
     export KOBRA_MODEL_CODE=K2P
-elif [ "$KOBRA_MODEL" == "Anycubic Kobra 3" ]; then
+elif [ "$KOBRA_MODEL_ID" == "20024" ]; then
+    export KOBRA_MODEL="Anycubic Kobra 3"
     export KOBRA_MODEL_CODE=K3
-elif [ "$KOBRA_MODEL" == "Anycubic Kobra S1" ]; then
+elif [ "$KOBRA_MODEL_ID" == "20025" ]; then
+    export KOBRA_MODEL="Anycubic Kobra S1"
     export KOBRA_MODEL_CODE=KS1
 fi
+
+export KOBRA_VERSION=$(cat /useremain/dev/version)
+export KOBRA_DEVICE_ID=$(cat /useremain/dev/device_id)
 
 export ORIGINAL_ROOT=/tmp/rinkhals/original
 

@@ -4,6 +4,7 @@ import json
 import uuid
 import time
 import os
+import subprocess
 from datetime import datetime
 
 import aiohttp
@@ -17,6 +18,14 @@ def log(message):
     print(datetime.now().strftime('%Y-%m-%d %H:%M:%S') + ' [moonraker-proxy] ' + message, flush = True)
 
 
+
+# Environment
+command = f'source /useremain/rinkhals/.current/tools.sh && python -c "import os, json; print(json.dumps(dict(os.environ)))"'
+environment = subprocess.check_output(['sh', '-c', command])
+environment = json.loads(environment.decode('utf-8').strip())
+
+KOBRA_MODEL_ID = environment['KOBRA_MODEL_ID']
+KOBRA_DEVICE_ID = environment['KOBRA_DEVICE_ID']
 
 # User configuration
 DEBUG = 'MOONRAKER_PROXY_DEBUG' in os.environ
@@ -63,8 +72,8 @@ async def mqtt_printfile(file):
     mqtt_print_error = None
 
     def mqtt_on_connect(client, userdata, flags, reason_code, properties):
-        client.subscribe('anycubic/anycubicCloud/v1/printer/public/20024/' + PRINTER_ID + '/print/report')
-        client.publish('anycubic/anycubicCloud/v1/slicer/printer/20024/' + PRINTER_ID + '/print', payload=payload, qos=1)
+        client.subscribe(f'anycubic/anycubicCloud/v1/printer/public/{KOBRA_MODEL_ID}/{KOBRA_DEVICE_ID}/print/report')
+        client.publish(f'anycubic/anycubicCloud/v1/slicer/printer/{KOBRA_MODEL_ID}/{KOBRA_DEVICE_ID}/print', payload=payload, qos=1)
 
     def mqtt_on_message(client, userdata, msg):
         global mqtt_print_report
@@ -248,16 +257,8 @@ if __name__ == "__main__":
         else:
             log('No MQTT credentials found, MQTT will not be used')
 
-    if not PRINTER_ID:
-        if os.path.isfile('/useremain/dev/device_id'):
-            with open('/useremain/dev/device_id', 'r') as f:
-                PRINTER_ID = f.read().strip()
-
-    if REMOTE_MODE == 'lan' and MQTT_USERNAME and MQTT_PASSWORD and PRINTER_ID:
+    if REMOTE_MODE == 'lan' and MQTT_USERNAME and MQTT_PASSWORD:
         USE_MQTT = True
-
-    if DEBUG and PRINTER_ID:
-        log('Printer ID: {0}'.format(PRINTER_ID))
 
     # Start asynchonous server
     loop = asyncio.new_event_loop()
