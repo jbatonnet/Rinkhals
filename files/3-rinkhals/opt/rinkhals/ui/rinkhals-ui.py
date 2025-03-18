@@ -30,11 +30,6 @@ USING_SIMULATOR = True
 if os.path.exists('/dev/fb0'):
     USING_SIMULATOR = False
 
-TOUCH_CALIBRATION_MIN_X = 235
-TOUCH_CALIBRATION_MAX_X = 25
-TOUCH_CALIBRATION_MIN_Y = 460
-TOUCH_CALIBRATION_MAX_Y = 25
-
 COLOR_PRIMARY = (0, 128, 255)
 COLOR_SECONDARY = (96, 96, 96)
 COLOR_TEXT = (255, 255, 255)
@@ -61,7 +56,7 @@ if USING_SIMULATOR:
     RINKHALS_VERSION = 'dev'
     KOBRA_MODEL = 'Anycubic Kobra'
     KOBRA_VERSION = '1.2.3.4'
-    KOBRA_MODEL_CODE = 'K3'
+    KOBRA_MODEL_CODE = 'KS1'
 else:
     command = f'source {RINKHALS_ROOT}/tools.sh && python -c "import os, json; print(json.dumps(dict(os.environ)))"'
     environment = subprocess.check_output(['sh', '-c', command])
@@ -75,13 +70,29 @@ else:
     KOBRA_VERSION = environment['KOBRA_VERSION']
     KOBRA_DEVICE_ID = environment['KOBRA_DEVICE_ID']
 
-
 # TODO: Read that from QT_QPA_PLATFORM
 # For example: QT_QPA_PLATFORM=linuxfb:fb=/dev/fb0:size=800x480:rotation=180:offset=0x0:nographicsmodeswitch
+if KOBRA_MODEL_CODE == 'KS1':
+    SCREEN_WIDTH = 800
+    SCREEN_HEIGHT = 480
+    SCREEN_ROTATION = 180
+    TOUCH_CALIBRATION_MIN_X = 800
+    TOUCH_CALIBRATION_MAX_X = 0
+    TOUCH_CALIBRATION_MIN_Y = 480
+    TOUCH_CALIBRATION_MAX_Y = 0
+else:
+    SCREEN_WIDTH = 272
+    SCREEN_HEIGHT = 480
+    SCREEN_ROTATION = 90
+    TOUCH_CALIBRATION_MIN_X = 235
+    TOUCH_CALIBRATION_MAX_X = 25
+    TOUCH_CALIBRATION_MIN_Y = 460
+    TOUCH_CALIBRATION_MAX_Y = 25
 
-SCREEN_WIDTH = 800 if KOBRA_MODEL_CODE == 'KS1' else 272
-SCREEN_HEIGHT = 480
-SCREEN_ROTATION = 180 if KOBRA_MODEL_CODE == 'KS1' else 90
+if KOBRA_MODEL_CODE == 'KS1':
+    BUTTON_HEIGHT = 60
+else:
+    BUTTON_HEIGHT = 44
 
 BUILTIN_APP_PATH = f'{RINKHALS_ROOT}/home/rinkhals/apps'
 USER_APP_PATH = f'{RINKHALS_HOME}/apps'
@@ -122,6 +133,7 @@ def wrap(txt, width):
 def shell(command):
     result = subprocess.check_output(['sh', '-c', command])
     result = result.decode('utf-8').strip()
+    log(LOG_DEBUG, f'Shell "{command}" => "{result}"')
     return result
 
 
@@ -135,6 +147,7 @@ class Program:
     selected_app = None
     touch_actions = []
     apps_page = 0
+    last_screen_check = 0
 
     # Assets
     font_title = None
@@ -191,7 +204,7 @@ class Program:
             monitor_thread = threading.Thread(target = self.monitor_k3sysui)
             monitor_thread.start()
 
-        icon_scale = 0.75 if KOBRA_MODEL_CODE == 'KS1' else 0.5
+        icon_scale = 0.5
         self.icon_rinkhals = Image.open(RINKHALS_ROOT + '/opt/rinkhals/ui/icon.bmp').convert('RGBA')
         self.icon_rinkhals = self.icon_rinkhals.resize((int(self.icon_rinkhals.width * icon_scale), int(self.icon_rinkhals.height * icon_scale)))
 
@@ -243,6 +256,14 @@ class Program:
         client.connect('127.0.0.1', 2883)
         client.loop_start()
 
+    def is_screen_on(self):
+        brightness = shell('cat /sys/class/backlight/backlight/brightness')
+        return brightness != '0'
+    def turn_on_screen(self):
+        shell('echo 255 > /sys/class/backlight/backlight/brightness')
+    def turn_off_screen(self):
+        shell('echo 0 > /sys/class/backlight/backlight/brightness')
+
     def loop(self):
 
         while True:
@@ -254,13 +275,15 @@ class Program:
 
             self.touch_actions = []
 
-            #buffer = Image.new('RGBA', (SCREEN_WIDTH, SCREEN_HEIGHT), COLOR_BACKGROUND)
-            buffer = self.capture()
+            if KOBRA_MODEL_CODE == 'KS1':
+                buffer = Image.new('RGBA', (SCREEN_WIDTH, SCREEN_HEIGHT), COLOR_BACKGROUND)
+            else:
+                buffer = self.capture()
+                
             draw = ImageDraw.Draw(buffer)
 
             if KOBRA_MODEL_CODE == 'KS1':
-                draw.rectangle((0, 48, SCREEN_WIDTH, SCREEN_HEIGHT), fill = (0, 0, 0))
-                draw.rectangle((0, 0, SCREEN_WIDTH - 144, SCREEN_HEIGHT), fill = (0, 0, 0))
+                draw.rectangle((0, 0, SCREEN_WIDTH, SCREEN_HEIGHT), fill = (0, 0, 0))
             else:
                 draw.rectangle((0, 24, SCREEN_WIDTH, SCREEN_HEIGHT), fill = (0, 0, 0))
 
@@ -278,11 +301,6 @@ class Program:
     def draw_main_screen(self, buffer, draw):
         draw.text((32, 48), '<', fill = COLOR_TEXT, font = self.font_title, anchor = 'mm')
         self.touch_actions.append(((0, 24, 48, 72), lambda: self.quit()))
-
-        if KOBRA_MODEL_CODE == 'KS1':
-            draw.text((SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2), 'Rinkhals UI is not yet available for the Kobra S1', fill = COLOR_TEXT, font = self.font_title, anchor = 'mm')
-            self.touch_actions.append(((0, 0, SCREEN_WIDTH, SCREEN_HEIGHT), lambda: self.quit()))
-            return
 
         icon_x = ((SCREEN_WIDTH / 4) if KOBRA_MODEL_CODE == 'KS1' else (SCREEN_WIDTH / 2)) - self.icon_rinkhals.width / 2
         icon_y = 116 if KOBRA_MODEL_CODE == 'KS1' else 56
@@ -313,41 +331,42 @@ class Program:
         current_y += 20 if KOBRA_MODEL_CODE == 'KS1' else 16
         draw.text((current_x, current_y), 'Disk usage: ' + self.disk_usage, fill = COLOR_SUBTITLE, font = self.font_subtitle, anchor = 'mm')
 
-        current_y = 280
+        current_y = 64 if KOBRA_MODEL_CODE == 'KS1' else 280
+        margin_left = SCREEN_WIDTH / 2 if KOBRA_MODEL_CODE == 'KS1' else 0
 
-        surface = (0, current_y - 22, SCREEN_WIDTH, current_y + 22)
-        if not self.dialog and self.touch_down and self.touch_down[1] >= current_y - 22 and self.touch_down[1] <= current_y + 22:
+        surface = (margin_left, current_y - BUTTON_HEIGHT / 2, SCREEN_WIDTH, current_y + BUTTON_HEIGHT / 2)
+        if not self.dialog and self.touch_down and self.touch_down[1] >= current_y - BUTTON_HEIGHT / 2 and self.touch_down[1] <= current_y + BUTTON_HEIGHT / 2:
             draw.rectangle(surface, fill = COLOR_SECONDARY)
-        draw.text((16, current_y), 'Manage apps', fill = COLOR_TEXT, font = self.font_text, anchor = 'lm')
+        draw.text((margin_left + 16, current_y), 'Manage apps', fill = COLOR_TEXT, font = self.font_text, anchor = 'lm')
         draw.text((SCREEN_WIDTH - 16, current_y), '>', fill = COLOR_TEXT, font = self.font_text, anchor = 'rm')
         self.touch_actions.append((surface, lambda: self.show_screen('apps')))
 
-        # current_y = current_y + 44
-        # surface = (0, current_y - 22, SCREEN_WIDTH, current_y + 22)
-        # if not dialog and touch_down and touch_down[1] >= current_y - 22 and touch_down[1] <= current_y + 22:
+        # current_y = current_y + BUTTON_HEIGHT
+        # surface = (0, current_y - BUTTON_HEIGHT / 2, SCREEN_WIDTH, current_y + BUTTON_HEIGHT / 2)
+        # if not dialog and touch_down and touch_down[1] >= current_y - BUTTON_HEIGHT / 2 and touch_down[1] <= current_y + BUTTON_HEIGHT / 2:
         #     draw.rectangle(surface, fill = COLOR_SECONDARY)
         # draw.text((16, current_y), 'Clean storage (logs, old files, ...)', fill = self.COLOR_TEXT, font = font_text, anchor = 'lm')
         # touch_actions.append((surface, lambda: show_dialog('confirm-cleanup')))
 
-        current_y = current_y + 44
-        surface = (0, current_y - 22, SCREEN_WIDTH, current_y + 22)
-        if not self.dialog and self.touch_down and self.touch_down[1] >= current_y - 22 and self.touch_down[1] <= current_y + 22:
+        current_y = current_y + BUTTON_HEIGHT
+        surface = (margin_left, current_y - BUTTON_HEIGHT / 2, SCREEN_WIDTH, current_y + BUTTON_HEIGHT / 2)
+        if not self.dialog and self.touch_down and self.touch_down[1] >= current_y - BUTTON_HEIGHT / 2 and self.touch_down[1] <= current_y + BUTTON_HEIGHT / 2:
             draw.rectangle(surface, fill = COLOR_SECONDARY)
-        draw.text((16, current_y), 'Stop Rinkhals', fill = COLOR_TEXT, font = self.font_text, anchor = 'lm')
+        draw.text((margin_left + 16, current_y), 'Stop Rinkhals', fill = COLOR_TEXT, font = self.font_text, anchor = 'lm')
         self.touch_actions.append((surface, lambda: self.show_dialog('confirm-stop-rinkhals')))
 
-        # current_y = current_y + 44
-        # surface = (0, current_y - 22, SCREEN_WIDTH, current_y + 22)
-        # if not self.dialog and self.touch_down and self.touch_down[1] >= current_y - 22 and self.touch_down[1] <= current_y + 22:
+        # current_y = current_y + BUTTON_HEIGHT
+        # surface = (0, current_y - BUTTON_HEIGHT / 2, SCREEN_WIDTH, current_y + BUTTON_HEIGHT / 2)
+        # if not self.dialog and self.touch_down and self.touch_down[1] >= current_y - BUTTON_HEIGHT / 2 and self.touch_down[1] <= current_y + BUTTON_HEIGHT / 2:
         #     draw.rectangle(surface, fill = COLOR_SECONDARY)
         # draw.text((16, current_y), 'Restart Rinkhals', fill = COLOR_TEXT, font = self.font_text, anchor = 'lm')
         # touch_actions.append((surface, lambda: show_dialog('confirm-restart-rinkhals')))
 
-        current_y = current_y + 44
-        surface = (0, current_y - 22, SCREEN_WIDTH, current_y + 22)
-        if not self.dialog and self.touch_down and self.touch_down[1] >= current_y - 22 and self.touch_down[1] <= current_y + 22:
+        current_y = current_y + BUTTON_HEIGHT
+        surface = (margin_left, current_y - BUTTON_HEIGHT / 2, SCREEN_WIDTH, current_y + BUTTON_HEIGHT / 2)
+        if not self.dialog and self.touch_down and self.touch_down[1] >= current_y - BUTTON_HEIGHT / 2 and self.touch_down[1] <= current_y + BUTTON_HEIGHT / 2:
             draw.rectangle(surface, fill = COLOR_SECONDARY)
-        draw.text((16, current_y), 'Disable Rinkhals', fill = COLOR_DANGER, font = self.font_text, anchor = 'lm')
+        draw.text((margin_left + 16, current_y), 'Disable Rinkhals', fill = COLOR_DANGER, font = self.font_text, anchor = 'lm')
         self.touch_actions.append((surface, lambda: self.show_dialog('confirm-disable-rinkhals')))
 
         if self.dialog == 'confirm-cleanup':
@@ -428,7 +447,7 @@ class Program:
 
         current_y = 96
 
-        apps_on_screen = round((SCREEN_HEIGHT - current_y) / 44) - 1
+        apps_on_screen = round((SCREEN_HEIGHT - current_y) / BUTTON_HEIGHT) - 1
         page_start = self.apps_page * apps_on_screen
         page_end = min(page_start + apps_on_screen, len(apps))
 
@@ -462,8 +481,8 @@ class Program:
 
             app_enabled = self.is_app_enabled(app, app_root)
                 
-            surface = (0, current_y - 22, SCREEN_WIDTH, current_y + 22)
-            if not self.dialog and self.touch_down and self.touch_down[1] >= current_y - 22 and self.touch_down[1] <= current_y + 22:
+            surface = (0, current_y - BUTTON_HEIGHT / 2, SCREEN_WIDTH, current_y + BUTTON_HEIGHT / 2)
+            if not self.dialog and self.touch_down and self.touch_down[1] >= current_y - BUTTON_HEIGHT / 2 and self.touch_down[1] <= current_y + BUTTON_HEIGHT / 2:
                 draw.rectangle(surface, fill = COLOR_SECONDARY)
             draw.text((16, current_y), app_name + (f' ({app_version})' if app_version else ''), fill = COLOR_TEXT, font = self.font_text, anchor = 'lm')
             #draw.text((16, current_y + 9), description, fill = COLOR_TEXT, font = font_subtitle, anchor = 'lm')
@@ -471,10 +490,10 @@ class Program:
             position = SCREEN_WIDTH - 24 if app_enabled else SCREEN_WIDTH - 48
             draw.rounded_rectangle((position - 9, current_y - 9, position + 9, current_y + 9), 9, fill = COLOR_TEXT if app_enabled else COLOR_DISABLED)
 
-            self.touch_actions.append(((0, current_y - 22, SCREEN_WIDTH - 60, current_y + 22), lambda app = app: self.show_app(app)))
-            self.touch_actions.append(((SCREEN_WIDTH - 60, current_y - 22, SCREEN_WIDTH, current_y + 22), lambda app = app: self.toggle_app(app, start_stop=True)))
+            self.touch_actions.append(((0, current_y - BUTTON_HEIGHT / 2, SCREEN_WIDTH - 60, current_y + BUTTON_HEIGHT / 2), lambda app = app: self.show_app(app)))
+            self.touch_actions.append(((SCREEN_WIDTH - 60, current_y - BUTTON_HEIGHT / 2, SCREEN_WIDTH, current_y + BUTTON_HEIGHT / 2), lambda app = app: self.toggle_app(app, start_stop=True)))
 
-            current_y = current_y + 44
+            current_y = current_y + BUTTON_HEIGHT
 
         if page_start > 0:
             button_rect = (SCREEN_WIDTH * 1 / 3 - 32, SCREEN_HEIGHT - 48, SCREEN_WIDTH * 1 / 3 + 32, SCREEN_HEIGHT - 16)
@@ -539,19 +558,19 @@ class Program:
         bbox = draw.multiline_textbbox((SCREEN_WIDTH / 2, current_y), app_description)
         draw.multiline_text((SCREEN_WIDTH / 2, current_y), app_description, align = 'center', fill = COLOR_TEXT, font = self.font_subtitle, anchor = 'ma')
 
-        current_y = bbox[3] + 44
-        surface = (0, current_y - 22, SCREEN_WIDTH, current_y + 22)
+        current_y = bbox[3] + BUTTON_HEIGHT
+        surface = (0, current_y - BUTTON_HEIGHT / 2, SCREEN_WIDTH, current_y + BUTTON_HEIGHT / 2)
         draw.text((16, current_y), 'Size on disk', fill = COLOR_TEXT, font = self.font_text, anchor = 'lm')
         draw.text((SCREEN_WIDTH - 16, current_y), app_size, fill = COLOR_SUBTITLE, font = self.font_text, anchor = 'rm')
 
-        current_y = current_y + 44
-        surface = (0, current_y - 22, SCREEN_WIDTH, current_y + 22)
+        current_y = current_y + BUTTON_HEIGHT
+        surface = (0, current_y - BUTTON_HEIGHT / 2, SCREEN_WIDTH, current_y + BUTTON_HEIGHT / 2)
         draw.text((16, current_y), 'Status', fill = COLOR_TEXT, font = self.font_text, anchor = 'lm')
         draw.text((SCREEN_WIDTH - 16, current_y), app_status, fill = COLOR_SUBTITLE, font = self.font_text, anchor = 'rm')
 
-        current_y = current_y + 44
-        surface = (0, current_y - 22, SCREEN_WIDTH, current_y + 22)
-        if not self.dialog and self.touch_down and self.touch_down[1] >= current_y - 22 and self.touch_down[1] <= current_y + 22:
+        current_y = current_y + BUTTON_HEIGHT
+        surface = (0, current_y - BUTTON_HEIGHT / 2, SCREEN_WIDTH, current_y + BUTTON_HEIGHT / 2)
+        if not self.dialog and self.touch_down and self.touch_down[1] >= current_y - BUTTON_HEIGHT / 2 and self.touch_down[1] <= current_y + BUTTON_HEIGHT / 2:
             draw.rectangle(surface, fill = COLOR_SECONDARY)
         draw.text((16, current_y), 'Enabled', fill = COLOR_TEXT, font = self.font_text, anchor = 'lm')
         draw.rounded_rectangle((SCREEN_WIDTH - 60, current_y - 12, SCREEN_WIDTH - 12, current_y + 12), radius = 12, fill = COLOR_PRIMARY if app_enabled else COLOR_SECONDARY)
@@ -663,6 +682,8 @@ class Program:
 
                     # Touch position
                     if event.type == evdev.ecodes.EV_ABS:
+
+                        # For K3 / K2P
                         if event.code == evdev.ecodes.ABS_X:
                             self.touch_last_y = (event.value - TOUCH_CALIBRATION_MIN_Y) / (TOUCH_CALIBRATION_MAX_Y - TOUCH_CALIBRATION_MIN_Y) * SCREEN_HEIGHT
                             self.touch_last_y = min(max(0, int(self.touch_last_y)), SCREEN_HEIGHT)
@@ -674,6 +695,18 @@ class Program:
                             if self.touch_down_builder:
                                 self.touch_down_builder[0] = self.touch_last_x
 
+                        # For KS1
+                        if event.code == evdev.ecodes.ABS_MT_POSITION_X:
+                            self.touch_last_x = (event.value - TOUCH_CALIBRATION_MIN_X) / (TOUCH_CALIBRATION_MAX_X - TOUCH_CALIBRATION_MIN_X) * SCREEN_WIDTH
+                            self.touch_last_x = min(max(0, int(self.touch_last_x)), SCREEN_WIDTH)
+                            if self.touch_down_builder:
+                                self.touch_down_builder[0] = self.touch_last_x
+                        elif event.code == evdev.ecodes.ABS_MT_POSITION_Y:
+                            self.touch_last_y = (event.value - TOUCH_CALIBRATION_MIN_Y) / (TOUCH_CALIBRATION_MAX_Y - TOUCH_CALIBRATION_MIN_Y) * SCREEN_HEIGHT
+                            self.touch_last_y = min(max(0, int(self.touch_last_y)), SCREEN_HEIGHT)
+                            if self.touch_down_builder:
+                                self.touch_down_builder[1] = self.touch_last_y
+
                         if self.touch_down_builder and self.touch_down_builder[0] >= 0 and self.touch_down_builder[1] >= 0:
                             self.on_touch_down(self.touch_down_builder[0], self.touch_down_builder[1])
                             self.touch_down_builder = None
@@ -682,6 +715,13 @@ class Program:
 
                     # Touch action
                     elif event.code == evdev.ecodes.BTN_TOUCH: # EV_KEY
+                        if time.time_ns() - self.last_screen_check > 5000000000:
+                            self.last_screen_check = time.time_ns()
+
+                            if not self.is_screen_on():
+                                self.turn_on_screen()
+                                return
+
                         if event.value == 1:
                             self.touch_down_builder = [-1, -1]
                         elif event.value == 0:
