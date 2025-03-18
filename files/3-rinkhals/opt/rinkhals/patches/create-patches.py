@@ -109,6 +109,12 @@ def patch_K3SysUi(binaryPath, modelCode, version):
         patchJumpOperand = 'b'
         patchReturnAddress = 0x13f258
 
+    elif modelCode == 'KS1' and version == '2.5.0.2':
+        buttonCallback = k3sysui.symbols['_ZZN10MainWindow26AcSettingGeneralPageUiInitEvENKUlRK11QModelIndexE0_clES2_']
+        patchJumpAddress = 0x111dc4
+        patchJumpOperand = 'b'
+        patchReturnAddress = 0x111dcc
+
     else:
         raise Exception('Unsupported model and version')
 
