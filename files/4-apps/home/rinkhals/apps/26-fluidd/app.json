@@ -2,8 +2,8 @@
     "$version": "1",
 
     "name": "Fluidd",
-    "description": "Fluidd web interface for Moonraker, listening on port 4408",
-    "version": "1.31.2",
+    "description": "Free and open-source Klipper web interface for managing your 3d printer. Uses port 4408.",
+    "version": "1.33.0",
 
     "requirements":
     {
