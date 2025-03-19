@@ -16,7 +16,7 @@ elif [ "$KOBRA_MODEL_ID" == "20025" ]; then
 fi
 
 export KOBRA_VERSION=$(cat /useremain/dev/version)
-export KOBRA_DEVICE_ID=$(cat /useremain/dev/device_id)
+export KOBRA_DEVICE_ID=$(cat /useremain/dev/device_id 2> /dev/null)
 
 export ORIGINAL_ROOT=/tmp/rinkhals/original
 

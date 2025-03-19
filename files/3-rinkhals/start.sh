@@ -218,7 +218,10 @@ fi
 log "> Restarting Anycubic apps..."
 
 # Generate the printer.cfg file
-python /opt/rinkhals/scripts/process-cfg.py /userdata/app/gk/printer.cfg $RINKHALS_ROOT/home/rinkhals/printer_data/config/printer.rinkhals.cfg > /userdata/app/gk/printer_data/config/printer.generated.cfg
+sed '/-- SAVE_CONFIG --/,$d' /userdata/app/gk/printer.cfg > /tmp/printer.1.cfg
+sed -n '/-- SAVE_CONFIG --/,$p' /userdata/app/gk/printer.cfg > /tmp/printer.2.cfg
+python /opt/rinkhals/scripts/process-cfg.py /tmp/printer.1.cfg $RINKHALS_ROOT/home/rinkhals/printer_data/config/printer.rinkhals.cfg > /userdata/app/gk/printer_data/config/printer.generated.cfg
+cat /tmp/printer.2.cfg >> /userdata/app/gk/printer_data/config/printer.generated.cfg
 
 cd /userdata/app/gk
 
