@@ -56,7 +56,7 @@ if TYPE_CHECKING:
     FlexCallback = Callable[..., Optional[Coroutine]]
     _T = TypeVar("_T", Sentinel, Any)
 
-API_VERSION = (1, 4, 0)
+API_VERSION = (1, 5, 0)
 SERVER_COMPONENTS = ['application', 'websockets', 'klippy_connection']
 CORE_COMPONENTS = [
     'dbus_manager', 'database', 'file_manager', 'authorization',
@@ -89,6 +89,7 @@ class Server:
         self.ssl_port: int = config.getint('ssl_port', 7130)
         self.exit_reason: str = ""
         self.server_running: bool = False
+        self.app_running_evt = asyncio.Event()
         self.pip_recovery_attempted: bool = False
 
         # Configure Debug Logging
@@ -194,14 +195,19 @@ class Server:
         if optional_comps:
             await asyncio.gather(*optional_comps)
 
+        # Wait until all components are initialized to start the file
+        # observer.  This allows other components to register gcode file
+        # processors before metadata is processed for gcode files that
+        # do not have a metadata entry.
+        file_manager: FileManager = self.lookup_component("file_manager")
+        file_manager.start_file_observer()
+
         if not self.warnings:
             await self.event_loop.run_in_thread(self.config.create_backup)
 
         machine: Machine = self.lookup_component("machine")
-        if await machine.validate_installation():
-            return
-
-        if start_server:
+        restarting = await machine.validate_installation()
+        if not restarting and start_server:
             await self.start_server()
 
     async def start_server(self, connect_to_klippy: bool = True) -> None:
@@ -218,6 +224,9 @@ class Server:
         if connect_to_klippy:
             self.klippy_connection.connect()
 
+    async def run_until_exit(self) -> None:
+        await self.app_running_evt.wait()
+
     def add_log_rollover_item(
         self, name: str, item: str, log: bool = True
     ) -> None:
@@ -226,13 +235,17 @@ class Server:
             logging.info(item)
 
     def add_warning(
-        self, warning: str, warn_id: Optional[str] = None, log: bool = True
+        self,
+        warning: str,
+        warn_id: Optional[str] = None,
+        log: bool = True,
+        exc_info: Optional[BaseException] = None
     ) -> str:
         if warn_id is None:
             warn_id = str(id(warning))
         self.warnings[warn_id] = warning
         if log:
-            logging.warning(warning)
+            logging.warning(warning, exc_info=exc_info)
         return warn_id
 
     def remove_warning(self, warn_id: str) -> None:
@@ -246,15 +259,19 @@ class Server:
             if ret is not None:
                 await ret
         except Exception as e:
-            logging.exception(f"Component [{name}] failed post init")
-            self.add_warning(f"Component '{name}' failed to load with "
-                             f"error: {e}")
+            self.add_warning(
+                f"Component '{name}' failed to load with error: {e}", exc_info=e
+            )
             self.set_failed_component(name)
 
     def load_components(self) -> None:
         config = self.config
         cfg_sections = set([s.split()[0] for s in config.sections()])
         cfg_sections.remove('server')
+
+        # load database to initialize saved state
+        self.load_component(config, "database")
+        self.klippy_connection.load_saved_state()
 
         # load core components
         for component in CORE_COMPONENTS:
@@ -480,7 +497,7 @@ class Server:
 
         self.exit_reason = exit_reason
         self.event_loop.remove_signal_handler(signal.SIGTERM)
-        self.event_loop.stop()
+        self.app_running_evt.set()
 
     async def _handle_server_restart(self, web_request: WebRequest) -> str:
         self.event_loop.register_callback(self._stop_server)
@@ -531,6 +548,45 @@ class Server:
             'orig': self.config.get_orig_config(),
             'files': cfg_file_list
         }
+
+async def launch_server(
+    log_manager: LogManager, app_args: Dict[str, Any]
+) -> Optional[int]:
+    eventloop = EventLoop()
+    startup_warnings: List[str] = app_args["startup_warnings"]
+    try:
+        server = Server(app_args, log_manager, eventloop)
+        server.load_components()
+    except confighelper.ConfigError as e:
+        logging.exception("Server Config Error")
+        backup_cfg: Optional[str] = app_args["backup_config"]
+        if app_args["is_backup_config"] or backup_cfg is None:
+            return 1
+        app_args["is_backup_config"] = True
+        startup_warnings.append(
+            f"Server configuration error: {e}\n"
+            f"Loading most recent working configuration: '{backup_cfg}'\n"
+            f"Please fix the issue in moonraker.conf and restart the server."
+        )
+        return True
+    except Exception:
+        logging.exception("Moonraker Error")
+        return 1
+    try:
+        await server.server_init()
+        await server.run_until_exit()
+    except Exception:
+        logging.exception("Server Running Error")
+        return 1
+    if server.exit_reason == "terminate":
+        return 0
+    # Restore the original config and clear the warning
+    # before the server restarts
+    if app_args["is_backup_config"]:
+        startup_warnings.pop()
+        app_args["is_backup_config"] = False
+    del server
+    return None
 
 def main(from_package: bool = True) -> None:
     def get_env_bool(key: str) -> bool:
@@ -627,6 +683,7 @@ def main(from_package: bool = True) -> None:
         "data_path": str(data_path),
         "is_default_data_path": cmd_line_args.datapath is None,
         "config_file": cfg_file,
+        "backup_config": confighelper.find_config_backup(cfg_file),
         "startup_warnings": startup_warnings,
         "verbose": cmd_line_args.verbose,
         "debug": cmd_line_args.debug,
@@ -653,60 +710,14 @@ def main(from_package: bool = True) -> None:
     log_manager = LogManager(app_args, startup_warnings)
 
     # Start asyncio event loop and server
-    event_loop = EventLoop()
-    alt_config_loaded = False
-    estatus = 0
     while True:
-        try:
-            server = Server(app_args, log_manager, event_loop)
-            server.load_components()
-        except confighelper.ConfigError as e:
-            backup_cfg = confighelper.find_config_backup(cfg_file)
-            logging.exception("Server Config Error")
-            if alt_config_loaded or backup_cfg is None:
-                estatus = 1
-                break
-            app_args["config_file"] = backup_cfg
-            app_args["is_backup_config"] = True
-            warn_list = list(startup_warnings)
-            app_args["startup_warnings"] = warn_list
-            warn_list.append(
-                f"Server configuration error: {e}\n"
-                f"Loaded server from most recent working configuration:"
-                f" '{app_args['config_file']}'\n"
-                f"Please fix the issue in moonraker.conf and restart "
-                f"the server."
-            )
-            alt_config_loaded = True
-            continue
-        except Exception:
-            logging.exception("Moonraker Error")
-            estatus = 1
+        estatus = asyncio.run(launch_server(log_manager, app_args))
+        if estatus is not None:
             break
-        try:
-            event_loop.register_callback(server.server_init)
-            event_loop.start()
-        except Exception:
-            logging.exception("Server Running Error")
-            estatus = 1
-            break
-        if server.exit_reason == "terminate":
-            break
-        # Restore the original config and clear the warning
-        # before the server restarts
-        if alt_config_loaded:
-            app_args["config_file"] = cfg_file
-            app_args["startup_warnings"] = startup_warnings
-            app_args["is_backup_config"] = False
-            alt_config_loaded = False
-        event_loop.close()
         # Since we are running outside of the the server
         # it is ok to use a blocking sleep here
         time.sleep(.5)
         logging.info("Attempting Server Restart...")
-        del server
-        event_loop.reset()
-    event_loop.close()
     logging.info("Server Shutdown")
     log_manager.stop_logging()
     exit(estatus)

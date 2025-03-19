@@ -249,6 +249,31 @@ class ConfigHelper:
             self.config.getfloat, option, default,
             above, below, minval, maxval, deprecate)
 
+    def getchoice(
+        self,
+        option: str,
+        choices: Union[Dict[str, _T], List[_T]],
+        default_key: Union[Sentinel, str] = Sentinel.MISSING,
+        force_lowercase: bool = False,
+        deprecate: bool = False
+    ) -> _T:
+        result: str = self._get_option(
+            self.config.get, option, default_key, deprecate=deprecate
+        )
+        if force_lowercase:
+            result = result.lower()
+        if result not in choices:
+            items = list(choices.keys()) if isinstance(choices, dict) else choices
+            raise ConfigError(
+                f"Section [{self.section}], Option '{option}: Value "
+                f"{result} is not a vailid choice.  Must be one of the "
+                f"following {items}"
+            )
+        if isinstance(choices, dict):
+            return choices[result]
+        else:
+            return result  # type: ignore
+
     def getlists(self,
                  option: str,
                  default: Union[Sentinel, _T] = Sentinel.MISSING,
@@ -506,7 +531,7 @@ class ConfigHelper:
 
     def create_backup(self) -> None:
         cfg_path = self.server.get_app_args()["config_file"]
-        cfg = pathlib.Path(cfg_path).expanduser().resolve()
+        cfg = pathlib.Path(cfg_path).expanduser()
         backup = cfg.parent.joinpath(f".{cfg.name}.bkp")
         backup_fp: Optional[TextIO] = None
         try:
@@ -1083,7 +1108,10 @@ class FileSourceWrapper(ConfigSourceWrapper):
 def get_configuration(
     server: Server, app_args: Dict[str, Any]
 ) -> ConfigHelper:
-    start_path = pathlib.Path(app_args['config_file']).expanduser().resolve()
+    cfg_file = app_args["config_file"]
+    if app_args["is_backup_config"]:
+        cfg_file = app_args["backup_config"]
+    start_path = pathlib.Path(cfg_file).expanduser().absolute()
     source = FileSourceWrapper(server)
     source.read_file(start_path)
     if not source.config.has_section('server'):
@@ -1091,7 +1119,7 @@ def get_configuration(
     return ConfigHelper(server, source, 'server', {})
 
 def find_config_backup(cfg_path: str) -> Optional[str]:
-    cfg = pathlib.Path(cfg_path).expanduser().resolve()
+    cfg = pathlib.Path(cfg_path).expanduser()
     backup = cfg.parent.joinpath(f".{cfg.name}.bkp")
     if backup.is_file():
         return str(backup)

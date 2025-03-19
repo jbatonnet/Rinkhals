@@ -51,8 +51,8 @@ if TYPE_CHECKING:
     from .announcements import Announcements
     from .proc_stats import ProcStats
     from .dbus_manager import DbusManager
-    from dbus_next.aio.proxy_object import ProxyInterface
-    from dbus_next.signature import Variant
+    from dbus_fast.aio.proxy_object import ProxyInterface
+    from dbus_fast.signature import Variant
     SudoReturn = Union[Awaitable[Tuple[str, bool]], Tuple[str, bool]]
     SudoCallback = Callable[[], SudoReturn]
 
@@ -173,10 +173,9 @@ class Machine:
         shell_cmd: SCMDComp = self.server.load_component(
             config, 'shell_command')
         self.addr_cmd = shell_cmd.build_shell_command("ip -json -det address")
-#         iwgetbin = "/sbin/iwgetid"
-#         if not pathlib.Path(iwgetbin).exists():
-        # Beam changed: No permission on some devices
-        iwgetbin = "iwgetid"
+        iwgetbin = "/sbin/iwgetid"
+        if not pathlib.Path(iwgetbin).exists():
+            iwgetbin = "iwgetid"
         self.iwgetid_cmd = shell_cmd.build_shell_command(iwgetbin)
         self.init_evt = asyncio.Event()
         self.libcam = self._try_import_libcamera()
@@ -509,9 +508,6 @@ class Machine:
         )
 
     def _get_sdcard_info(self) -> Dict[str, Any]:
-        # Beam changed: No permissions on Android
-        if True:
-            return {}
         sd_info: Dict[str, Any] = {}
         cid_file = pathlib.Path(SD_CID_PATH)
         if not cid_file.exists():
@@ -668,7 +664,8 @@ class Machine:
                                         sequence: int,
                                         notify: bool = True
                                         ) -> None:
-        if sequence % NETWORK_UPDATE_SEQUENCE or True:
+        return
+        if sequence % NETWORK_UPDATE_SEQUENCE:
             return
         network: Dict[str, Any] = {}
         canbus: Dict[str, Any] = {}
@@ -1716,8 +1713,7 @@ class InstallValidator:
         except Exception as e:
             has_error = True
             msg = f"Failed to validate {name}: {e}"
-            logging.exception(msg)
-            self.server.add_warning(msg, log=False)
+            self.server.add_warning(msg, exc_info=e)
             fm.disable_write_access()
         else:
             self.validation_enabled = False

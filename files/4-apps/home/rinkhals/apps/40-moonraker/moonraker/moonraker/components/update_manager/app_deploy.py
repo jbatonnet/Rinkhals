@@ -10,13 +10,13 @@ import pathlib
 import hashlib
 import logging
 import re
-import distro
 import asyncio
 import importlib
 from .common import AppType, Channel
 from .base_deploy import BaseDeploy
 from ...utils import pip_utils
 from ...utils import json_wrapper as jsonw
+from ...utils.sysdeps_parser import SysDepsParser
 
 # Annotation imports
 from typing import (
@@ -31,49 +31,25 @@ from typing import (
 if TYPE_CHECKING:
     from ...confighelper import ConfigHelper
     from ..klippy_connection import KlippyConnection as Klippy
-    from .update_manager import CommandHelper
     from ..machine import Machine
     from ..file_manager.file_manager import FileManager
 
-MIN_PIP_VERSION = (23, 3, 2)
-
-SUPPORTED_CHANNELS = {
-    AppType.WEB: [Channel.STABLE, Channel.BETA],
-    AppType.ZIP: [Channel.STABLE, Channel.BETA],
-    AppType.GIT_REPO: list(Channel)
-}
-TYPE_TO_CHANNEL = {
-    AppType.WEB: Channel.STABLE,
-    AppType.ZIP: Channel.STABLE,
-    AppType.GIT_REPO: Channel.DEV
-}
-
-DISTRO_ALIASES = [distro.id()]
-DISTRO_ALIASES.extend(distro.like().split())
-
 class AppDeploy(BaseDeploy):
-    def __init__(
-            self, config: ConfigHelper, cmd_helper: CommandHelper, prefix: str
-    ) -> None:
-        super().__init__(config, cmd_helper, prefix=prefix)
+    def __init__(self, config: ConfigHelper, prefix: str) -> None:
+        super().__init__(config, prefix=prefix)
         self.config = config
-        type_choices = list(TYPE_TO_CHANNEL.keys())
-        self.type = AppType.from_string(config.get('type'))
-        if self.type not in type_choices:
-            str_types = [str(t) for t in type_choices]
-            raise config.error(
-                f"Section [{config.get_name()}], Option 'type: {self.type}': "
-                f"value must be one of the following choices: {str_types}"
-            )
-        self.channel = Channel.from_string(
-            config.get("channel", str(TYPE_TO_CHANNEL[self.type]))
+        type_choices = {str(t): t for t in AppType.valid_types()}
+        self.type = config.getchoice("type", type_choices)
+        channel_choices = {str(chnl): chnl for chnl in list(Channel)}
+        self.channel = config.getchoice(
+            "channel", channel_choices, str(self.type.default_channel)
         )
         self.channel_invalid: bool = False
-        if self.channel not in SUPPORTED_CHANNELS[self.type]:
-            str_channels = [str(c) for c in SUPPORTED_CHANNELS[self.type]]
+        if self.channel not in self.type.supported_channels:
+            str_channels = [str(c) for c in self.type.supported_channels]
             self.channel_invalid = True
             invalid_channel = self.channel
-            self.channel = TYPE_TO_CHANNEL[self.type]
+            self.channel = self.type.default_channel
             self.server.add_warning(
                 f"[{config.get_name()}]: Invalid value '{invalid_channel}' for "
                 f"option 'channel'. Type '{self.type}' supports the following "
@@ -152,17 +128,21 @@ class AppDeploy(BaseDeploy):
         if self.py_exec is not None:
             self.python_reqs = self.path.joinpath(config.get("requirements"))
             self._verify_path(config, 'requirements', self.python_reqs)
-        deps = config.get("system_dependencies", None)
-        if deps is not None:
-            self.system_deps_json = self.path.joinpath(deps).resolve()
-            self._verify_path(config, 'system_dependencies', self.system_deps_json)
-        else:
+        if not self._configure_sysdeps(config):
             # Fall back on deprecated "install_script" option if dependencies file
             # not present
             install_script = config.get('install_script', None)
             if install_script is not None:
                 self.install_script = self.path.joinpath(install_script).resolve()
                 self._verify_path(config, 'install_script', self.install_script)
+
+    def _configure_sysdeps(self, config: ConfigHelper) -> bool:
+        deps = config.get("system_dependencies", None)
+        if deps is not None:
+            self.system_deps_json = self.path.joinpath(deps).resolve()
+            self._verify_path(config, 'system_dependencies', self.system_deps_json)
+            return True
+        return False
 
     def _configure_managed_services(self, config: ConfigHelper) -> None:
         svc_default = []
@@ -292,20 +272,8 @@ class AppDeploy(BaseDeploy):
             except Exception:
                 logging.exception(f"Error reading system deps: {deps_json}")
                 return []
-            for distro_id in DISTRO_ALIASES:
-                if distro_id in dep_info:
-                    if not dep_info[distro_id]:
-                        self.log_info(
-                            f"Dependency file '{deps_json.name}' contains an empty "
-                            f"package definition for linux distro '{distro_id}'"
-                        )
-                    return dep_info[distro_id]
-            else:
-                self.log_info(
-                    f"Dependency file '{deps_json.name}' has no package definition "
-                    f" for linux distro '{DISTRO_ALIASES[0]}'"
-                )
-                return []
+            parser = SysDepsParser()
+            return parser.parse_dependencies(dep_info)
         # Fall back on install script if configured
         if self.install_script is None:
             return []
@@ -319,7 +287,7 @@ class AppDeploy(BaseDeploy):
         except asyncio.CancelledError:
             raise
         except Exception:
-            logging.exception(f"Error reading install script: {deps_json}")
+            logging.exception(f"Error reading install script: {inst_path}")
             return []
         plines: List[str] = re.findall(r'PKGLIST="(.*)"', data)
         plines = [p.lstrip("${PKGLIST}").strip() for p in plines]
@@ -401,7 +369,17 @@ class AppDeploy(BaseDeploy):
         pip_exec = pip_utils.AsyncPipExecutor(
             self.pip_cmd, self.server, self.cmd_helper.notify_update_response
         )
-        # Check the current pip version
+        # Check and update the pip version
+        await self._update_pip(pip_exec)
+        self.notify_status("Updating python packages...")
+        try:
+            await pip_exec.install_packages(requirements, self.pip_env_vars)
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            self.log_exc("Error updating python requirements")
+
+    async def _update_pip(self, pip_exec: pip_utils.AsyncPipExecutor) -> None:
         self.notify_status("Checking pip version...")
         try:
             pip_ver = await pip_exec.get_pip_version()
@@ -413,18 +391,13 @@ class AppDeploy(BaseDeploy):
                 )
                 await pip_exec.update_pip()
                 self.pip_version = pip_utils.MIN_PIP_VERSION
+            else:
+                self.notify_status("Pip version up to date")
         except asyncio.CancelledError:
             raise
         except Exception as e:
             self.notify_status(f"Pip Version Check Error: {e}")
             self.log_exc("Pip Version Check Error")
-        self.notify_status("Updating python packages...")
-        try:
-            await pip_exec.install_packages(requirements, self.pip_env_vars)
-        except asyncio.CancelledError:
-            raise
-        except Exception:
-            self.log_exc("Error updating python requirements")
 
     async def _collect_dependency_info(self) -> Dict[str, Any]:
         pkg_deps = await self._read_system_dependencies()

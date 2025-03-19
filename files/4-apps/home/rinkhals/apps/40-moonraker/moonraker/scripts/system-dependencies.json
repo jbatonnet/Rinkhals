@@ -7,7 +7,9 @@
         "zlib1g-dev",
         "libjpeg-dev",
         "packagekit",
-        "wireless-tools",
-        "curl"
+        "wireless-tools; distro_id != 'ubuntu' or distro_version <= '24.04'",
+        "iw; distro_id == 'ubuntu' and distro_version >= '24.10'",
+        "curl",
+        "build-essential"
     ]
 }

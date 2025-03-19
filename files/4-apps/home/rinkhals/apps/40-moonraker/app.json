@@ -2,6 +2,6 @@
     "$version": "1",
 
     "name": "Moonraker",
-    "description": "Moonraker web server for Klipper and moonraker-proxy for better Kobra compatibility",
-    "version": "0.1"
+    "description": "Web server that exposes APIs with which client applications may use to interact with the 3D printing firmware Klipper.",
+    "version": "2025-03-05"
 }

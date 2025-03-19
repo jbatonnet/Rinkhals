@@ -32,7 +32,7 @@ cp -pr /work/fluidd/* /files/4-apps/home/rinkhals/apps/26-fluidd/fluidd
 # Moonraker
 echo "Downloading Moonraker..."
 
-wget -O moonraker.zip https://github.com/utkabobr/moonraker/archive/refs/heads/duckpro.zip
+wget -O moonraker.zip https://github.com/jbatonnet/Rinkhals.Moonraker/archive/refs/heads/rinkhals-next.zip
 unzip -d moonraker moonraker.zip
 
 mkdir -p /files/2-external/usr/share/moonraker

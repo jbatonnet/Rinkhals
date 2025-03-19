@@ -29,18 +29,15 @@ if TYPE_CHECKING:
     from ..dbus_manager import DbusManager
     from ..machine import Machine
     from .update_manager import CommandHelper
-    from dbus_next import Variant
-    from dbus_next.aio import ProxyInterface
+    from dbus_fast import Variant
+    from dbus_fast.aio import ProxyInterface
     JsonType = Union[List[Any], Dict[str, Any]]
 
 
 class PackageDeploy(BaseDeploy):
-    def __init__(self,
-                 config: ConfigHelper,
-                 cmd_helper: CommandHelper
-                 ) -> None:
-        super().__init__(config, cmd_helper, "system", "", "")
-        cmd_helper.set_package_updater(self)
+    def __init__(self, config: ConfigHelper) -> None:
+        super().__init__(config, "system", "", "")
+        self.cmd_helper.set_package_updater(self)
         self.use_packagekit = config.getboolean("enable_packagekit", True)
         self.available_packages: List[str] = []
 
@@ -74,7 +71,7 @@ class PackageDeploy(BaseDeploy):
                 self.log_info("PackageDeploy: Using APT CLI Provider")
                 self.prefix = "Package Manager APT: "
                 provider = fallback
-        self.provider = provider
+        self.provider = provider  # type: ignore
         return storage
 
     async def _get_fallback_provider(self) -> Optional[BasePackageProvider]:
@@ -148,8 +145,10 @@ class PackageDeploy(BaseDeploy):
 
     def get_update_status(self) -> Dict[str, Any]:
         return {
-            'package_count': len(self.available_packages),
-            'package_list': self.available_packages
+            "name": self.name,
+            "configured_type": "system",
+            "package_count": len(self.available_packages),
+            "package_list": self.available_packages
         }
 
 class BasePackageProvider:

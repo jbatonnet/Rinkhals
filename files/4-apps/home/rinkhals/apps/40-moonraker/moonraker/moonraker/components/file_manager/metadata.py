@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # GCode metadata extraction utility
 #
-# Copyright (C) 2020 Eric Callahan <arksine.code@gmail.com>
+# Copyright (C) 2020-2025 Eric Callahan <arksine.code@gmail.com>
 #
 # This file may be distributed under the terms of the GNU GPLv3 license.
 
@@ -18,7 +18,9 @@ import zipfile
 import shutil
 import uuid
 import logging
-#from PIL import Image
+import shlex
+import subprocess
+from PIL import Image
 
 # Annotation imports
 from typing import (
@@ -67,6 +69,23 @@ def regex_find_ints(pattern: str, data: str) -> List[int]:
             pass
     return []
 
+def regex_find_strings(pattern: str, separators: str, data: str) -> List[str]:
+    pattern = pattern.replace(r"(%S)", r"(.*)")
+    match = re.search(pattern, data)
+    if match and match.group(1):
+        separators = re.escape(separators)
+        pattern = rf'\s*(")(?:\\"|[^"])*"\s*|[^{separators}]+'
+        parsed_matches: List[str] = []
+        for m in re.finditer(pattern, match.group(1)):
+            (val, sep) = m.group(0, 1)
+            val = val.strip()
+            if sep:
+                val = val[1:-1].replace(rf'\{sep}', sep).strip()
+            if val:
+                parsed_matches.append(val)
+        return parsed_matches
+    return []
+
 def regex_find_float(pattern: str, data: str) -> Optional[float]:
     pattern = pattern.replace(r"(%F)", r"([0-9]*\.?[0-9]+)")
     match = re.search(pattern, data)
@@ -109,6 +128,8 @@ def regex_find_max_float(pattern: str, data: str) -> Optional[float]:
 class BaseSlicer(object):
     def __init__(self, file_path: str) -> None:
         self.path = file_path
+        self.slicer_name = "Unknown"
+        self.slicer_version = "?"
         self.header_data: str = ""
         self.footer_data: str = ""
         self.layer_height: Optional[float] = None
@@ -153,7 +174,14 @@ class BaseSlicer(object):
                 return True
         return False
 
-    def check_identity(self, data: str) -> Optional[Dict[str, str]]:
+    def check_identity(self, data: str) -> bool:
+        return False
+
+    def check_gcode_processor(self, regex: str, location: str) -> Dict[str, Any] | None:
+        data = self.header_data if location == "header" else self.footer_data
+        proc_match = re.search(regex, data, re.MULTILINE)
+        if proc_match is not None:
+            return proc_match.groupdict()
         return None
 
     def has_objects(self) -> bool:
@@ -187,10 +215,28 @@ class BaseSlicer(object):
     def parse_filament_weight_total(self) -> Optional[float]:
         return None
 
+    def parse_filament_weights(self) -> Optional[List[float]]:
+        return None
+
     def parse_filament_name(self) -> Optional[str]:
         return None
 
     def parse_filament_type(self) -> Optional[str]:
+        return None
+
+    def parse_filament_colors(self) -> Optional[List[str]]:
+        return None
+
+    def parse_extruder_colors(self) -> Optional[List[str]]:
+        return None
+
+    def parse_filament_temps(self) -> Optional[List[int]]:
+        return None
+
+    def parse_referenced_tools(self) -> Optional[List[int]]:
+        return None
+
+    def parse_mmu_print(self) -> Optional[int]:
         return None
 
     def parse_estimated_time(self) -> Optional[float]:
@@ -203,6 +249,9 @@ class BaseSlicer(object):
         return None
 
     def parse_first_layer_extr_temp(self) -> Optional[float]:
+        return None
+
+    def parse_filament_change_count(self) -> Optional[int]:
         return None
 
     def parse_thumbnails(self) -> Optional[List[Dict[str, Any]]]:
@@ -282,9 +331,6 @@ class BaseSlicer(object):
         return None
 
 class UnknownSlicer(BaseSlicer):
-    def check_identity(self, data: str) -> Optional[Dict[str, str]]:
-        return {'slicer': "Unknown"}
-
     def parse_first_layer_height(self) -> Optional[float]:
         return regex_find_min_float(r"G1\sZ(%F)\s", self.header_data)
 
@@ -304,7 +350,7 @@ class UnknownSlicer(BaseSlicer):
         return None
 
 class PrusaSlicer(BaseSlicer):
-    def check_identity(self, data: str) -> Optional[Dict[str, str]]:
+    def check_identity(self, data: str) -> bool:
         aliases = {
             'PrusaSlicer': r"PrusaSlicer\s(.*)\son",
             'SuperSlicer': r"SuperSlicer\s(.*)\son",
@@ -313,15 +359,15 @@ class PrusaSlicer(BaseSlicer):
             'SliCR-3D': r"SliCR-3D\s(.*)\son",
             'BambuStudio': r"BambuStudio[^ ]*\s(.*)\n",
             'A3dp-Slicer': r"A3dp-Slicer\s(.*)\son",
+            'QIDISlicer': r"QIDISlicer\s(.*)\son",
         }
         for name, expr in aliases.items():
             match = re.search(expr, data)
             if match:
-                return {
-                    'slicer': name,
-                    'slicer_version': match.group(1)
-                }
-        return None
+                self.slicer_name = name
+                self.slicer_version = match.group(1)
+                return True
+        return False
 
     def has_objects(self) -> bool:
         return self._check_has_objects(
@@ -372,12 +418,57 @@ class PrusaSlicer(BaseSlicer):
             self.footer_data
         )
 
+    def parse_filament_weights(self) -> Optional[List[float]]:
+        line = regex_find_string(r'filament\sused\s\[g\]\s=\s(%S)\n', self.footer_data)
+        if line:
+            weights = regex_find_floats(
+                r"(%F)", line
+            )
+            if weights:
+                return weights
+        return None
+
     def parse_filament_type(self) -> Optional[str]:
-        return regex_find_string(r";\sfilament_type\s=\s(%S)", self.footer_data)
+        return regex_find_string(
+            r";\sfilament_type\s=\s(%S)", self.footer_data
+        )
 
     def parse_filament_name(self) -> Optional[str]:
         return regex_find_string(
             r";\sfilament_settings_id\s=\s(%S)", self.footer_data
+        )
+
+    def parse_filament_colors(self) -> Optional[List[str]]:
+        return regex_find_strings(
+            r";\sfilament_colour\s=\s(%S)", ",;", self.footer_data
+        )
+
+    def parse_extruder_colors(self) -> Optional[List[str]]:
+        return regex_find_strings(
+            r";\sextruder_colour\s=\s(%S)", ",;", self.footer_data
+        )
+
+    def parse_filament_temps(self) -> Optional[List[int]]:
+        temps = regex_find_strings(
+            r";\s(?:nozzle_)?temperature\s=\s(%S)", ",;", self.footer_data
+        )
+        try:
+            return [int(t) for t in temps]
+        except ValueError:
+            return None
+
+    def parse_referenced_tools(self) -> Optional[List[int]]:
+        tools = regex_find_strings(
+            r";\sreferenced_tools\s=\s(%S)", ",;", self.footer_data
+        )
+        try:
+            return [int(t) for t in tools]
+        except ValueError:
+            return None
+
+    def parse_mmu_print(self) -> Optional[int]:
+        return regex_find_int(
+            r";\ssingle_extruder_multi_material\s=\s(%D)", self.footer_data
         )
 
     def parse_estimated_time(self) -> Optional[float]:
@@ -421,15 +512,20 @@ class PrusaSlicer(BaseSlicer):
     def parse_layer_count(self) -> Optional[int]:
         return regex_find_int(r"; total layers count = (%D)", self.footer_data)
 
+    def parse_filament_change_count(self) -> Optional[int]:
+        res = regex_find_int(r"; total toolchanges = (%D)", self.footer_data)
+        if res is not None:
+            return res
+        return regex_find_int(r"; total filament change = (%D)", self.footer_data)
+
 class Slic3rPE(PrusaSlicer):
-    def check_identity(self, data: str) -> Optional[Dict[str, str]]:
+    def check_identity(self, data: str) -> bool:
         match = re.search(r"Slic3r\sPrusa\sEdition\s(.*)\son", data)
         if match:
-            return {
-                'slicer': "Slic3r PE",
-                'slicer_version': match.group(1)
-            }
-        return None
+            self.slicer_name = "Slic3r PE"
+            self.slicer_version = match.group(1)
+            return True
+        return False
 
     def parse_filament_total(self) -> Optional[float]:
         return regex_find_float(r"filament\sused\s=\s(%F)mm", self.footer_data)
@@ -438,14 +534,13 @@ class Slic3rPE(PrusaSlicer):
         return None
 
 class Slic3r(Slic3rPE):
-    def check_identity(self, data: str) -> Optional[Dict[str, str]]:
+    def check_identity(self, data: str) -> bool:
         match = re.search(r"Slic3r\s(\d.*)\son", data)
         if match:
-            return {
-                'slicer': "Slic3r",
-                'slicer_version': match.group(1)
-            }
-        return None
+            self.slicer_name = "Slic3r"
+            self.slicer_version = match.group(1)
+            return True
+        return False
 
     def parse_filament_total(self) -> Optional[float]:
         filament = regex_find_float(
@@ -462,14 +557,13 @@ class Slic3r(Slic3rPE):
         return None
 
 class Cura(BaseSlicer):
-    def check_identity(self, data: str) -> Optional[Dict[str, str]]:
+    def check_identity(self, data: str) -> bool:
         match = re.search(r"Cura_SteamEngine\s(.*)", data)
         if match:
-            return {
-                'slicer': "Cura",
-                'slicer_version': match.group(1)
-            }
-        return None
+            self.slicer_name = "Cura"
+            self.slicer_version = match.group(1)
+            return True
+        return False
 
     def has_objects(self) -> bool:
         return self._check_has_objects(self.header_data, r"\n;MESH:")
@@ -556,16 +650,14 @@ class Cura(BaseSlicer):
         return thumbs
 
 class Simplify3D(BaseSlicer):
-    def check_identity(self, data: str) -> Optional[Dict[str, str]]:
+    def check_identity(self, data: str) -> bool:
         match = re.search(r"Simplify3D\(R\)\sVersion\s(.*)", data)
         if match:
-            self._version = match.group(1)
-            self._is_v5 = self._version.startswith("5")
-            return {
-                'slicer': "Simplify3D",
-                'slicer_version': match.group(1)
-            }
-        return None
+            self.slicer_name = "Simplify3D"
+            self.slicer_version = match.group(1)
+            self._is_v5 = self.slicer_version.startswith("5")
+            return True
+        return False
 
     def parse_first_layer_height(self) -> Optional[float]:
         return regex_find_min_float(r"G1\sZ(%F)\s", self.header_data)
@@ -666,16 +758,16 @@ class Simplify3D(BaseSlicer):
         )
 
 class KISSlicer(BaseSlicer):
-    def check_identity(self, data: str) -> Optional[Dict[str, Any]]:
+    def check_identity(self, data: str) -> bool:
         match = re.search(r";\sKISSlicer", data)
         if match:
-            ident = {'slicer': "KISSlicer"}
+            self.slicer_name = "KISSlicer"
             vmatch = re.search(r";\sversion\s(.*)", data)
             if vmatch:
                 version = vmatch.group(1).replace(" ", "-")
-                ident['slicer_version'] = version
-            return ident
-        return None
+                self.slicer_version = version
+            return True
+        return False
 
     def parse_first_layer_height(self) -> Optional[float]:
         return regex_find_float(
@@ -717,14 +809,13 @@ class KISSlicer(BaseSlicer):
 
 
 class IdeaMaker(BaseSlicer):
-    def check_identity(self, data: str) -> Optional[Dict[str, str]]:
+    def check_identity(self, data: str) -> bool:
         match = re.search(r"\sideaMaker\s(.*),", data)
         if match:
-            return {
-                'slicer': "IdeaMaker",
-                'slicer_version': match.group(1)
-            }
-        return None
+            self.slicer_name = "IdeaMaker"
+            self.slicer_version = match.group(1)
+            return True
+        return False
 
     def has_objects(self) -> bool:
         return self._check_has_objects(self.header_data, r"\n;PRINTING:")
@@ -794,15 +885,14 @@ class IdeaMaker(BaseSlicer):
             r";Dimension:(?:\s\d+\.\d+){3}\s(%F)", self.header_data)
 
 class IceSL(BaseSlicer):
-    def check_identity(self, data) -> Optional[Dict[str, Any]]:
+    def check_identity(self, data) -> bool:
         match = re.search(r"<IceSL\s(.*)>", data)
         if match:
             version = match.group(1) if match.group(1)[0].isdigit() else "-"
-            return {
-                'slicer': "IceSL",
-                'slicer_version': version
-            }
-        return None
+            self.slicer_name = "IceSL"
+            self.slicer_version = version
+            return True
+        return False
 
     def parse_first_layer_height(self) -> Optional[float]:
         return regex_find_float(
@@ -860,7 +950,7 @@ class IceSL(BaseSlicer):
             r";\snozzle_diameter_mm_0\s:\s+(%F)", self.header_data)
 
 class KiriMoto(BaseSlicer):
-    def check_identity(self, data) -> Optional[Dict[str, Any]]:
+    def check_identity(self, data) -> bool:
         variants: Dict[str, str] = {
             "Kiri:Moto": r"; Generated by Kiri:Moto (\d.+)",
             "SimplyPrint": r"; Generated by Kiri:Moto \(SimplyPrint\) (.+)"
@@ -868,11 +958,10 @@ class KiriMoto(BaseSlicer):
         for name, pattern in variants.items():
             match = re.search(pattern, data)
             if match:
-                return {
-                    "slicer": name,
-                    "slicer_version": match.group(1)
-                }
-        return None
+                self.slicer_name = name
+                self.slicer_version = match.group(1)
+                return True
+        return False
 
     def parse_first_layer_height(self) -> Optional[float]:
         return regex_find_float(
@@ -939,11 +1028,27 @@ SUPPORTED_DATA = [
     'chamber_temp',
     'filament_name',
     'filament_type',
+    'filament_colors',
+    'filament_change_count',
+    'extruder_colors',
+    'filament_temps',
+    'referenced_tools',
+    'mmu_print',
     'filament_total',
     'filament_weight_total',
-    'thumbnails']
+    'filament_weights',
+    'thumbnails'
+]
 
-def process_objects(file_path: str, slicer: BaseSlicer, name: str) -> bool:
+PPC_REGEX = (
+    r"^; Pre-Processed for Cancel-Object support "
+    r"by preprocess_cancellation (?P<version>v?\d+(?:\.\d+)*)"
+)
+
+def process_objects(file_path: str, slicer: BaseSlicer) -> bool:
+    name = slicer.slicer_name
+    if not slicer.has_objects():
+        return False
     try:
         from preprocess_cancellation import (
             preprocess_slicer,
@@ -956,8 +1061,7 @@ def process_objects(file_path: str, slicer: BaseSlicer, name: str) -> bool:
         return False
     fname = os.path.basename(file_path)
     logger.info(
-        f"Performing Object Processing on file: {fname}, "
-        f"sliced by {name}"
+        f"Performing Object Processing on file: {fname}, sliced by {name}"
     )
     with tempfile.TemporaryDirectory() as tmp_dir_name:
         tmp_file = os.path.join(tmp_dir_name, fname)
@@ -988,7 +1092,7 @@ def process_objects(file_path: str, slicer: BaseSlicer, name: str) -> bool:
         shutil.move(tmp_file, file_path)
     return True
 
-def get_slicer(file_path: str) -> Tuple[BaseSlicer, Dict[str, str]]:
+def get_slicer(file_path: str) -> BaseSlicer:
     header_data = footer_data = ""
     slicer: Optional[BaseSlicer] = None
     size = os.path.getsize(file_path)
@@ -998,12 +1102,10 @@ def get_slicer(file_path: str) -> Tuple[BaseSlicer, Dict[str, str]]:
         header_data = f.read(READ_SIZE)
         for impl in SUPPORTED_SLICERS:
             slicer = impl(file_path)
-            ident = slicer.check_identity(header_data)
-            if ident is not None:
+            if slicer.check_identity(header_data):
                 break
         else:
             slicer = UnknownSlicer(file_path)
-            ident = slicer.check_identity(header_data)
         if size > READ_SIZE * 2:
             f.seek(size - READ_SIZE)
             footer_data = f.read()
@@ -1013,23 +1115,91 @@ def get_slicer(file_path: str) -> Tuple[BaseSlicer, Dict[str, str]]:
         else:
             footer_data = header_data
         slicer.set_data(header_data, footer_data, size)
-    if ident is None:
-        ident = {"slicer": "unknown"}
-    return slicer, ident
+    return slicer
+
+def run_gcode_processors(
+    gc_file_path: str, slicer: BaseSlicer, processors: List[Dict[str, Any]]
+) -> Tuple[List[str], bool]:
+    reload_slicer_data: bool = False
+    finished_procs: List[str] = []
+    short_name = os.path.basename(gc_file_path)
+    for proc_cfg in processors:
+        name: str = "Unknown"
+        try:
+            name = proc_cfg["name"]
+            version = proc_cfg.get("version", "v?")
+            ident: Dict[str, Any] = proc_cfg.get("ident", {})
+            if ident:
+                regex: str = ident["regex"]
+                loc: str = ident["location"]
+                data = slicer.check_gcode_processor(regex, loc)
+                if data is not None:
+                    ver = data.get("version", "v?")
+                    logger.info(
+                        f"File {short_name} previously processed by {name} {ver}"
+                    )
+                    finished_procs.append(name)
+                    continue
+            if not proc_cfg.get("enabled", True):
+                logger.info(f"Processor {name} is disabled")
+                continue
+            arglist: List[str] = []
+            command = proc_cfg["command"]
+            if callable(command):
+                # Local file processor (preprocess_cancellation)
+                if command(gc_file_path, slicer):
+                    finished_procs.append(name)
+                    reload_slicer_data = True
+                continue
+            elif isinstance(command, str):
+                arglist = shlex.split(command)
+            else:
+                arglist = command
+            assert isinstance(arglist, list)
+            for idx, arg in enumerate(arglist):
+                assert isinstance(arg, str)
+                if arg == "{gcode_file_path}":
+                    arglist[idx] = gc_file_path
+            timeout: float = proc_cfg.get("timeout", 120.)
+            assert isinstance(timeout, (int, float)) and timeout > 0.
+            logger.info(
+                f"Running processor {name} {version} on file {short_name}..."
+            )
+            ret = subprocess.run(arglist, capture_output=True, timeout=timeout)
+        except Exception:
+            logger.info(f"Processor {name} failed with error")
+            logger.info(traceback.format_exc())
+            continue
+        if ret.returncode != 0:
+            logger.info(f"File processor {name} failed with code {ret.returncode}")
+            stdout = ret.stdout.decode(errors="ignore")
+            stderr = ret.stderr.decode(errors="ignore")
+            if stdout:
+                logger.info(stdout)
+            if stderr:
+                logger.info(stderr)
+        else:
+            logger.info(f"File processor {name} successfully complete")
+            finished_procs.append(name)
+            reload_slicer_data = True
+    return finished_procs, reload_slicer_data
 
 def extract_metadata(
-    file_path: str, check_objects: bool
+    file_path: str, processors: List[Dict[str, Any]]
 ) -> Dict[str, Any]:
     metadata: Dict[str, Any] = {}
-    slicer, ident = get_slicer(file_path)
-    if check_objects and slicer.has_objects():
-        name = ident.get("slicer", "unknown")
-        if process_objects(file_path, slicer, name):
-            slicer, ident = get_slicer(file_path)
-    metadata['size'] = os.path.getsize(file_path)
-    metadata['modified'] = os.path.getmtime(file_path)
-    metadata['uuid'] = str(uuid.uuid4())
-    metadata.update(ident)
+    proc_list: List[str] = []
+    slicer = get_slicer(file_path)
+    if processors:
+        proc_list, reload = run_gcode_processors(file_path, slicer, processors)
+        if reload:
+            slicer = get_slicer(file_path)
+    metadata["size"] = os.path.getsize(file_path)
+    metadata["modified"] = os.path.getmtime(file_path)
+    metadata["uuid"] = str(uuid.uuid4())
+    metadata["file_processors"] = proc_list
+    metadata["slicer"] = slicer.slicer_name
+    metadata["slicer_version"] = slicer.slicer_version
     for key in SUPPORTED_DATA:
         func = getattr(slicer, "parse_" + key)
         result = func()
@@ -1069,12 +1239,23 @@ def extract_ufp(ufp_path: str, dest_path: str) -> None:
     except Exception:
         logger.info(f"Error removing ufp file: {ufp_path}")
 
-def main(path: str,
-         filename: str,
-         ufp: Optional[str],
-         check_objects: bool
-         ) -> None:
-    file_path = os.path.join(path, filename)
+def main(config: Dict[str, Any]) -> None:
+    gc_path: str = config["gcode_dir"]
+    filename: str = config["filename"]
+    file_path = os.path.join(gc_path, filename)
+    processors: List[Dict[str, Any]] = config.get("processors", [])
+    processors.append(
+        {
+            "name": "preprocess_cancellation",
+            "command": process_objects,
+            "enabled": config.get("check_objects", False),
+            "ident": {
+                "regex": PPC_REGEX,
+                "location": "header"
+            }
+        }
+    )
+    ufp = config.get("ufp_path")
     if ufp is not None:
         extract_ufp(ufp, file_path)
     metadata: Dict[str, Any] = {}
@@ -1082,7 +1263,7 @@ def main(path: str,
         logger.info(f"File Not Found: {file_path}")
         sys.exit(-1)
     try:
-        metadata = extract_metadata(file_path, check_objects)
+        metadata = extract_metadata(file_path, processors)
     except Exception:
         logger.info(traceback.format_exc())
         sys.exit(-1)
@@ -1102,12 +1283,15 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="GCode Metadata Extraction Utility")
     parser.add_argument(
-        "-f", "--filename", metavar='<filename>',
+        "-c", "--config", metavar='<config_file>', default=None,
+        help="Optional json configuration file for metadata.py"
+    )
+    parser.add_argument(
+        "-f", "--filename", metavar='<filename>', default=None,
         help="name gcode file to parse")
     parser.add_argument(
-        "-p", "--path", default=os.path.abspath(os.path.dirname(__file__)),
-        metavar='<path>',
-        help="optional absolute path for file"
+        "-p", "--path", metavar='<path>', default=None,
+        help="optional path to folder containing the file"
     )
     parser.add_argument(
         "-u", "--ufp", metavar="<ufp file>", default=None,
@@ -1117,7 +1301,29 @@ if __name__ == "__main__":
         "-o", "--check-objects", dest='check_objects', action='store_true',
         help="process gcode file for exclude opbject functionality")
     args = parser.parse_args()
-    check_objects = args.check_objects
-    enabled_msg = "enabled" if check_objects else "disabled"
-    logger.info(f"Object Processing is {enabled_msg}")
-    main(args.path, args.filename, args.ufp, check_objects)
+    config: Dict[str, Any] = {}
+    if args.config is None:
+        if args.filename is None:
+            logger.info(
+                "The '--filename' (-f) option must be specified when "
+                " --config is not set"
+            )
+            sys.exit(-1)
+        config["filename"] = args.filename
+        config["gcode_dir"] = args.path
+        config["ufp_path"] = args.ufp
+        config["check_objects"] = args.check_objects
+    else:
+        # Config file takes priority over command line options
+        try:
+            with open(args.config, "r") as f:
+                config = (json.load(f))
+        except Exception:
+            logger.info(traceback.format_exc())
+            sys.exit(-1)
+        if config.get("filename") is None:
+            logger.info("The 'filename' field must be present in the configuration")
+            sys.exit(-1)
+    if config.get("gcode_dir") is None:
+        config["gcode_dir"] = os.path.abspath(os.path.dirname(__file__))
+    main(config)

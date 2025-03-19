@@ -11,11 +11,12 @@ import logging
 import time
 import tempfile
 import pathlib
-from .common import AppType, get_base_configuration, get_app_type
+from .common import AppType, get_base_configuration
 from .base_deploy import BaseDeploy
 from .app_deploy import AppDeploy
 from .git_deploy import GitDeploy
-from .zip_deploy import ZipDeploy
+from .net_deploy import NetDeploy
+from .python_deploy import PythonDeploy
 from .system_deploy import PackageDeploy
 from ...common import RequestType
 from ...utils.filelock import AsyncExclusiveFileLock, LockTimeout
@@ -56,9 +57,11 @@ def get_deploy_class(
 ) -> Union[Type[BaseDeploy], _T]:
     key = AppType.from_string(app_type) if isinstance(app_type, str) else app_type
     _deployers = {
-        AppType.WEB: ZipDeploy,
+        AppType.WEB: NetDeploy,
         AppType.GIT_REPO: GitDeploy,
-        AppType.ZIP: ZipDeploy
+        AppType.ZIP: NetDeploy,
+        AppType.PYTHON: PythonDeploy,
+        AppType.EXECUTABLE: NetDeploy
     }
     return _deployers.get(key, default)
 
@@ -85,20 +88,21 @@ class UpdateManager:
                                " in 'refresh_window' cannot be the same.")
 
         self.cmd_helper = CommandHelper(config, self.get_updaters)
+        BaseDeploy.set_command_helper(self.cmd_helper)
         self.updaters: Dict[str, BaseDeploy] = {}
         if config.getboolean('enable_system_updates', True):
-            self.updaters['system'] = PackageDeploy(config, self.cmd_helper)
+            self.updaters['system'] = PackageDeploy(config)
         mcfg = self.app_config["moonraker"]
         kcfg = self.app_config["klipper"]
         mclass = get_deploy_class(mcfg.get("type"), BaseDeploy)
-        self.updaters['moonraker'] = mclass(mcfg, self.cmd_helper)
+        self.updaters['moonraker'] = mclass(mcfg)
         kclass = BaseDeploy
         if (
             os.path.exists(kcfg.get("path")) and
             os.path.exists(kcfg.get("env"))
         ):
             kclass = get_deploy_class(kcfg.get("type"), BaseDeploy)
-        self.updaters['klipper'] = kclass(kcfg, self.cmd_helper)
+        self.updaters['klipper'] = kclass(kcfg)
 
         # TODO: The below check may be removed when invalid config options
         # raise a config error.
@@ -127,10 +131,11 @@ class UpdateManager:
                     self.server.add_warning(
                         f"Invalid type '{client_type}' for section [{section}]")
                 else:
-                    self.updaters[name] = deployer(cfg, self.cmd_helper)
+                    self.updaters[name] = deployer(cfg)
             except Exception as e:
                 self.server.add_warning(
-                    f"[update_manager]: Failed to load extension {name}: {e}"
+                    f"[update_manager]: Failed to load extension {name}: {e}",
+                    exc_info=e
                 )
 
         self.cmd_request_lock = asyncio.Lock()
@@ -157,6 +162,9 @@ class UpdateManager:
         )
         self.server.register_endpoint(
             "/machine/update/full", RequestType.POST, self._handle_full_update_request
+        )
+        self.server.register_endpoint(
+            "/machine/update/upgrade", RequestType.POST, self._handle_update_request
         )
         self.server.register_endpoint(
             "/machine/update/status", RequestType.GET, self._handle_status_request
@@ -198,35 +206,45 @@ class UpdateManager:
                 self._handle_auto_refresh, self.event_loop.get_loop_time()
             )
 
+    def register_updater(self, name: str, config: Dict[str, str]) -> None:
+        if name in self.updaters:
+            raise self.server.error(f"Updater {name} already registered")
+        cfg = self.app_config.read_supplemental_dict({name: config})
+        updater_type = cfg.get("type")
+        updater_cls = get_deploy_class(updater_type, None)
+        if updater_cls is None:
+            raise self.server.error(f"Invalid type '{updater_type}'")
+        self.updaters[name] = updater_cls(cfg)
+
+    async def refresh_updater(self, updater_name: str, force: bool = False) -> None:
+        if updater_name not in self.updaters:
+            return
+        async with self.cmd_request_lock:
+            updater = self.updaters[updater_name]
+            if updater.needs_refresh() or force:
+                await updater.refresh()
+
     def _set_klipper_repo(self) -> None:
         if self.klippy_identified_evt is not None:
             self.klippy_identified_evt.set()
-        kinfo = self.server.get_klippy_info()
-        if not kinfo:
-            logging.info("No valid klippy info received")
-            return
-        kpath: str = kinfo['klipper_path']
-        executable: str = kinfo['python_path']
+
+        kconn: KlippyConnection = self.server.lookup_component("klippy_connection")
         kupdater = self.updaters.get('klipper')
-        app_type = get_app_type(kpath)
+        app_type = AppType.detect(kconn.path)
         if (
             (isinstance(kupdater, AppDeploy) and
-             kupdater.check_same_paths(kpath, executable)) or
+             kupdater.check_same_paths(kconn.path, kconn.executable)) or
             (app_type == AppType.NONE and type(kupdater) is BaseDeploy)
         ):
             # Current Klipper Updater is valid or unnecessary
             return
-        # Update paths in the database
-        db: DBComp = self.server.lookup_component('database')
-        db.insert_item("moonraker", "update_manager.klipper_path", kpath)
-        db.insert_item("moonraker", "update_manager.klipper_exec", executable)
         kcfg = self.app_config["klipper"]
-        kcfg.set_option("path", kpath)
-        kcfg.set_option("env", executable)
+        kcfg.set_option("path", str(kconn.path))
+        kcfg.set_option("env", str(kconn.executable))
         kcfg.set_option("type", str(app_type))
         notify = not isinstance(kupdater, AppDeploy)
         kclass = get_deploy_class(app_type, BaseDeploy)
-        coro = self._update_klipper_repo(kclass(kcfg, self.cmd_helper), notify)
+        coro = self._update_klipper_repo(kclass(kcfg), notify)
         self.event_loop.create_task(coro)
 
     async def _update_klipper_repo(self, updater: BaseDeploy, notify: bool) -> None:
@@ -282,16 +300,17 @@ class UpdateManager:
             self.cmd_helper.notify_update_refreshed()
         return eventtime + UPDATE_REFRESH_INTERVAL
 
-    async def _handle_update_request(self,
-                                     web_request: WebRequest
-                                     ) -> str:
+    async def _handle_update_request(self, web_request: WebRequest) -> str:
         if self.kconn.is_printing():
-            raise self.server.error("Update Refused: Klippy is printing")
+            raise self.server.error("Update Refused: Klippy is printing", 503)
         app: str = web_request.get_endpoint().split("/")[-1]
-        if app == "client":
-            app = web_request.get_str('name')
+        if app in ("upgrade", "client"):
+            app_name = web_request.get_str("name", None)
+            if app_name is None:
+                return await self._handle_full_update_request(web_request)
+            app = app_name
         if self.cmd_helper.is_app_updating(app):
-            return f"Object {app} is currently being updated"
+            raise self.server.error(f"Item {app} is currently updating", 503)
         updater = self.updaters.get(app, None)
         if updater is None:
             raise self.server.error(f"Updater {app} not available", 404)
@@ -307,12 +326,10 @@ class UpdateManager:
                 self.cmd_helper.clear_update_info()
         return "ok"
 
-    async def _handle_full_update_request(self,
-                                          web_request: WebRequest
-                                          ) -> str:
+    async def _handle_full_update_request(self, web_request: WebRequest) -> str:
         async with self.cmd_request_lock:
             app_name = ""
-            self.cmd_helper.set_update_info('full', id(web_request))
+            self.cmd_helper.set_update_info("full", id(web_request), True)
             self.cmd_helper.notify_update_response(
                 "Preparing full software update...")
             try:
@@ -365,6 +382,7 @@ class UpdateManager:
                 self.cmd_helper.set_full_complete(True)
                 self.cmd_helper.notify_update_response(
                     f"Error updating {app_name}: {e}", is_complete=True)
+                raise
             finally:
                 self.cmd_helper.clear_update_info()
             return "ok"
@@ -557,10 +575,12 @@ class CommandHelper:
     def get_umdb(self) -> NamespaceWrapper:
         return self.umdb
 
-    def set_update_info(self, app: str, uid: int) -> None:
+    def set_update_info(
+        self, app: str, uid: int, full: bool = False
+    ) -> None:
         self.cur_update_app = app
         self.cur_update_id = uid
-        self.full_update = app == "full"
+        self.full_update = full
         self.full_complete = not self.full_update
         self.pending_service_restarts.clear()
 
@@ -587,7 +607,7 @@ class CommandHelper:
         return svc_name in self.pending_service_restarts
 
     def is_app_updating(self, app_name: str) -> bool:
-        return self.cur_update_app == app_name
+        return self.cur_update_app == app_name or self.full_update
 
     def is_update_busy(self) -> bool:
         return self.cur_update_app is not None

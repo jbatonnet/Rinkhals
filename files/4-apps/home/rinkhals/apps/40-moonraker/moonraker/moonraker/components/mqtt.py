@@ -352,11 +352,13 @@ class MQTTClient(APITransport):
                 "between 0 and 2")
         self.publish_split_status = \
             config.getboolean("publish_split_status", False)
+        client_id: Optional[str] = config.get("client_id", None)
         if PAHO_MQTT_VERSION < (2, 0):
-            self.client = ExtPahoClient(protocol=self.protocol)
+            self.client = ExtPahoClient(client_id, protocol=self.protocol)
         else:
             self.client = ExtPahoClient(
-                paho_mqtt.CallbackAPIVersion.VERSION1, protocol=self.protocol
+                paho_mqtt.CallbackAPIVersion.VERSION1, client_id,
+                protocol=self.protocol
             )
         self.client.on_connect = self._on_connect
         self.client.on_message = self._on_message
@@ -451,9 +453,13 @@ class MQTTClient(APITransport):
     async def _handle_klippy_started(self, state: KlippyState) -> None:
         if self.status_objs:
             kapi: KlippyAPI = self.server.lookup_component("klippy_apis")
-            await kapi.subscribe_from_transport(
-                self.status_objs, self, default=None,
+            result = await kapi.subscribe_from_transport(
+                self.status_objs, self, default=None, full_response=True
             )
+            if result is not None:
+                status: Dict[str, Any] = result["status"]
+                eventtime: float = result["eventtime"]
+                self.send_status(status, eventtime)
             if self.status_update_timer is not None:
                 self.status_update_timer.start(delay=self.status_interval)
 
@@ -494,7 +500,7 @@ class MQTTClient(APITransport):
                                {'server': 'online'}, retain=True)
             subs = [(k, v[0]) for k, v in self.subscribed_topics.items()]
             if subs:
-                res, msg_id = client.subscribe(subs)
+                _, msg_id = client.subscribe(subs)
                 if msg_id is not None:
                     sub_fut: asyncio.Future = self.eventloop.create_future()
                     topics = list(self.subscribed_topics.keys())
@@ -616,7 +622,7 @@ class MQTTClient(APITransport):
             need_sub = qos != prev_qos
         self.subscribed_topics[topic] = (qos, sub_handles)
         if self.is_connected() and need_sub:
-            res, msg_id = self.client.subscribe(topic, qos)
+            _, msg_id = self.client.subscribe(topic, qos)
             if msg_id is not None:
                 sub_fut: asyncio.Future = self.eventloop.create_future()
                 sub_fut.add_done_callback(
@@ -634,7 +640,7 @@ class MQTTClient(APITransport):
                 pass
             if not sub_hdls:
                 del self.subscribed_topics[topic]
-                res, msg_id = self.client.unsubscribe(topic)
+                _, msg_id = self.client.unsubscribe(topic)
                 if msg_id is not None:
                     unsub_fut: asyncio.Future = self.eventloop.create_future()
                     unsub_fut.add_done_callback(
@@ -812,7 +818,8 @@ class MQTTClient(APITransport):
                     payload = {'eventtime': eventtime, 'value': objval[statekey]}
                     self.publish_topic(
                         f"{self.klipper_state_prefix}/{objkey}/{statekey}",
-                        payload, retain=True)
+                        payload, retain=True
+                    )
         else:
             payload = {'eventtime': eventtime, 'status': status}
             self.publish_topic(self.klipper_status_topic, payload)

@@ -1,0 +1,23 @@
+Metadata-Version: 2.1
+Name: python-periphery
+Version: 2.4.1
+Summary: A pure Python 2/3 library for peripheral I/O (GPIO, LED, PWM, SPI, I2C, MMIO, Serial) in Linux.
+Home-page: https://github.com/vsergeev/python-periphery
+Author: vsergeev
+Author-email: v@sergeev.io
+License: MIT
+Keywords: gpio spi led pwm i2c mmio serial uart embedded linux beaglebone raspberrypi rpi odroid
+Classifier: Development Status :: 5 - Production/Stable
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: POSIX :: Linux
+Classifier: Programming Language :: Python
+Classifier: Programming Language :: Python :: 2
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: Implementation :: CPython
+Classifier: Topic :: Software Development :: Libraries :: Python Modules
+Classifier: Topic :: Software Development :: Embedded Systems
+Classifier: Topic :: System :: Hardware
+Classifier: Topic :: System :: Hardware :: Hardware Drivers
+License-File: LICENSE
+
+python-periphery is a pure Python library for GPIO, LED, PWM, SPI, I2C, MMIO, and Serial peripheral I/O interface access in userspace Linux. It is useful in embedded Linux environments (including Raspberry Pi, BeagleBone, etc. platforms) for interfacing with external peripherals. python-periphery is compatible with Python 2 and Python 3, is written in pure Python, and is MIT licensed. See https://github.com/vsergeev/python-periphery for more information.

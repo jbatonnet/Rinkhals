@@ -12,6 +12,7 @@ import subprocess
 import pathlib
 import shutil
 import threading
+import logging
 from dataclasses import dataclass
 
 # Annotation imports
@@ -31,8 +32,11 @@ if TYPE_CHECKING:
     from ..server import Server
     from ..components.shell_command import ShellCommandFactory
 
-MIN_PIP_VERSION = (23, 3, 2)
+MIN_PIP_VERSION = (24, 0)
 MIN_PYTHON_VERSION = (3, 7)
+
+class PipException(Exception):
+    pass
 
 # Synchronous Subprocess Helpers
 def _run_subprocess_with_response(
@@ -48,7 +52,7 @@ def _run_subprocess_with_response(
     if proc.returncode == 0:
         return proc.stdout.strip()
     err = proc.stderr
-    raise Exception(f"Failed to run pip command '{cmd}': {err}")
+    raise PipException(f"Failed to run pip command '{cmd}': {err}")
 
 def _process_subproc_output(
     stdout: IO[str],
@@ -80,9 +84,9 @@ def _run_subprocess(
             process.wait(timeout)
     ret = process.poll()
     if ret != 0:
-        raise Exception(f"Failed to run pip command '{cmd}'")
+        raise PipException(f"Failed to run pip command '{cmd}'")
 
-@ dataclass(frozen=True)
+@dataclass(frozen=True)
 class PipVersionInfo:
     pip_version_string: str
     python_version_string: str
@@ -124,7 +128,10 @@ class PipExecutor:
 
     def update_pip(self) -> None:
         pip_ver = ".".join([str(part) for part in MIN_PIP_VERSION])
-        self.call_pip(f"install pip=={pip_ver}", 120.)
+        try:
+            self.call_pip(f"install pip=={pip_ver}", 120.)
+        except PipException:
+            logging.exception("Failed to update pip")
 
     def install_packages(
         self,
@@ -165,6 +172,41 @@ class AsyncPipExecutor:
     def get_shell_cmd(self) -> ShellCommandFactory:
         return self.server.lookup_component("shell_command")
 
+    async def call_pip_with_response(
+        self,
+        args: str,
+        timeout: float = 30.,
+        attempts: int = 3,
+        sys_env_vars: Optional[Dict[str, Any]] = None
+    ) -> str:
+        env: Optional[Dict[str, str]] = None
+        if sys_env_vars is not None:
+            env = dict(os.environ)
+            env.update(sys_env_vars)
+        shell_cmd = self.get_shell_cmd()
+        return await shell_cmd.exec_cmd(
+            f"{self.pip_cmd} {args}", attempts=attempts,
+            timeout=timeout, env=env, log_stderr=True
+        )
+
+    async def call_pip(
+        self,
+        args: str,
+        timeout: float = 30.,
+        attempts: int = 3,
+        sys_env_vars: Optional[Dict[str, Any]] = None
+    ) -> None:
+        env: Optional[Dict[str, str]] = None
+        if sys_env_vars is not None:
+            env = dict(os.environ)
+            env.update(sys_env_vars)
+        shell_cmd = self.get_shell_cmd()
+        await shell_cmd.run_cmd_async(
+            f"{self.pip_cmd} {args}", self.notify_callback,
+            timeout=timeout, attempts=attempts, env=env,
+            log_stderr=True
+        )
+
     async def get_pip_version(self) -> PipVersionInfo:
         resp: str = await self.get_shell_cmd().exec_cmd(
             f"{self.pip_cmd} --version", timeout=30., attempts=3, log_stderr=True
@@ -174,10 +216,13 @@ class AsyncPipExecutor:
     async def update_pip(self) -> None:
         pip_ver = ".".join([str(part) for part in MIN_PIP_VERSION])
         shell_cmd = self.get_shell_cmd()
-        await shell_cmd.run_cmd_async(
-            f"{self.pip_cmd} install pip=={pip_ver}",
-            self.notify_callback, timeout=1200., attempts=3, log_stderr=True
-        )
+        try:
+            await shell_cmd.run_cmd_async(
+                f"{self.pip_cmd} install pip=={pip_ver}",
+                self.notify_callback, timeout=1200., attempts=1, log_stderr=True
+            )
+        except shell_cmd.error:
+            logging.exception("Failed to Update Pip")
 
     async def install_packages(
         self,
@@ -242,6 +287,6 @@ def prepare_install_args(packages: Union[pathlib.Path, List[str]]) -> str:
             raise FileNotFoundError(
                 f"Invalid path to requirements_file '{packages}'"
             )
-        return f"-r {packages}"
+        return f"-U -r {packages}"
     reqs = [req.replace("\"", "'") for req in packages]
-    return " ".join([f"\"{req}\"" for req in reqs])
+    return "-U " + " ".join([f"\"{req}\"" for req in reqs])
