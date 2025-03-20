@@ -2,7 +2,9 @@ import datetime
 import sys
 from typing import Literal, SupportsFloat, TypedDict
 
-littlecms_version: str
+from ._typing import CapsuleType
+
+littlecms_version: str | None
 
 _Tuple3f = tuple[float, float, float]
 _Tuple2x3f = tuple[_Tuple3f, _Tuple3f]
@@ -108,11 +110,7 @@ class CmsProfile:
     def is_intent_supported(self, intent: int, direction: int, /) -> int: ...
 
 class CmsTransform:
-    @property
-    def inputMode(self) -> str: ...
-    @property
-    def outputMode(self) -> str: ...
-    def apply(self, id_in: int, id_out: int) -> int: ...
+    def apply(self, id_in: CapsuleType, id_out: CapsuleType) -> int: ...
 
 def profile_open(profile: str, /) -> CmsProfile: ...
 def profile_frombytes(profile: bytes, /) -> CmsProfile: ...

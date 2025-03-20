@@ -26,7 +26,13 @@ import tempfile
 from . import Image
 
 
-def grab(bbox=None, include_layered_windows=False, all_screens=False, xdisplay=None):
+def grab(
+    bbox: tuple[int, int, int, int] | None = None,
+    include_layered_windows: bool = False,
+    all_screens: bool = False,
+    xdisplay: str | None = None,
+) -> Image.Image:
+    im: Image.Image
     if xdisplay is None:
         if sys.platform == "darwin":
             fh, filepath = tempfile.mkstemp(".png")
@@ -63,14 +69,16 @@ def grab(bbox=None, include_layered_windows=False, all_screens=False, xdisplay=N
                 left, top, right, bottom = bbox
                 im = im.crop((left - x0, top - y0, right - x0, bottom - y0))
             return im
+    # Cast to Optional[str] needed for Windows and macOS.
+    display_name: str | None = xdisplay
     try:
         if not Image.core.HAVE_XCB:
             msg = "Pillow was built without XCB support"
             raise OSError(msg)
-        size, data = Image.core.grabscreen_x11(xdisplay)
+        size, data = Image.core.grabscreen_x11(display_name)
     except OSError:
         if (
-            xdisplay is None
+            display_name is None
             and sys.platform not in ("darwin", "win32")
             and shutil.which("gnome-screenshot")
         ):
@@ -94,30 +102,19 @@ def grab(bbox=None, include_layered_windows=False, all_screens=False, xdisplay=N
         return im
 
 
-def grabclipboard():
+def grabclipboard() -> Image.Image | list[str] | None:
     if sys.platform == "darwin":
-        fh, filepath = tempfile.mkstemp(".png")
-        os.close(fh)
-        commands = [
-            'set theFile to (open for access POSIX file "'
-            + filepath
-            + '" with write permission)',
-            "try",
-            "    write (the clipboard as «class PNGf») to theFile",
-            "end try",
-            "close access theFile",
-        ]
-        script = ["osascript"]
-        for command in commands:
-            script += ["-e", command]
-        subprocess.call(script)
+        p = subprocess.run(
+            ["osascript", "-e", "get the clipboard as «class PNGf»"],
+            capture_output=True,
+        )
+        if p.returncode != 0:
+            return None
 
-        im = None
-        if os.stat(filepath).st_size != 0:
-            im = Image.open(filepath)
-            im.load()
-        os.unlink(filepath)
-        return im
+        import binascii
+
+        data = io.BytesIO(binascii.unhexlify(p.stdout[11:-3]))
+        return Image.open(data)
     elif sys.platform == "win32":
         fmt, data = Image.core.grabclipboard_win32()
         if fmt == "file":  # CF_HDROP

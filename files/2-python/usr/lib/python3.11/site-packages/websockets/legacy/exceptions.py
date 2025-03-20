@@ -3,16 +3,11 @@ import http
 from .. import datastructures
 from ..exceptions import (
     InvalidHandshake,
+    # InvalidMessage was incorrectly moved here in versions 14.0 and 14.1.
+    InvalidMessage,  # noqa: F401
     ProtocolError as WebSocketProtocolError,  # noqa: F401
 )
 from ..typing import StatusLike
-
-
-class InvalidMessage(InvalidHandshake):
-    """
-    Raised when a handshake request or response is malformed.
-
-    """
 
 
 class InvalidStatusCode(InvalidHandshake):
@@ -57,9 +52,7 @@ class AbortHandshake(InvalidHandshake):
 
     def __str__(self) -> str:
         return (
-            f"HTTP {self.status:d}, "
-            f"{len(self.headers)} headers, "
-            f"{len(self.body)} bytes"
+            f"HTTP {self.status:d}, {len(self.headers)} headers, {len(self.body)} bytes"
         )
 
 

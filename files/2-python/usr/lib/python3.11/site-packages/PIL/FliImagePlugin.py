@@ -27,7 +27,7 @@ from ._binary import o8
 # decoder
 
 
-def _accept(prefix):
+def _accept(prefix: bytes) -> bool:
     return (
         len(prefix) >= 6
         and i16(prefix, 4) in [0xAF11, 0xAF12]
@@ -45,7 +45,7 @@ class FliImageFile(ImageFile.ImageFile):
     format_description = "Autodesk FLI/FLC Animation"
     _close_exclusive_fp_after_loading = False
 
-    def _open(self):
+    def _open(self) -> None:
         # HEAD
         s = self.fp.read(128)
         if not (_accept(s) and s[20:22] == b"\x00\x00"):
@@ -83,7 +83,7 @@ class FliImageFile(ImageFile.ImageFile):
         if i16(s, 4) == 0xF1FA:
             # look for palette chunk
             number_of_subchunks = i16(s, 6)
-            chunk_size = None
+            chunk_size: int | None = None
             for _ in range(number_of_subchunks):
                 if chunk_size is not None:
                     self.fp.seek(chunk_size - 6, os.SEEK_CUR)
@@ -96,8 +96,9 @@ class FliImageFile(ImageFile.ImageFile):
                 if not chunk_size:
                     break
 
-        palette = [o8(r) + o8(g) + o8(b) for (r, g, b) in palette]
-        self.palette = ImagePalette.raw("RGB", b"".join(palette))
+        self.palette = ImagePalette.raw(
+            "RGB", b"".join(o8(r) + o8(g) + o8(b) for (r, g, b) in palette)
+        )
 
         # set things up to decode first frame
         self.__frame = -1
@@ -105,7 +106,7 @@ class FliImageFile(ImageFile.ImageFile):
         self.__rewind = self.fp.tell()
         self.seek(0)
 
-    def _palette(self, palette, shift):
+    def _palette(self, palette: list[tuple[int, int, int]], shift: int) -> None:
         # load palette
 
         i = 0
@@ -123,7 +124,7 @@ class FliImageFile(ImageFile.ImageFile):
                 palette[i] = (r, g, b)
                 i += 1
 
-    def seek(self, frame):
+    def seek(self, frame: int) -> None:
         if not self._seek_check(frame):
             return
         if frame < self.__frame:
@@ -132,7 +133,7 @@ class FliImageFile(ImageFile.ImageFile):
         for f in range(self.__frame + 1, frame + 1):
             self._seek(f)
 
-    def _seek(self, frame):
+    def _seek(self, frame: int) -> None:
         if frame == 0:
             self.__frame = -1
             self._fp.seek(self.__rewind)
@@ -158,11 +159,11 @@ class FliImageFile(ImageFile.ImageFile):
         framesize = i32(s)
 
         self.decodermaxblock = framesize
-        self.tile = [("fli", (0, 0) + self.size, self.__offset, None)]
+        self.tile = [ImageFile._Tile("fli", (0, 0) + self.size, self.__offset)]
 
         self.__offset += framesize
 
-    def tell(self):
+    def tell(self) -> int:
         return self.__frame
 
 

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-import typing
+# Importing the typing module would conflict with websockets.typing.
+from typing import TYPE_CHECKING
 
 from .imports import lazy_import
 from .version import version as __version__  # noqa: F401
@@ -10,11 +11,18 @@ __all__ = [
     # .asyncio.client
     "connect",
     "unix_connect",
+    "ClientConnection",
+    # .asyncio.router
+    "route",
+    "unix_route",
+    "Router",
     # .asyncio.server
     "basic_auth",
     "broadcast",
     "serve",
     "unix_serve",
+    "ServerConnection",
+    "Server",
     # .client
     "ClientProtocol",
     # .datastructures
@@ -31,9 +39,13 @@ __all__ = [
     "InvalidHeader",
     "InvalidHeaderFormat",
     "InvalidHeaderValue",
+    "InvalidMessage",
     "InvalidOrigin",
     "InvalidParameterName",
     "InvalidParameterValue",
+    "InvalidProxy",
+    "InvalidProxyMessage",
+    "InvalidProxyStatus",
     "InvalidState",
     "InvalidStatus",
     "InvalidUpgrade",
@@ -41,8 +53,21 @@ __all__ = [
     "NegotiationError",
     "PayloadTooBig",
     "ProtocolError",
+    "ProxyError",
     "SecurityError",
     "WebSocketException",
+    # .frames
+    "Close",
+    "CloseCode",
+    "Frame",
+    "Opcode",
+    # .http11
+    "Request",
+    "Response",
+    # .protocol
+    "Protocol",
+    "Side",
+    "State",
     # .server
     "ServerProtocol",
     # .typing
@@ -56,9 +81,17 @@ __all__ = [
 ]
 
 # When type checking, import non-deprecated aliases eagerly. Else, import on demand.
-if typing.TYPE_CHECKING:
-    from .asyncio.client import connect, unix_connect
-    from .asyncio.server import basic_auth, broadcast, serve, unix_serve
+if TYPE_CHECKING:
+    from .asyncio.client import ClientConnection, connect, unix_connect
+    from .asyncio.router import Router, route, unix_route
+    from .asyncio.server import (
+        Server,
+        ServerConnection,
+        basic_auth,
+        broadcast,
+        serve,
+        unix_serve,
+    )
     from .client import ClientProtocol
     from .datastructures import Headers, HeadersLike, MultipleValuesError
     from .exceptions import (
@@ -71,9 +104,13 @@ if typing.TYPE_CHECKING:
         InvalidHeader,
         InvalidHeaderFormat,
         InvalidHeaderValue,
+        InvalidMessage,
         InvalidOrigin,
         InvalidParameterName,
         InvalidParameterValue,
+        InvalidProxy,
+        InvalidProxyMessage,
+        InvalidProxyStatus,
         InvalidState,
         InvalidStatus,
         InvalidUpgrade,
@@ -81,9 +118,13 @@ if typing.TYPE_CHECKING:
         NegotiationError,
         PayloadTooBig,
         ProtocolError,
+        ProxyError,
         SecurityError,
         WebSocketException,
     )
+    from .frames import Close, CloseCode, Frame, Opcode
+    from .http11 import Request, Response
+    from .protocol import Protocol, Side, State
     from .server import ServerProtocol
     from .typing import (
         Data,
@@ -101,11 +142,18 @@ else:
             # .asyncio.client
             "connect": ".asyncio.client",
             "unix_connect": ".asyncio.client",
+            "ClientConnection": ".asyncio.client",
+            # .asyncio.router
+            "route": ".asyncio.router",
+            "unix_route": ".asyncio.router",
+            "Router": ".asyncio.router",
             # .asyncio.server
             "basic_auth": ".asyncio.server",
             "broadcast": ".asyncio.server",
             "serve": ".asyncio.server",
             "unix_serve": ".asyncio.server",
+            "ServerConnection": ".asyncio.server",
+            "Server": ".asyncio.server",
             # .client
             "ClientProtocol": ".client",
             # .datastructures
@@ -122,9 +170,13 @@ else:
             "InvalidHeader": ".exceptions",
             "InvalidHeaderFormat": ".exceptions",
             "InvalidHeaderValue": ".exceptions",
+            "InvalidMessage": ".exceptions",
             "InvalidOrigin": ".exceptions",
             "InvalidParameterName": ".exceptions",
             "InvalidParameterValue": ".exceptions",
+            "InvalidProxy": ".exceptions",
+            "InvalidProxyMessage": ".exceptions",
+            "InvalidProxyStatus": ".exceptions",
             "InvalidState": ".exceptions",
             "InvalidStatus": ".exceptions",
             "InvalidUpgrade": ".exceptions",
@@ -132,8 +184,21 @@ else:
             "NegotiationError": ".exceptions",
             "PayloadTooBig": ".exceptions",
             "ProtocolError": ".exceptions",
+            "ProxyError": ".exceptions",
             "SecurityError": ".exceptions",
             "WebSocketException": ".exceptions",
+            # .frames
+            "Close": ".frames",
+            "CloseCode": ".frames",
+            "Frame": ".frames",
+            "Opcode": ".frames",
+            # .http11
+            "Request": ".http11",
+            "Response": ".http11",
+            # .protocol
+            "Protocol": ".protocol",
+            "Side": ".protocol",
+            "State": ".protocol",
             # .server
             "ServerProtocol": ".server",
             # .typing
@@ -159,7 +224,6 @@ else:
             "WebSocketClientProtocol": ".legacy.client",
             # .legacy.exceptions
             "AbortHandshake": ".legacy.exceptions",
-            "InvalidMessage": ".legacy.exceptions",
             "InvalidStatusCode": ".legacy.exceptions",
             "RedirectHandshake": ".legacy.exceptions",
             "WebSocketProtocolError": ".legacy.exceptions",

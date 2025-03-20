@@ -36,7 +36,13 @@ __all__ = [
 T = TypeVar("T")
 
 
-def build_host(host: str, port: int, secure: bool) -> str:
+def build_host(
+    host: str,
+    port: int,
+    secure: bool,
+    *,
+    always_include_port: bool = False,
+) -> str:
     """
     Build a ``Host`` header.
 
@@ -53,7 +59,7 @@ def build_host(host: str, port: int, secure: bool) -> str:
         if address.version == 6:
             host = f"[{host}]"
 
-    if port != (443 if secure else 80):
+    if always_include_port or port != (443 if secure else 80):
         host = f"{host}:{port}"
 
     return host
@@ -384,7 +390,7 @@ parse_extension_list = parse_extension  # alias for backwards compatibility
 
 
 def build_extension_item(
-    name: ExtensionName, parameters: list[ExtensionParameter]
+    name: ExtensionName, parameters: Sequence[ExtensionParameter]
 ) -> str:
     """
     Build an extension definition.

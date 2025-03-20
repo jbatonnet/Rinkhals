@@ -16,6 +16,7 @@ files/3-rinkhals/opt/rinkhals/patches/gk*.*.patch
 files/3-rinkhals/opt/rinkhals/patches/cache_*.json
 
 # Python venv and pip cache
+files/2-python/**/*.pyc
 files/4-apps/**/.cache
 files/4-apps/**/*.pyc
 files/4-apps/**/.ash_history

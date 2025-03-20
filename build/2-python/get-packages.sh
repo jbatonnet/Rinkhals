@@ -1,24 +1,26 @@
 #!/bin/sh
 
 # From a Windows machine:
-#   docker run --rm -it -e KOBRA_IP=x.x.x.x -v .\build:/build -v .\files:/files --entrypoint=/bin/sh rclone/rclone:1.68.2 /build/2-python/get-packages.sh
+#   docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+#   docker run --platform=linux/arm/v7 --rm -it -v .\build\cache\pip:/root/.cache/pip -v .\build:/build -v .\files:/files ghcr.io/jbatonnet/rinkhals/rootfs /build/2-python/get-packages.sh
 
 
-if [ "$KOBRA_IP" == "x.x.x.x" ] || [ "$KOBRA_IP" == "" ]; then
-    echo "Please specify your Kobra 3 IP using KOBRA_IP environment variable"
-    exit 1
-fi
+cd /files/2-python/usr
 
+echo "Removing old packages..."
+rm -rf lib
 
-export RCLONE_CONFIG_KOBRA_TYPE=sftp
-export RCLONE_CONFIG_KOBRA_HOST=$KOBRA_IP
-export RCLONE_CONFIG_KOBRA_PORT=${KOBRA_PORT:-22}
-export RCLONE_CONFIG_KOBRA_USER=root
-export RCLONE_CONFIG_KOBRA_PASS=$(rclone obscure "rockchip")
+echo "Creating temporary venv..."
+python -m venv .
+. bin/activate
 
+echo "Installing requirements..."
+python -m pip install --upgrade pip
+python -m pip install paho-mqtt evdev pillow # rinkhals-ui
+python -m pip install websockets paho-mqtt aiohttp # moonraker-proxy
 
-mkdir -p /files/3-python/usr/lib/python3.11/site-packages
-rclone -v sync --exclude "*.pyc" Kobra:/usr/lib/python3.11/site-packages /files/2-python/usr/lib/python3.11/site-packages
-
-#find /usr/local/lib/python3.11/site-packages -name '*.pyc' -type f -delete
-#cp -r /usr/local/lib/python3.11/site-packages/* /files/3-python/usr/lib/python3.11/site-packages
+echo "Cleaning up..."
+rm -rf bin
+rm -rf include
+rm -f pyvenv.cfg
+find lib/python3.* -name '*.pyc' -type f | xargs rm

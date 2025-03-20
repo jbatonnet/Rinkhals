@@ -356,8 +356,6 @@ int _uinput_end_erase(int fd, struct uinput_ff_erase *upload)
     return ioctl(fd, UI_END_FF_ERASE, upload);
 }
 
-#define MODULE_NAME "_uinput"
-#define MODULE_HELP "Python bindings for parts of linux/uinput.c"
 
 static PyMethodDef MethodTable[] = {
     { "open",  uinput_open, METH_VARARGS,
@@ -390,11 +388,10 @@ static PyMethodDef MethodTable[] = {
     { NULL, NULL, 0, NULL}
 };
 
-#if PY_MAJOR_VERSION >= 3
 static struct PyModuleDef moduledef = {
     PyModuleDef_HEAD_INIT,
-    MODULE_NAME,
-    MODULE_HELP,
+    "_uinput",
+    "Python bindings for parts of linux/uinput.c",
     -1,          /* m_size */
     MethodTable, /* m_methods */
     NULL,        /* m_reload */
@@ -418,21 +415,3 @@ PyInit__uinput(void)
 {
     return moduleinit();
 }
-
-#else
-static PyObject *
-moduleinit(void)
-{
-    PyObject* m = Py_InitModule3(MODULE_NAME, MethodTable, MODULE_HELP);
-    if (m == NULL) return NULL;
-
-    PyModule_AddIntConstant(m, "maxnamelen", UINPUT_MAX_NAME_SIZE);
-    return m;
-}
-
-PyMODINIT_FUNC
-init_uinput(void)
-{
-    moduleinit();
-}
-#endif

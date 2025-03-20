@@ -1,6 +1,6 @@
 import ctypes
-from evdev import ecodes
 
+from . import ecodes
 
 _u8 = ctypes.c_uint8
 _u16 = ctypes.c_uint16
