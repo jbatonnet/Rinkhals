@@ -1,4 +1,4 @@
-source /useremain/rinkhals/.current/tools.sh
+. /useremain/rinkhals/.current/tools.sh
 
 APP_ROOT=$(dirname $(realpath $0))
 
@@ -15,12 +15,9 @@ start() {
     stop
     
     cd $APP_ROOT
-
-    # Create Python venv
-    python -m venv --without-pip .
-    . bin/activate
-
-    HOME=/userdata/app/gk python ./moonraker/moonraker/moonraker.py >> $RINKHALS_ROOT/logs/app-moonraker.log 2>&1 &
+    
+    chmod +x moonraker.sh
+    ./moonraker.sh &
 
     PID=$(get_by_name moonraker-proxy.py)
     if [ "$PID" = "" ]; then
