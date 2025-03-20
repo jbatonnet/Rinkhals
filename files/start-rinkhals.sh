@@ -16,7 +16,7 @@ if [ ! -f /useremain/rinkhals/.version ]; then
     exit 1
 fi
 
-if [ -f /mnt/udisk/.enable-rinkhals ]; then
+if [ -f /mnt/udisk/.enable-rinkhals ] || [ -f /useremain/rinkhals/.enable-rinkhals ]; then
     log "Forcing Rinkhals startup with the .enable-rinkhals file"
 
     rm /mnt/udisk/.disable-rinkhals

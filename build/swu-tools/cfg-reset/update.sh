@@ -18,11 +18,12 @@ fi
 
 # Restore default config
 RINKHALS_HOME=/useremain/home/rinkhals
+CONFIG_FILE=$RINKHALS_HOME/printer_data/config/printer.custom.cfg
 
-if [ -e $RINKHALS_HOME/printer_data/config/printer.cfg ]; then
-    rm $RINKHALS_HOME/printer_data/config/printer.custom.cfg.bak
-    cp $RINKHALS_HOME/printer_data/config/printer.custom.cfg $RINKHALS_HOME/printer_data/config/printer.custom.cfg.bak
-    rm $RINKHALS_HOME/printer_data/config/printer.custom.cfg
+if [ -f $CONFIG_FILE ]; then
+    rm $CONFIG_FILE.bak
+    cp $CONFIG_FILE $CONFIG_FILE.bak
+    rm $CONFIG_FILE
 fi
 
 rm /useremain/rinkhals/.disable-rinkhals

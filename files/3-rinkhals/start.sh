@@ -65,7 +65,7 @@ echo
 touch /useremain/rinkhals/.disable-rinkhals
 
 VERIFIED_FIRMWARE=$(is_verified_firmware)
-if [ "$VERIFIED_FIRMWARE" != "1" ] && [ ! -f /mnt/udisk/.enable-rinkhals ]; then
+if [ "$VERIFIED_FIRMWARE" != "1" ] && [ ! -f /mnt/udisk/.enable-rinkhals ] && [ ! -f /useremain/rinkhals/.enable-rinkhals ]; then
     log "Unsupported firmware version, use .enable-rinkhals file to force startup"
     exit 1
 fi
