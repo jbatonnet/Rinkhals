@@ -17,7 +17,7 @@ For now the following printers and firmwares are tested / supported:
 | -- | -- | -- |
 | Kobra 3 (+ combo) | `2.3.5.3` `2.3.8` | `2.3.7` and `2.3.7.1` have some instabilities |
 | Kobra 2 Pro | `3.1.2.3` | Only with mainboard [Trigorilla Spe **B** v1.0.x](https://1coderookie.github.io/Kobra2ProInsights/hardware/mainboard/#trigorilla_spe_b_v10x-stock-new-revision). `3.1.4` is buggy |
-| Kobra S1 (+ combo) | `2.4.8.3` `2.5.0.2` |
+| Kobra S1 (+ combo) | `2.5.0.2` `2.5.0.6` |
 
 In case you're wondering this project is named after rinkhals, a sub-species of Cobras ... Kobra ... Rinkhals 👏
 

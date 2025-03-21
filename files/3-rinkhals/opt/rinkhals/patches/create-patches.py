@@ -115,6 +115,12 @@ def patch_K3SysUi(binaryPath, modelCode, version):
         patchJumpOperand = 'b'
         patchReturnAddress = 0x111dcc
 
+    elif modelCode == 'KS1' and version == '2.5.0.6':
+        buttonCallback = k3sysui.symbols['_ZZN10MainWindow26AcSettingGeneralPageUiInitEvENKUlRK11QModelIndexE0_clES2_']
+        patchJumpAddress = 0x111e14
+        patchJumpOperand = 'b'
+        patchReturnAddress = 0x111e1c
+
     else:
         raise Exception('Unsupported model and version')
 
@@ -440,10 +446,10 @@ def main():
         model = match.group(2)
         version = match.group(3)
 
-        if name == 'gkapi':
-            patch_gkapi(f'{patchesPath}/{file}', model, version)
-            create_patch_script(f'{patchesPath}/{file}', f'{patchesPath}/{file}.patch', f'{patchesPath}/{file}.sh')
-        elif name == 'K3SysUi':
+        # if name == 'gkapi':
+        #     patch_gkapi(f'{patchesPath}/{file}', model, version)
+        #     create_patch_script(f'{patchesPath}/{file}', f'{patchesPath}/{file}.patch', f'{patchesPath}/{file}.sh')
+        if name == 'K3SysUi':
             patch_K3SysUi(f'{patchesPath}/{file}', model, version)
             create_patch_script(f'{patchesPath}/{file}', f'{patchesPath}/{file}.patch', f'{patchesPath}/{file}.sh')
          
