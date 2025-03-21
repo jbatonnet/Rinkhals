@@ -12,12 +12,22 @@ status() {
     fi
 }
 start() {
-    cd $APP_ROOT
-    
     stop
+
+    cd $APP_ROOT
 
     chmod +x moonraker.sh
     ./moonraker.sh &
+}
+debug() {
+    stop
+
+    cd $APP_ROOT
+    
+    python -m venv --without-pip .
+    . bin/activate
+
+    HOME=/userdata/app/gk python ./moonraker/moonraker/moonraker.py -c /userdata/app/gk/printer_data/config/moonraker.generated.conf $@
 }
 stop() {
     kill_by_name moonraker.py
@@ -29,6 +39,10 @@ case "$1" in
         ;;
     start)
         start
+        ;;
+    debug)
+        shift
+        debug $@
         ;;
     stop)
         stop
