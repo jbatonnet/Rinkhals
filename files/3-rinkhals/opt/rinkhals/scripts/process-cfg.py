@@ -19,7 +19,7 @@ def readSections(path, hintPath = None):
     with open(path, 'r') as f:
         config = f.read()
 
-    sections = re.findall("\[([^\]]+)\]((?:.|\n)*?)(?=\n\[|$)", config)
+    sections = re.findall("(?:^|\n)\[([^\]]+)\]((?:.|\n)*?)(?=\n\[|$)", config)
 
     i = 0
     while i < len(sections):
