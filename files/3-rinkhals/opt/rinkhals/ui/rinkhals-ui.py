@@ -157,6 +157,7 @@ class Program:
 
     # Cache
     disk_usage = None
+    apps_size = {}
 
     def __init__(self):
         if not USING_SIMULATOR:
@@ -531,8 +532,13 @@ class Program:
         app_name = app_manifest.get('name') if app_manifest else app
         app_description = app_manifest.get('description') if app_manifest else ''
         app_version = app_manifest.get('version') if app_manifest else ''
-        app_size = shell(f"du -sh {app_root} | awk '{{print $1}}'") if USING_SHELL else '?M'
         app_enabled = self.is_app_enabled(app, app_root)
+        
+        if app not in self.apps_size:
+            app_size = shell(f"du -sh {app_root} | awk '{{print $1}}'") if USING_SHELL else '?M'
+            self.apps_size[app] = app_size
+        else:
+            app_size = self.apps_size[app]
         
         app_status = 'Unknown'
         if not USING_SIMULATOR:
@@ -846,7 +852,6 @@ class Program:
             os.system('reboot')
 
         self.quit()
-
 
 
 if __name__ == "__main__":
