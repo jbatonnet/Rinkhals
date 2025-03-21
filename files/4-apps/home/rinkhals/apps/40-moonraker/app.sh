@@ -12,28 +12,15 @@ status() {
     fi
 }
 start() {
-    stop
-    
     cd $APP_ROOT
     
+    stop
+
     chmod +x moonraker.sh
     ./moonraker.sh &
-
-    PID=$(get_by_name moonraker-proxy.py)
-    if [ "$PID" = "" ]; then
-        socat TCP-LISTEN:7125,reuseaddr,fork TCP:localhost:7126 &> /dev/null &
-    fi
 }
 stop() {
     kill_by_name moonraker.py
-
-    PID=$(get_by_port 7125)
-    if [ "$PID" != "" ]; then
-        CMDLINE=$(get_command_line $PID)
-        if [ "$(echo $CMDLINE | grep socat)" != "" ]; then
-            kill -9 $PID
-        fi
-    fi
 }
 
 case "$1" in

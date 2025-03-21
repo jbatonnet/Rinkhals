@@ -77,7 +77,7 @@ MAX_BODY_SIZE = 50 * 1024 * 1024
 MAX_WS_CONNS_DEFAULT = 50
 EXCLUDED_ARGS = ["_", "token", "access_token", "connection_id"]
 AUTHORIZED_EXTS = [".png", ".jpg"]
-DEFAULT_KLIPPY_LOG_PATH = "/tmp/klippy.log"
+DEFAULT_KLIPPY_LOG_PATH = "/useremain/rinkhals/.current/logs/gklib.log"
 
 class MutableRouter(RuleRouter):
     def __init__(self, application: tornado.web.Application) -> None:

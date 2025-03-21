@@ -116,25 +116,23 @@ class ExtendedEnum(Enum):
 class JobEvent(ExtendedEnum):
     STANDBY = 1
     STARTED = 2
-#    PAUSED = 3
-    OnPause = 3
+    PAUSED = 3
     RESUMED = 4
-    heating = 5
-    COMPLETE = 6
-    ERROR = 7
-    CANCELLED = 8
+    COMPLETE = 5
+    ERROR = 6
+    CANCELLED = 7
 
     @property
     def finished(self) -> bool:
-        return self.value >= 6
+        return self.value >= 5
 
     @property
     def aborted(self) -> bool:
-        return self.value >= 7
+        return self.value >= 6
 
     @property
     def is_printing(self) -> bool:
-        return self.value in [2, 4, 5]
+        return self.value in [2, 4]
 
 class KlippyState(ExtendedEnum):
     DISCONNECTED = 1

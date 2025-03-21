@@ -32,6 +32,13 @@ class JobState:
             "server:klippy_disconnect", self._handle_disconnect
         )
 
+    def convert_kobra_state(self, state: str):
+        if state.lower() == 'heating':
+            return 'printing'
+        if state.lower() == 'onpause':
+            return 'paused'
+        return state
+
     def _handle_disconnect(self):
         state = self.last_print_stats.get("state", "")
         if state in ("printing", "paused"):
@@ -50,6 +57,7 @@ class JobState:
             logging.info("Error subscribing to print_stats")
         self.last_print_stats = result.get("print_stats", {})
         if "state" in self.last_print_stats:
+            self.last_print_stats['state'] = self.convert_kobra_state(self.last_print_stats['state'])
             state = self.last_print_stats["state"]
             logging.info(f"Job state initialized: {state}")
 
@@ -58,6 +66,7 @@ class JobState:
             return
         ps = data['print_stats']
         if "state" in ps:
+            ps['state'] = self.convert_kobra_state(ps['state'])
             prev_ps = dict(self.last_print_stats)
             old_state: str = prev_ps['state']
             new_state: str = ps['state']

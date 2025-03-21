@@ -424,6 +424,7 @@ class FileManager:
                                        web_request: WebRequest
                                        ) -> Dict[str, Any]:
         requested_file: str = web_request.get_str('filename')
+        requested_file = requested_file.replace('/useremain/app/gk/gcodes/', '')
         metadata: Optional[Dict[str, Any]]
         metadata = self.gcode_metadata.get(requested_file, None)
         if metadata is None:

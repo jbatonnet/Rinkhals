@@ -1,7 +1,0 @@
-{
-    "$version": "1",
-
-    "name": "moonraker-proxy",
-    "description": "A proxy that intercepts print calls and sends them to Anycubic binaries to display print progress on the touch screen",
-    "version": "0.1"
-}
