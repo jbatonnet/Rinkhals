@@ -11,11 +11,5 @@ cp -rf kobra.py moonraker/moonraker/components/kobra.py
 [ -f /userdata/app/gk/printer_data/config/moonraker.custom.conf ] || cp moonraker.custom.conf /userdata/app/gk/printer_data/config/moonraker.custom.conf
 python /opt/rinkhals/scripts/process-cfg.py moonraker.conf > /userdata/app/gk/printer_data/config/moonraker.generated.conf
 
-GKLIB=$(get_by_name gklib)
-if [ "$GKLIB" != "" ]; then
-    echo >> /userdata/app/gk/printer_data/config/moonraker.generated.conf
-    echo "[kobra]" >> /userdata/app/gk/printer_data/config/moonraker.generated.conf
-fi
-
 # Start Klippy
 HOME=/userdata/app/gk python ./moonraker/moonraker/moonraker.py -c /userdata/app/gk/printer_data/config/moonraker.generated.conf >> $RINKHALS_ROOT/logs/app-moonraker.log 2>&1

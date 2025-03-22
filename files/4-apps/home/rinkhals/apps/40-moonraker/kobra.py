@@ -8,13 +8,14 @@ import logging
 import subprocess
 from datetime import datetime
 import paho.mqtt.client as paho
+
 from ..utils import Sentinel
+
 
 class Kobra:
     # Environment
     KOBRA_MODEL_ID = None
     KOBRA_DEVICE_ID = None
-    REMOTE_MODE = 'cloud'
     MQTT_USERNAME = None
     MQTT_PASSWORD = None
 
@@ -22,9 +23,16 @@ class Kobra:
     mqtt_print_report = False
     mqtt_print_error = None
 
+    # Cache
+    _goklipper_next_check = 0
+    _goklipper_pid = None
+    _remote_mode_next_check = 0
+    _remote_mode = None
+
     def __init__(self, config):
         self.server = config.get_server()
 
+        # Extract environment values from the printer
         try:
             command = f'. /useremain/rinkhals/.current/tools.sh && python -c "import os, json; print(json.dumps(dict(os.environ)))"'
             environment = subprocess.check_output(['sh', '-c', command])
@@ -33,11 +41,6 @@ class Kobra:
             self.KOBRA_DEVICE_ID = environment['KOBRA_DEVICE_ID']
         except:
             pass
-
-        if os.path.isfile('/useremain/dev/remote_ctrl_mode'):
-            with open('/useremain/dev/remote_ctrl_mode', 'r') as f:
-                self.REMOTE_MODE = f.read().strip()
-
         if os.path.isfile('/userdata/app/gk/config/device_account.json'):
             with open('/userdata/app/gk/config/device_account.json', 'r') as f:
                 json_data = f.read()
@@ -45,19 +48,8 @@ class Kobra:
                 self.MQTT_USERNAME = data['username']
                 self.MQTT_PASSWORD = data['password']
         
-        if not self.is_using_mqtt():
-            logging.warn('MQTT will not be used')
-
-        # logging.info(f'REMOTE_MODE: {self.REMOTE_MODE}')
-        # logging.info(f'KOBRA_MODEL_ID: {self.KOBRA_MODEL_ID}')
-        # logging.info(f'KOBRA_DEVICE_ID: {self.KOBRA_DEVICE_ID}')
-        # logging.info(f'MQTT_USERNAME: {self.MQTT_USERNAME}')
-        # logging.info(f'MQTT_PASSWORD: {self.MQTT_PASSWORD}')
-
-        for i in range(10):
-            logging.debug('')
+        # Monkey patch Moonraker for Kobra
         logging.info('Starting Kobra patching...')
-
         #self.patch_klippy_path()
         self.patch_network_interfaces()
         self.patch_spoolman()
@@ -68,12 +60,98 @@ class Kobra:
         self.patch_objects_list()
         self.patch_mainsail()
         self.patch_gcode_paths()
-
         logging.info('Completed Kobra patching! Yay!')
-        for i in range(10):
-            logging.debug('')
-        
-        #time.sleep(60)
+
+
+    def is_goklipper_running(self):
+        if time.time() < self._goklipper_next_check:
+            return self._goklipper_pid != None
+
+        if self._goklipper_pid != None:
+            try:
+                os.kill(self._goklipper_pid, 0)
+            except:
+                self._goklipper_pid = None
+
+        if not _goklipper_pid:
+            self._goklipper_pid = subprocess.check_output(['sh', '-c', "ps | grep K3SysUi | grep -v grep | awk '{print $1}'"])
+            self._goklipper_pid = self._goklipper_pid.decode('utf-8').strip()
+            self._goklipper_pid = int(self._goklipper_pid) if self._goklipper_pid else None
+
+        self._goklipper_next_check = time.time() + 5
+        return self._goklipper_pid != None
+
+    def get_remote_mode(self):
+        if time.time() < self._remote_mode_next_check:
+            return self._remote_mode
+
+        if os.path.isfile('/useremain/dev/remote_ctrl_mode'):
+            with open('/useremain/dev/remote_ctrl_mode', 'r') as f:
+                self._remote_mode = f.read().strip()
+
+        self._remote_mode_next_check = time.time() + 5
+        return self._remote_mode
+
+    def is_using_mqtt(self):
+        if not self.KOBRA_MODEL_ID or not self.KOBRA_DEVICE_ID or not self.MQTT_USERNAME or not self.MQTT_PASSWORD:
+            return False
+        return self.get_remote_mode() == 'lan'
+
+    def mqtt_print_file(self, file):
+        logging.info(f'Trying to print {file} using MQTT...')
+
+        payload = """{{
+            "type": "print",
+            "action": "start",
+            "msgid": "{0}",
+            "timestamp": {1},
+            "data": {{
+                "taskid": "-1",
+                "filename": "{2}",
+                "filetype": 1
+            }}
+        }}""".format(uuid.uuid4(), round(time.time() * 1000), file)
+
+        self.mqtt_print_report = False
+        self.mqtt_print_error = None
+
+        def mqtt_on_connect(client, userdata, flags, reason_code, properties):
+            client.subscribe(f'anycubic/anycubicCloud/v1/printer/public/{self.KOBRA_MODEL_ID}/{self.KOBRA_DEVICE_ID}/print/report')
+            client.publish(f'anycubic/anycubicCloud/v1/slicer/printer/{self.KOBRA_MODEL_ID}/{self.KOBRA_DEVICE_ID}/print', payload=payload, qos=1)
+
+        def mqtt_on_message(client, userdata, msg):
+            logging.debug(f'Received MQTT print report: {str(msg.payload)}')
+
+            payload = json.loads(msg.payload)
+            state = str(payload['state'])
+            logging.info(f'Received MQTT print state: {state}')
+
+            if state == 'failed':
+                self.mqtt_print_error = str(payload['msg'])
+                logging.error(f'Failed MQTT print: {self.mqtt_print_error}')
+
+            self.mqtt_print_report = True
+
+        client = paho.Client(protocol = paho.MQTTv5)
+        client.on_connect = mqtt_on_connect
+        client.on_message = mqtt_on_message
+
+        client.username_pw_set(self.MQTT_USERNAME, self.MQTT_PASSWORD)
+        client.connect('127.0.0.1', 2883)
+
+        timeout = time.time() + 30
+        while not self.mqtt_print_report:
+
+            if time.time() > timeout:
+                logging.error(f'Timeout trying to print {file}')
+                return f'Timeout trying to print {file}'
+
+            client.loop(timeout = 0.25)
+
+        client.disconnect()
+
+        if self.mqtt_print_error:
+            raise(Exception(self.mqtt_print_error))
 
 
     def patch_klippy_path(self):
@@ -120,8 +198,9 @@ class Kobra:
         def wrap_get_klippy_info(original_get_klippy_info):
             def get_klippy_info(me):
                 result = original_get_klippy_info(me)
-                result['klipper_path'] = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))))
-                logging.info('[Kobra] Injected klipper_path')
+                if self.is_goklipper_running():
+                    result['klipper_path'] = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))))
+                    logging.info('[Kobra] Injected klipper_path')
                 return result
             return get_klippy_info
 
@@ -136,13 +215,14 @@ class Kobra:
         from .klippy_connection import KlippyConnection, KlippyRequest
 
         def convert_kobra_state(state):
-            logging.info(f'[Kobra] Converted Kobra state {state}')
-            if state.lower() == 'heating':
-                return 'printing'
-            if state.lower() == 'leveling':
-                return 'printing'
-            if state.lower() == 'onpause':
-                return 'paused'
+            if self.is_goklipper_running():
+                logging.info(f'[Kobra] Converted Kobra state {state}')
+                if state.lower() == 'heating':
+                    return 'printing'
+                if state.lower() == 'leveling':
+                    return 'printing'
+                if state.lower() == 'onpause':
+                    return 'paused'
             return state
 
         def wrap__send_klippy_request(original__send_klippy_request):
@@ -201,7 +281,7 @@ class Kobra:
 
         def wrap_run_gcode(original_run_gcode):
             async def run_gcode(me, script, default = Sentinel.MISSING):
-                if script.startswith('SDCARD_PRINT_FILE'):
+                if self.is_goklipper_running() and script.startswith('SDCARD_PRINT_FILE'):
                     script = script.replace('/useremain/app/gk/gcodes/', '')
                     script = script.replace('useremain/app/gk/gcodes/', '')
                     print(script)
@@ -228,7 +308,7 @@ class Kobra:
         def wrap_request(original_request):
             async def request(me, web_request):
                 rpc_method = web_request.get_endpoint()
-                if rpc_method == "gcode/script":
+                if self.is_goklipper_running() and rpc_method == "gcode/script":
                     script = web_request.get_str('script', "")
                     if script.lower() == "bed_mesh_map" and os.path.isfile("/userdata/app/gk/printer_data/config/printer_mutable.cfg"):
                         logging.info('[Kobra] Injected bed mesh')
@@ -256,12 +336,13 @@ class Kobra:
 
                 # Do not send bed_mesh to goklipper, it does not support it
                 want_bed_mesh = False
-                if 'objects' in args and 'bed_mesh' in args['objects']:
-                    want_bed_mesh = True
-                    del args['objects']['bed_mesh']
-                if 'objects' in args and 'bed_mesh \"default\"' in args['objects']:
-                    want_bed_mesh = True
-                    del args['objects']['bed_mesh \"default\"']
+                if self.is_goklipper_running():
+                    if 'objects' in args and 'bed_mesh' in args['objects']:
+                        want_bed_mesh = True
+                        del args['objects']['bed_mesh']
+                    if 'objects' in args and 'bed_mesh \"default\"' in args['objects']:
+                        want_bed_mesh = True
+                        del args['objects']['bed_mesh \"default\"']
 
                 result = await original__request_standard(me, web_request, timeout)
 
@@ -321,7 +402,7 @@ class Kobra:
         def wrap_request(original_request):
             async def request(me, web_request):
                 rpc_method = web_request.get_endpoint()
-                if rpc_method == "objects/list":
+                if self.is_goklipper_running() and rpc_method == "objects/list":
                     logging.info('[Kobra] Injected objects list')
                     return {
                         "objects": [
@@ -371,7 +452,7 @@ class Kobra:
         def wrap__request_standard(original__request_standard):
             async def _request_standard(me, web_request, timeout = None):
                 result = await original__request_standard(me, web_request, timeout)
-                if 'status' in result and 'configfile' in result['status'] and 'config' in result['status']['configfile']:
+                if self.is_goklipper_running() and 'status' in result and 'configfile' in result['status'] and 'config' in result['status']['configfile']:
                     logging.info('[Kobra] Injected Mainsail macros')
                     result['status']['configfile']['config']['gcode_macro pause'] = {}
                     result['status']['configfile']['config']['gcode_macro resume'] = {}
@@ -390,7 +471,7 @@ class Kobra:
 
         def wrap__handle_metadata_request(original__handle_metadata_request):
             async def _handle_metadata_request(me, web_request):
-                if 'filename' in web_request.args:
+                if self.is_goklipper_running() and 'filename' in web_request.args:
                     logging.info('[Kobra] Replaced gcode paths')
                     web_request.args['filename'] = web_request.args['filename'].replace('/useremain/app/gk/gcodes/', '')
                 return await original__handle_metadata_request(me, web_request)
@@ -402,71 +483,6 @@ class Kobra:
         setattr(FileManager, '_handle_metadata_request', wrap__handle_metadata_request(FileManager._handle_metadata_request))
         logging.debug(f'  After: {FileManager._handle_metadata_request}')
 
-
-
-
-
-
-
-
-    def is_using_mqtt(self):
-        return self.REMOTE_MODE == 'lan' and self.KOBRA_MODEL_ID and self.KOBRA_DEVICE_ID and self.MQTT_USERNAME and self.MQTT_PASSWORD
-
-    def mqtt_print_file(self, file):
-        logging.info(f'Trying to print {file} using MQTT...')
-
-        payload = """{{
-            "type": "print",
-            "action": "start",
-            "msgid": "{0}",
-            "timestamp": {1},
-            "data": {{
-                "taskid": "-1",
-                "filename": "{2}",
-                "filetype": 1
-            }}
-        }}""".format(uuid.uuid4(), round(time.time() * 1000), file)
-
-        self.mqtt_print_report = False
-        self.mqtt_print_error = None
-
-        def mqtt_on_connect(client, userdata, flags, reason_code, properties):
-            client.subscribe(f'anycubic/anycubicCloud/v1/printer/public/{self.KOBRA_MODEL_ID}/{self.KOBRA_DEVICE_ID}/print/report')
-            client.publish(f'anycubic/anycubicCloud/v1/slicer/printer/{self.KOBRA_MODEL_ID}/{self.KOBRA_DEVICE_ID}/print', payload=payload, qos=1)
-
-        def mqtt_on_message(client, userdata, msg):
-            logging.debug(f'Received MQTT print report: {str(msg.payload)}')
-
-            payload = json.loads(msg.payload)
-            state = str(payload['state'])
-            logging.info(f'Received MQTT print state: {state}')
-
-            if state == 'failed':
-                self.mqtt_print_error = str(payload['msg'])
-                logging.error(f'Failed MQTT print: {self.mqtt_print_error}')
-
-            self.mqtt_print_report = True
-
-        client = paho.Client(protocol = paho.MQTTv5)
-        client.on_connect = mqtt_on_connect
-        client.on_message = mqtt_on_message
-
-        client.username_pw_set(self.MQTT_USERNAME, self.MQTT_PASSWORD)
-        client.connect('127.0.0.1', 2883)
-
-        timeout = time.time() + 30
-        while not self.mqtt_print_report:
-
-            if time.time() > timeout:
-                logging.error(f'Timeout trying to print {file}')
-                return f'Timeout trying to print {file}'
-
-            client.loop(timeout = 0.25)
-
-        client.disconnect()
-
-        if self.mqtt_print_error:
-            raise(Exception(self.mqtt_print_error))
 
 def load_component(config):
     return Kobra(config)
