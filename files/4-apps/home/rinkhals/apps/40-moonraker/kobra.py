@@ -139,6 +139,8 @@ class Kobra:
             logging.info(f'[Kobra] Converted Kobra state {state}')
             if state.lower() == 'heating':
                 return 'printing'
+            if state.lower() == 'leveling':
+                return 'printing'
             if state.lower() == 'onpause':
                 return 'paused'
             return state
