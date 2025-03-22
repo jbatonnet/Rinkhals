@@ -12,7 +12,6 @@ import logging
 import getpass
 import asyncio
 import pathlib
-import json
 from ..utils import ServerError, get_unix_peer_credentials
 from ..utils import json_wrapper as jsonw
 from ..common import KlippyState, RequestType
@@ -150,13 +149,6 @@ class KlippyConnection:
     @property
     def executable(self) -> pathlib.Path:
         return self._executable
-
-    def convert_kobra_state(self, state: str):
-        if state.lower() == 'heating':
-            return 'printing'
-        if state.lower() == 'onpause':
-            return 'paused'
-        return state
 
     def load_saved_state(self) -> None:
         db: Database = self.server.lookup_component("database")
@@ -392,9 +384,6 @@ class KlippyConnection:
         logging.debug("Klippy Connection Failed to Init")
         return False
 
-    def _objects_list(self) -> Any:
-       return {"objects": ["motion_report", "gcode_macro pause", "gcode_macro resume", "gcode_macro cancel_print", "configfile", "heaters", "respond", "display_status", "extruder", "fan", "gcode_move", "heater_bed", "mcu", "mcu nozzle_mcu", "ota_filament_hub", "pause_resume", "pause_resume/cancel", "print_stats", "toolhead", "verify_heater extrude", "verify_heater heater_bed", "virtual_sdcard", "webhooks", "bed_mesh", "bed_mesh \"default\""]}
-
     async def _request_endpoints(self) -> None:
         result = await self.klippy_apis.list_endpoints(default=None)
         if result is None:
@@ -611,18 +600,12 @@ class KlippyConnection:
                         val = {k: v for k, v in val.items() if k in fields}
                     if val:
                         conn_status[name] = val
-            
-            if 'print_stats' in conn_status and 'state' in conn_status['print_stats']:
-                conn_status['print_stats']['state'] = self.convert_kobra_state(conn_status['print_stats']['state'])
-
             conn.send_status(conn_status, eventtime)
 
     async def request(self, web_request: WebRequest) -> Any:
         if not self.is_connected():
             raise ServerError("Klippy Host not connected", 503)
         rpc_method = web_request.get_endpoint()
-        if rpc_method == "objects/list":
-            return self._objects_list()
         if rpc_method == "objects/subscribe":
             return await self._request_subscripton(web_request)
         else:
@@ -631,21 +614,6 @@ class KlippyConnection:
                 if script:
                     self.server.send_event(
                         "klippy_connection:gcode_received", script)
-                if script.lower() == "bed_mesh_map" and os.path.isfile("/userdata/app/gk/printer_data/config/printer_mutable.cfg"):
-                    with open("/userdata/app/gk/printer_data/config/printer_mutable.cfg", "r") as f:
-                        config = json.load(f)
-                        mesh = config.get("bed_mesh default")
-                        if not mesh is None:
-                            points = json.loads("[[" + mesh.get('points').replace("\n", "], [") + "]]")
-                            return "mesh_map_output " + json.dumps({
-                                "mesh_min": (float(mesh.get('min_x')), float(mesh.get('min_y'))),
-                                "mesh_max": (float(mesh.get('max_x')), float(mesh.get('max_y'))),
-                                "z_positions": points
-                            })
-                        else:
-                            raise self.server.error("Failed to open mesh")
-                elif script.lower().startswith("bed_mesh_calibrate"):
-                    web_request.get_args()["script"] = "MOVE_HEAT_POS\nM109 S140\nWIPE_NOZZLE\nBED_MESH_CALIBRATE\nSAVE_CONFIG"
             return await self._request_standard(web_request)
 
     async def _request_subscripton(self, web_request: WebRequest) -> Dict[str, Any]:
@@ -658,12 +626,6 @@ class KlippyConnection:
                 )
             # if the connection has an existing subscription pop it off
             self.subscriptions.pop(conn, None)
-            # Do not send bed_mesh to goklipper, it does not support it
-            if 'bed_mesh' in args['objects']:
-                del args['objects']['bed_mesh']
-            if 'bed_mesh \"default\"' in args['objects']:
-                del args['objects']['bed_mesh \"default\"']
-                
             requested_sub: Subscription = args.get('objects', {})
             all_subs: Subscription = dict(requested_sub)
             # Build the subscription request from a superset of all client subscriptions
@@ -722,50 +684,6 @@ class KlippyConnection:
                         pruned_status[obj] = {
                             k: v for k, v in fields.items() if k in valid_fields
                         }
-
-                if 'print_stats' in pruned_status and 'state' in pruned_status['print_stats']:
-                    logging.info(f'Converting Kobra state {pruned_status["print_stats"]["state"]}')
-                    pruned_status['print_stats']['state'] = self.convert_kobra_state(pruned_status['print_stats']['state'])
-
-                # Please STFU Mainsail, we can't add them because of built-in macros'es, they're already exist (Yes, goklipper thing, blah, blah, blah.)
-                if 'configfile' in pruned_status and 'config' in pruned_status['configfile']:
-                    pruned_status['configfile']['config']['gcode_macro pause'] = {}
-                    pruned_status['configfile']['config']['gcode_macro resume'] = {}
-                    pruned_status['configfile']['config']['gcode_macro cancel_print'] = {}
-                
-                # Add bed_mesh, so mainsail will recognize it
-                if os.path.isfile("/userdata/app/gk/printer_data/config/printer_mutable.cfg"):
-                    with open('/userdata/app/gk/printer_data/config/printer_mutable.cfg', 'r') as f:
-                        config = json.load(f)
-                        mesh = config.get('bed_mesh default')
-                        if not mesh is None:
-                            points = json.loads("[[" + mesh.get('points').replace("\n", "], [") + "]]")
-                            
-                            pruned_status['bed_mesh'] = {
-                                "profile_name": "default",
-                                "mesh_min": (float(mesh.get("min_x")), float(mesh.get("min_y"))),
-                                "mesh_max": (float(mesh.get("max_x")), float(mesh.get("max_y"))),
-                                "probed_matrix": points,
-                                "mesh_matrix": points
-                            }
-                            pruned_status['bed_mesh \"default\"'] = {
-                                "points": points,
-                                "mesh_params": {
-                                    "min_x": float(mesh["min_x"]),
-                                    "max_x": float(mesh["max_x"]),
-                                    "min_y": float(mesh["min_y"]),
-                                    "max_y": float(mesh["max_y"]),
-                                    "x_count": int(mesh["x_count"]),
-                                    "y_count": int(mesh["y_count"]),
-                                    "mesh_x_pps": int(mesh["mesh_x_pps"]),
-                                    "mesh_y_pps": int(mesh["mesh_y_pps"]),
-                                    "tension": float(mesh["tension"]),
-                                    "algo": mesh["algo"]
-                                }
-                            }
-                else:
-                     pruned_status['bed_mesh'] = {}
-                     pruned_status['bed_mesh \"default\"'] = {}
             if status_diff:
                 # The response to the status request contains changed data, so it
                 # is necessary to manually push the status update to existing

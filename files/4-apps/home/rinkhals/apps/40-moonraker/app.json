@@ -3,5 +3,5 @@
 
     "name": "Moonraker",
     "description": "Web server that exposes APIs with which client applications may use to interact with the 3D printing firmware Klipper.",
-    "version": "2025-03-21"
+    "version": "ebaa664"
 }

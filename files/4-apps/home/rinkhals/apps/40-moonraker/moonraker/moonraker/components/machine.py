@@ -664,7 +664,6 @@ class Machine:
                                         sequence: int,
                                         notify: bool = True
                                         ) -> None:
-        return
         if sequence % NETWORK_UPDATE_SEQUENCE:
             return
         network: Dict[str, Any] = {}

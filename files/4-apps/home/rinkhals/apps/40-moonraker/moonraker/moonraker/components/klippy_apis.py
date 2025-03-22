@@ -26,7 +26,6 @@ if TYPE_CHECKING:
     from ..confighelper import ConfigHelper
     from ..common import UserInfo
     from .klippy_connection import KlippyConnection as Klippy
-    from .kobra import Kobra
     Subscription = Dict[str, Optional[List[Any]]]
     SubCallback = Callable[[Dict[str, Dict[str, Any]], float], Optional[Coroutine]]
     _T = TypeVar("_T")
@@ -45,7 +44,6 @@ class KlippyAPI(APITransport):
     def __init__(self, config: ConfigHelper) -> None:
         self.server = config.get_server()
         self.klippy: Klippy = self.server.lookup_component("klippy_connection")
-        self.kobra: Kobra = self.server.load_component(config, "kobra")
         self.eventloop = self.server.get_event_loop()
         app_args = self.server.get_app_args()
         self.version = app_args.get('software_version')
@@ -142,21 +140,12 @@ class KlippyAPI(APITransport):
             filename = filename[1:]
         # Escape existing double quotes in the file name
         filename = filename.replace("\"", "\\\"")
-        filename = filename.replace('/useremain/app/gk/gcodes/', '')
-        filename = filename.replace('useremain/app/gk/gcodes/', '')
-        if self.kobra.is_using_mqtt():
-            try:
-                self.kobra.mqtt_print_file(filename)
-            except Exception as e:
-                pass
-            ret = None
-        else:
-            script = f'SDCARD_PRINT_FILE FILENAME="{filename}"'
-            if wait_klippy_started:
-                await self.klippy.wait_started()
-            logging.info(f"Requesting Job Start, filename = {filename}")
-            ret = await self.run_gcode(script)
-            self.server.send_event("klippy_apis:job_start_complete", user)
+        script = f'SDCARD_PRINT_FILE FILENAME="{filename}"'
+        if wait_klippy_started:
+            await self.klippy.wait_started()
+        logging.info(f"Requesting Job Start, filename = {filename}")
+        ret = await self.run_gcode(script)
+        self.server.send_event("klippy_apis:job_start_complete", user)
         return ret
 
     async def pause_print(
@@ -245,14 +234,6 @@ class KlippyAPI(APITransport):
             return default
         raise self.server.error("Invalid response received from Klippy", 500)
 
-    
-    def convert_kobra_state(self, state: str):
-        if state.lower() == 'heating':
-            return 'printing'
-        if state.lower() == 'onpause':
-            return 'paused'
-        return state
-
     async def subscribe_objects(
         self,
         objects: Mapping[str, Optional[List[str]]],
@@ -276,8 +257,6 @@ class KlippyAPI(APITransport):
             if callback is not None:
                 self.subscription_callbacks.append(callback)
             return result["status"]
-        if isinstance(result, dict) and "print_stats" in result and 'state' in result['print_stats']:
-            result['print_stats']['state'] = self.convert_kobra_state(result['print_stats']['state'])
         if default is not Sentinel.MISSING:
             return default
         raise self.server.error("Invalid response received from Klippy", 500)
