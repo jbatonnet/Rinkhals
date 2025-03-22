@@ -9,7 +9,7 @@ import subprocess
 from datetime import datetime
 import paho.mqtt.client as paho
 
-from ..utils import Sentinel
+from ..utils import ServerError, Sentinel
 
 
 class Kobra:
@@ -62,6 +62,9 @@ class Kobra:
         self.patch_gcode_paths()
         logging.info('Completed Kobra patching! Yay!')
 
+        # Trigger LAN mode warning if needed
+        self.get_remote_mode()
+
 
     def is_goklipper_running(self):
         if time.time() < self._goklipper_next_check:
@@ -71,12 +74,15 @@ class Kobra:
             try:
                 os.kill(self._goklipper_pid, 0)
             except:
+                logging.info(f'[Kobra] GoKlipper (PID: {self._goklipper_pid}) died')
                 self._goklipper_pid = None
 
-        if not _goklipper_pid:
-            self._goklipper_pid = subprocess.check_output(['sh', '-c', "ps | grep K3SysUi | grep -v grep | awk '{print $1}'"])
+        if not self._goklipper_pid:
+            self._goklipper_pid = subprocess.check_output(['sh', '-c', "ps | grep gklib | grep -v grep | awk '{print $1}'"])
             self._goklipper_pid = self._goklipper_pid.decode('utf-8').strip()
             self._goklipper_pid = int(self._goklipper_pid) if self._goklipper_pid else None
+            if self._goklipper_pid:
+                logging.info(f'[Kobra] Found GoKlipper process (PID: {self._goklipper_pid})')
 
         self._goklipper_next_check = time.time() + 5
         return self._goklipper_pid != None
@@ -87,7 +93,14 @@ class Kobra:
 
         if os.path.isfile('/useremain/dev/remote_ctrl_mode'):
             with open('/useremain/dev/remote_ctrl_mode', 'r') as f:
-                self._remote_mode = f.read().strip()
+                remote_mode = f.read().strip()
+            if remote_mode != self._remote_mode:
+                logging.info(f'[Kobra] Remote control mode is: {self._remote_mode}')
+                if remote_mode != 'lan':
+                    self.server.add_warning(f'Your Kobra printer is not in LAN mode, prints won\'t be shown on the printer screen', warn_id='kobra_lan_mode')
+                else:
+                    self.server.remove_warning('kobra_lan_mode')
+            self._remote_mode = remote_mode
 
         self._remote_mode_next_check = time.time() + 5
         return self._remote_mode
@@ -126,9 +139,13 @@ class Kobra:
             state = str(payload['state'])
             logging.info(f'Received MQTT print state: {state}')
 
-            if state == 'failed':
-                self.mqtt_print_error = str(payload['msg'])
-                logging.error(f'Failed MQTT print: {self.mqtt_print_error}')
+            if state == 'failed' or state == 'stoped': # not 'heating', not 'printing', not 'leveling'
+                code = payload.get('code')
+                if code and code == 10107:
+                    message = 'Filament broken. Please load new filament. (code 10107)'
+                else:
+                    message = str(payload['msg']) + (f' (code {code})' if code else '')
+                self.mqtt_print_error = message
 
             self.mqtt_print_report = True
 
@@ -141,17 +158,17 @@ class Kobra:
 
         timeout = time.time() + 30
         while not self.mqtt_print_report:
-
             if time.time() > timeout:
-                logging.error(f'Timeout trying to print {file}')
-                return f'Timeout trying to print {file}'
-
+                self.mqtt_print_error = f'Timeout while trying to print {file}'
+                break
             client.loop(timeout = 0.25)
 
         client.disconnect()
 
         if self.mqtt_print_error:
-            raise(Exception(self.mqtt_print_error))
+            message = f'Error while trying to print: {str(self.mqtt_print_error)}'
+            logging.error(message)
+            raise self.server.error(message)
 
 
     def patch_klippy_path(self):
@@ -288,10 +305,7 @@ class Kobra:
                     filename = re.search("FILENAME=\"([^\"]+)\"$", script)
                     filename = filename[1] if filename else None
                     if filename and self.is_using_mqtt():
-                        try:
-                            self.mqtt_print_file(filename)
-                        except Exception as e:
-                            pass
+                        self.mqtt_print_file(filename)
                         return None
                 return await original_run_gcode(me, script, default)
             return run_gcode

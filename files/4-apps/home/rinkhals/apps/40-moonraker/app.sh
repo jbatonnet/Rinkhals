@@ -27,6 +27,7 @@ debug() {
     python -m venv --without-pip .
     . bin/activate
 
+    cp -rf kobra.py moonraker/moonraker/components/kobra.py
     HOME=/userdata/app/gk python ./moonraker/moonraker/moonraker.py -c /userdata/app/gk/printer_data/config/moonraker.generated.conf $@
 }
 stop() {
