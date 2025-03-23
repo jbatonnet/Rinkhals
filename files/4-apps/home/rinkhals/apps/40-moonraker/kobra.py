@@ -187,6 +187,11 @@ class Kobra:
                     state = 'paused'
 
                 status['print_stats']['state'] = state
+
+                if 'idle_timeout' not in status:
+                    status['idle_timeout'] = {}
+
+                status['idle_timeout']['state'] = state
             if 'virtual_sdcard' in status and 'current_layer' in status['virtual_sdcard']:
                 current_layer = status['virtual_sdcard']['current_layer']
                 logging.info(f'[Kobra] Injected current layer {current_layer}')
@@ -195,6 +200,7 @@ class Kobra:
                     status['print_stats'] = {}
                 if 'info' not in status['print_stats']:
                     status['print_stats']['info'] = {}
+
                 status['print_stats']['info']['current_layer'] = current_layer
 
         return status
@@ -464,7 +470,8 @@ class Kobra:
                             "virtual_sdcard",
                             "webhooks",
                             "bed_mesh",
-                            "bed_mesh \"default\""
+                            "bed_mesh \"default\"",
+                            "idle_timeout"
                         ]
                     }
                 return await original_request(me, web_request)
