@@ -316,7 +316,7 @@ class Program:
             home = home[:16] + '...' + home[-16:]
 
         if not self.disk_usage:
-            self.disk_usage = shell(f'df -Ph {RINKHALS_ROOT} | tail -n 1 | awk \'{{print $3 " / " $2 " (" $5 ")"}}\'') if USING_SHELL else '?G / ?G (?%)'
+            self.update_disk_usage()
 
         current_x = (SCREEN_WIDTH / 4) if KOBRA_MODEL_CODE == 'KS1' else SCREEN_WIDTH / 2
         current_y = 214 if KOBRA_MODEL_CODE == 'KS1' else 144
@@ -824,6 +824,36 @@ class Program:
         log(LOG_INFO, f'Stopped app {app} from {app_root}')
         redraw = True
 
+    def update_disk_usage(self):
+        self.disk_usage = shell(f'df -Ph {RINKHALS_ROOT} | tail -n 1 | awk \'{{print $3 " / " $2 " (" $5 ")"}}\'') if USING_SHELL else '?G / ?G (?%)'
+    def clean_old_rinkhals(self):
+        RINKHALS_PATH = '/useremain/rinkhals'
+
+        # List Rinkhals installations
+        installs = [ d.path for d in os.scandir(RINKHALS_PATH) if d.is_dir() and not d.is_symlink() ]
+
+        # Find installation dates
+        install_dates = [ (i, re.search('^(20[0-9]{2}[0-9]{2}[0-9]{2})_', os.path.basename(i))) for i in installs ]
+
+        # Keep 2 official versions, non dev and non current
+        installs_to_clean = []
+
+        non_dates_installs = [ i for i, d in install_dates if not i.endswith('/dev') and i != RINKHALS_ROOT and not d ]
+        for i in non_dates_installs:
+            installs_to_clean.append(i)
+
+        dates_installs = [ i for i, d in install_dates if i != RINKHALS_ROOT and d ]
+        dates_installs = sorted(dates_installs, reverse=True)
+        dates_installs = dates_installs[2:]
+        for i in dates_installs:
+            installs_to_clean.append(i)
+
+        # Remove old installs
+        for i in installs_to_clean:
+            # du -sh
+            os.system(f'rm -rf {i}')
+
+        self.update_disk_usage()
     def stop_rinkhals(self):
         log(LOG_INFO, 'Stopping Rinkhals...')
 
