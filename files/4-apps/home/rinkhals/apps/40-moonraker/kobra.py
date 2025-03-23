@@ -79,7 +79,7 @@ class Kobra:
                 self._goklipper_pid = None
 
         if not self._goklipper_pid:
-            self._goklipper_pid = subprocess.check_output(['sh', '-c', "ps | grep gklib | grep -v grep | awk '{print $1}'"])
+            self._goklipper_pid = subprocess.check_output(['sh', '-c', "ps | grep gklib | grep -v grep | head -n 1 | awk '{print $1}'"])
             self._goklipper_pid = self._goklipper_pid.decode('utf-8').strip()
             self._goklipper_pid = int(self._goklipper_pid) if self._goklipper_pid else None
             if self._goklipper_pid:
