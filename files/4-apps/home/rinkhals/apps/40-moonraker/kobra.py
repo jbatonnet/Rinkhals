@@ -59,7 +59,6 @@ class Kobra:
         self.patch_bed_mesh()
         self.patch_objects_list()
         self.patch_mainsail()
-        self.patch_gcode_paths()
         logging.info('Completed Kobra patching! Yay!')
 
         # Trigger LAN mode warning if needed
@@ -172,32 +171,42 @@ class Kobra:
 
 
     def patch_status(self, status):
-
         if self.is_goklipper_running():
-            if 'print_stats' in status and 'state' in status['print_stats']:
-                state = status['print_stats']['state']
-                logging.info(f'[Kobra] Converted Kobra state {state}')
 
-                if state.lower() == 'heating':
-                    state = 'printing'
-                if state.lower() == 'leveling':
-                    state = 'printing'
-                if state.lower() == 'onpause':
-                    state = 'paused'
+            if 'print_stats' in status:
+                if 'state' in status['print_stats']: 
+                    # Convert Kobra state
+                    state = status['print_stats']['state']
+                    logging.info(f'[Kobra] Converted Kobra state {state}')
 
-                status['print_stats']['state'] = state
+                    if state.lower() == 'heating':
+                        state = 'printing'
+                    if state.lower() == 'leveling':
+                        state = 'printing'
+                    if state.lower() == 'onpause':
+                        state = 'paused'
 
-                if 'idle_timeout' not in status:
-                    status['idle_timeout'] = {}
+                    status['print_stats']['state'] = state
 
-                status['idle_timeout']['state'] = state
+                    # Inject in 'idle_timeout' for Fluidd
+                    if 'idle_timeout' not in status:
+                        status['idle_timeout'] = {}
+
+                    status['idle_timeout']['state'] = state
+
+                if 'filename' in status['print_stats']:
+                    # Remove path prefix from filename
+                    status['print_stats']['filename'] = status['print_stats']['filename'].replace('/useremain/app/gk/gcodes/', '')
+
             if 'virtual_sdcard' in status:
                 if 'total_layer' in status['virtual_sdcard']:
+                    # Save layer count for later
                     self._total_layer = status['virtual_sdcard']['total_layer']
                 
                 if 'current_layer' in status['virtual_sdcard']:
                     current_layer = status['virtual_sdcard']['current_layer']
 
+                    # Inject current and total layer count in 'info' for Mainsail / Fluidd
                     if 'print_stats' not in status:
                         status['print_stats'] = {}
                     if 'info' not in status['print_stats']:
@@ -205,6 +214,10 @@ class Kobra:
 
                     status['print_stats']['info']['current_layer'] = current_layer
                     status['print_stats']['info']['total_layer'] = self._total_layer
+                
+                if 'file_path' in status['virtual_sdcard']:
+                    # Remove path prefix from file path
+                    status['virtual_sdcard']['file_path'] = status['virtual_sdcard']['file_path'].replace('/useremain/app/gk/gcodes/', '')
 
         return status
 
@@ -316,10 +329,7 @@ class Kobra:
         def wrap_run_gcode(original_run_gcode):
             async def run_gcode(me, script, default = Sentinel.MISSING):
                 if self.is_goklipper_running() and script.startswith('SDCARD_PRINT_FILE'):
-                    script = script.replace('/useremain/app/gk/gcodes/', '')
-                    script = script.replace('useremain/app/gk/gcodes/', '')
                     self._total_layer = 0
-                    print(script)
                     filename = re.search("FILENAME=\"([^\"]+)\"$", script)
                     filename = filename[1] if filename else None
                     if filename and self.is_using_mqtt():
@@ -498,23 +508,6 @@ class Kobra:
         logging.debug(f'  Before: {KlippyConnection._request_standard}')
         setattr(KlippyConnection, '_request_standard', wrap__request_standard(KlippyConnection._request_standard))
         logging.debug(f'  After: {KlippyConnection._request_standard}')
-
-    def patch_gcode_paths(self):
-        from .file_manager.file_manager import FileManager
-
-        def wrap__handle_metadata_request(original__handle_metadata_request):
-            async def _handle_metadata_request(me, web_request):
-                if self.is_goklipper_running() and 'filename' in web_request.args:
-                    logging.info('[Kobra] Replaced gcode paths')
-                    web_request.args['filename'] = web_request.args['filename'].replace('/useremain/app/gk/gcodes/', '')
-                return await original__handle_metadata_request(me, web_request)
-            return _handle_metadata_request
-
-        logging.info('> Patching gcode paths...')
-
-        logging.debug(f'  Before: {FileManager._handle_metadata_request}')
-        setattr(FileManager, '_handle_metadata_request', wrap__handle_metadata_request(FileManager._handle_metadata_request))
-        logging.debug(f'  After: {FileManager._handle_metadata_request}')
 
 
 def load_component(config):
