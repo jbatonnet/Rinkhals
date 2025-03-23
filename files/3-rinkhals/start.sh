@@ -167,6 +167,16 @@ $RINKHALS_ROOT/opt/rinkhals/scripts/ntpclient.sh &
 
 
 ################
+log "> Trimming old logs..."
+
+for LOG_FILE in $RINKHALS_ROOT/logs/*.log ; do
+    tail -c 1048576 $LOG_FILE > $LOG_FILE.tmp
+    cat $LOG_FILE.tmp > $LOG_FILE
+    rm $LOG_FILE.tmp
+done
+
+
+################
 log "> Starting SSH & ADB..."
 
 if [ "$(get_by_port 22)" != "" ]; then
