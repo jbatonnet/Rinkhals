@@ -51,15 +51,16 @@ class Kobra:
         # Monkey patch Moonraker for Kobra
         logging.info('Starting Kobra patching...')
         #self.patch_klippy_path()
+        self.patch_status_updates()
         self.patch_network_interfaces()
         self.patch_spoolman()
         self.patch_simplyprint()
-        self.patch_kobra_state()
         self.patch_mqtt_print()
         self.patch_bed_mesh()
         self.patch_objects_list()
         self.patch_mainsail()
         self.patch_gcode_paths()
+        #self.patch_layer_count()
         logging.info('Completed Kobra patching! Yay!')
 
         # Trigger LAN mode warning if needed
@@ -171,6 +172,87 @@ class Kobra:
             raise self.server.error(message)
 
 
+    def patch_status(self, status):
+
+        if self.is_goklipper_running():
+            if 'print_stats' in status and 'state' in status['print_stats']:
+                state = status['print_stats']['state']
+                logging.info(f'[Kobra] Converted Kobra state {state}')
+
+                if state.lower() == 'heating':
+                    state = 'printing'
+                if state.lower() == 'leveling':
+                    state = 'printing'
+                if state.lower() == 'onpause':
+                    state = 'paused'
+
+                status['print_stats']['state'] = state
+            if 'virtual_sdcard' in status and 'current_layer' in status['virtual_sdcard']:
+                current_layer = status['virtual_sdcard']['current_layer']
+                logging.info(f'[Kobra] Injected current layer {current_layer}')
+
+                if 'print_stats' not in status:
+                    status['print_stats'] = {}
+                if 'info' not in status['print_stats']:
+                    status['print_stats']['info'] = {}
+                status['print_stats']['info']['current_layer'] = current_layer
+
+        return status
+
+
+    def patch_status_updates(self):
+        from .klippy_apis import KlippyAPI
+        from .klippy_connection import KlippyConnection, KlippyRequest
+
+        logging.info('> Hooking status change...')
+
+        def wrap__send_klippy_request(original__send_klippy_request):
+            async def _send_klippy_request(me, method, params, default = Sentinel.MISSING, transport = None):
+                result = await original__send_klippy_request(me, method, params, default, transport)
+                if result and isinstance(result, dict) and 'status' in result:
+                    result['status'] = self.patch_status(result['status'])
+                return result
+            return _send_klippy_request
+
+        def wrap_send_status(original_send_status):
+            def send_status(me, status, eventtime):
+                status = self.patch_status(status)
+                return original_send_status(me, status, eventtime)
+            return send_status
+
+        logging.debug(f'  Before: {KlippyAPI._send_klippy_request}')
+        setattr(KlippyAPI, '_send_klippy_request', wrap__send_klippy_request(KlippyAPI._send_klippy_request))
+        logging.debug(f'  After: {KlippyAPI._send_klippy_request}')
+
+        logging.debug(f'  Before: {KlippyAPI.send_status}')
+        setattr(KlippyAPI, 'send_status', wrap_send_status(KlippyAPI.send_status))
+        logging.debug(f'  After: {KlippyAPI.send_status}')
+
+        def wrap__process_status_update(original__process_status_update):
+            def _process_status_update(me, eventtime, status):
+                status = self.patch_status(status)
+                return original__process_status_update(me, eventtime, status)
+            return _process_status_update
+
+        logging.debug(f'  Before: {KlippyConnection._process_status_update}')
+        setattr(KlippyConnection, '_process_status_update', wrap__process_status_update(KlippyConnection._process_status_update))
+        logging.debug(f'  After: {KlippyConnection._process_status_update}')
+
+        klippy_connection = self.server.lookup_component("klippy_connection")
+        klippy_connection.unregister_method('process_status_update')
+        klippy_connection.register_remote_method('process_status_update', klippy_connection._process_status_update, need_klippy_reg=False)
+
+        def wrap_set_result(original_set_result):
+            def set_result(me, result):
+                if isinstance(result, dict) and 'status' in result:
+                    result['status'] = self.patch_status(result['status'])
+                original_set_result(me, result)
+            return set_result
+
+        logging.debug(f'  Before: {KlippyRequest.set_result}')
+        setattr(KlippyRequest, 'set_result', wrap_set_result(KlippyRequest.set_result))
+        logging.debug(f'  After: {KlippyRequest.set_result}')
+
     def patch_klippy_path(self):
         from .application import MoonrakerApp
         application_module = sys.modules[MoonrakerApp.__module__]
@@ -226,72 +308,6 @@ class Kobra:
         logging.debug(f'  Before: {Server.get_klippy_info}')
         setattr(Server, 'get_klippy_info', wrap_get_klippy_info(Server.get_klippy_info))
         logging.debug(f'  After: {Server.get_klippy_info}')
-
-    def patch_kobra_state(self):
-        from .klippy_apis import KlippyAPI
-        from .klippy_connection import KlippyConnection, KlippyRequest
-
-        def convert_kobra_state(state):
-            if self.is_goklipper_running():
-                logging.info(f'[Kobra] Converted Kobra state {state}')
-                if state.lower() == 'heating':
-                    return 'printing'
-                if state.lower() == 'leveling':
-                    return 'printing'
-                if state.lower() == 'onpause':
-                    return 'paused'
-            return state
-
-        def wrap__send_klippy_request(original__send_klippy_request):
-            async def _send_klippy_request(me, method, params, default = Sentinel.MISSING, transport = None):
-                result = await original__send_klippy_request(me, method, params, default, transport)
-                if result and isinstance(result, dict) and 'status' in result and 'print_stats' in result['status'] and 'state' in result['status']['print_stats']:
-                    result['status']['print_stats']['state'] = convert_kobra_state(result['status']['print_stats']['state'])
-                return result
-            return _send_klippy_request
-
-        def wrap_send_status(original_send_status):
-            def send_status(me, status, eventtime):
-                if 'print_stats' in status and 'state' in status['print_stats']:
-                    status['print_stats']['state'] = convert_kobra_state(status['print_stats']['state'])
-                return original_send_status(me, status, eventtime)
-            return send_status
-
-        logging.info('> Automatically convert Kobra state...')
-
-        logging.debug(f'  Before: {KlippyAPI._send_klippy_request}')
-        setattr(KlippyAPI, '_send_klippy_request', wrap__send_klippy_request(KlippyAPI._send_klippy_request))
-        logging.debug(f'  After: {KlippyAPI._send_klippy_request}')
-
-        logging.debug(f'  Before: {KlippyAPI.send_status}')
-        setattr(KlippyAPI, 'send_status', wrap_send_status(KlippyAPI.send_status))
-        logging.debug(f'  After: {KlippyAPI.send_status}')
-
-        def wrap__process_status_update(original__process_status_update):
-            def _process_status_update(me, eventtime, status):
-                if 'print_stats' in status and 'state' in status['print_stats']:
-                    status['print_stats']['state'] = convert_kobra_state(status['print_stats']['state'])
-                return original__process_status_update(me, eventtime, status)
-            return _process_status_update
-
-        logging.debug(f'  Before: {KlippyConnection._process_status_update}')
-        setattr(KlippyConnection, '_process_status_update', wrap__process_status_update(KlippyConnection._process_status_update))
-        logging.debug(f'  After: {KlippyConnection._process_status_update}')
-
-        klippy_connection = self.server.lookup_component("klippy_connection")
-        klippy_connection.unregister_method('process_status_update')
-        klippy_connection.register_remote_method('process_status_update', klippy_connection._process_status_update, need_klippy_reg=False)
-
-        def wrap_set_result(original_set_result):
-            def set_result(me, result):
-                if isinstance(result, dict) and 'status' in result and 'print_stats' in result['status'] and 'state' in result['status']['print_stats']:
-                    result['status']['print_stats']['state'] = convert_kobra_state(result['status']['print_stats']['state'])
-                original_set_result(me, result)
-            return set_result
-
-        logging.debug(f'  Before: {KlippyRequest.set_result}')
-        setattr(KlippyRequest, 'set_result', wrap_set_result(KlippyRequest.set_result))
-        logging.debug(f'  After: {KlippyRequest.set_result}')
 
     def patch_mqtt_print(self):
         from .klippy_apis import KlippyAPI
@@ -496,6 +512,24 @@ class Kobra:
         logging.debug(f'  Before: {FileManager._handle_metadata_request}')
         setattr(FileManager, '_handle_metadata_request', wrap__handle_metadata_request(FileManager._handle_metadata_request))
         logging.debug(f'  After: {FileManager._handle_metadata_request}')
+
+    def patch_layer_count(self):
+        from .job_state import JobState
+        
+        logging.info('> Subscribing to layer change...')
+
+        async def _handle_started(state):
+            if self.is_goklipper_running():
+                logging.info('[Kobra] Subscribing to virtual_sdcard')
+                kapis = self.server.lookup_component('klippy_apis')
+                job_state = self.server.lookup_component('job_state')
+                sub = {"virtual_sdcard": None}
+                try:
+                    result = await kapis.subscribe_objects(sub, job_state._status_update)
+                except:
+                    pass
+
+        self.server.register_event_handler("server:klippy_started", _handle_started)
 
 
 def load_component(config):
