@@ -28,6 +28,7 @@ class Kobra:
     _goklipper_pid = None
     _remote_mode_next_check = 0
     _remote_mode = None
+    _total_layer = 0
 
     def __init__(self, config):
         self.server = config.get_server()
@@ -50,7 +51,6 @@ class Kobra:
         
         # Monkey patch Moonraker for Kobra
         logging.info('Starting Kobra patching...')
-        #self.patch_klippy_path()
         self.patch_status_updates()
         self.patch_network_interfaces()
         self.patch_spoolman()
@@ -60,7 +60,6 @@ class Kobra:
         self.patch_objects_list()
         self.patch_mainsail()
         self.patch_gcode_paths()
-        #self.patch_layer_count()
         logging.info('Completed Kobra patching! Yay!')
 
         # Trigger LAN mode warning if needed
@@ -192,16 +191,20 @@ class Kobra:
                     status['idle_timeout'] = {}
 
                 status['idle_timeout']['state'] = state
-            if 'virtual_sdcard' in status and 'current_layer' in status['virtual_sdcard']:
-                current_layer = status['virtual_sdcard']['current_layer']
-                logging.info(f'[Kobra] Injected current layer {current_layer}')
+            if 'virtual_sdcard' in status:
+                if 'total_layer' in status['virtual_sdcard']:
+                    self._total_layer = status['virtual_sdcard']['total_layer']
+                
+                if 'current_layer' in status['virtual_sdcard']:
+                    current_layer = status['virtual_sdcard']['current_layer']
 
-                if 'print_stats' not in status:
-                    status['print_stats'] = {}
-                if 'info' not in status['print_stats']:
-                    status['print_stats']['info'] = {}
+                    if 'print_stats' not in status:
+                        status['print_stats'] = {}
+                    if 'info' not in status['print_stats']:
+                        status['print_stats']['info'] = {}
 
-                status['print_stats']['info']['current_layer'] = current_layer
+                    status['print_stats']['info']['current_layer'] = current_layer
+                    status['print_stats']['info']['total_layer'] = self._total_layer
 
         return status
 
@@ -259,14 +262,6 @@ class Kobra:
         setattr(KlippyRequest, 'set_result', wrap_set_result(KlippyRequest.set_result))
         logging.debug(f'  After: {KlippyRequest.set_result}')
 
-    def patch_klippy_path(self):
-        from .application import MoonrakerApp
-        application_module = sys.modules[MoonrakerApp.__module__]
-
-        #logging.info('> Klippy log path...')
-        #setattr(application_module, 'DEFAULT_KLIPPY_LOG_PATH', '/useremain/rinkhals/.current/logs/gklib.log')
-        #logging.debug(f'  DEFAULT_KLIPPY_LOG_PATH: {application_module.DEFAULT_KLIPPY_LOG_PATH}')
-
     def patch_network_interfaces(self):
         from .machine import Machine
 
@@ -323,6 +318,7 @@ class Kobra:
                 if self.is_goklipper_running() and script.startswith('SDCARD_PRINT_FILE'):
                     script = script.replace('/useremain/app/gk/gcodes/', '')
                     script = script.replace('useremain/app/gk/gcodes/', '')
+                    self._total_layer = 0
                     print(script)
                     filename = re.search("FILENAME=\"([^\"]+)\"$", script)
                     filename = filename[1] if filename else None
@@ -519,24 +515,6 @@ class Kobra:
         logging.debug(f'  Before: {FileManager._handle_metadata_request}')
         setattr(FileManager, '_handle_metadata_request', wrap__handle_metadata_request(FileManager._handle_metadata_request))
         logging.debug(f'  After: {FileManager._handle_metadata_request}')
-
-    def patch_layer_count(self):
-        from .job_state import JobState
-        
-        logging.info('> Subscribing to layer change...')
-
-        async def _handle_started(state):
-            if self.is_goklipper_running():
-                logging.info('[Kobra] Subscribing to virtual_sdcard')
-                kapis = self.server.lookup_component('klippy_apis')
-                job_state = self.server.lookup_component('job_state')
-                sub = {"virtual_sdcard": None}
-                try:
-                    result = await kapis.subscribe_objects(sub, job_state._status_update)
-                except:
-                    pass
-
-        self.server.register_event_handler("server:klippy_started", _handle_started)
 
 
 def load_component(config):
