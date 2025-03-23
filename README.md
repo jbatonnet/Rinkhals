@@ -51,9 +51,9 @@ After installation, Rinkhals provides a touch UI accessible from the printer scr
 This UI allows you to stop or disable Rinkhals, and to control what feature and or app is enabled. This will allow you to customize your experience and keep the printer memory as low as needed based on your situation.
 
 <p align="center">
-    <img width="192" src="./doc/screenshot-settings.png">
-    <img width="192" src="./doc/screenshot-rinkhals-ui.png">
-    <img width="192" src="./doc/screenshot-rinkhals-apps.png">
+    <img width="192" src="./.github/images/screenshot-settings.png">
+    <img width="192" src="./.github/images/screenshot-rinkhals-ui.png">
+    <img width="192" src="./.github/images/screenshot-rinkhals-apps.png">
 </p>
 
 ## Apps system
