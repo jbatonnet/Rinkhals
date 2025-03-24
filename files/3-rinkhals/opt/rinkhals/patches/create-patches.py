@@ -183,7 +183,7 @@ def patch_K3SysUi(binaryPath, modelCode, version):
 
     address = freeSpace
     
-    if modelCode == 'KS1' and version == '2.4.8.3':
+    if modelCode == 'KS1':
         # if (row() != 3) return
         k3sysui.asm(address + 0, 'mov r0, r4')
         k3sysui.asm(address + 4, 'cmp r3, #0x3')
