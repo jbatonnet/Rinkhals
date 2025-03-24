@@ -162,7 +162,6 @@ done
 source /etc/profile
 
 # Start time synchronization
-/sbin/udhcpc -i wlan0 > /dev/null 2>&1
 $RINKHALS_ROOT/opt/rinkhals/scripts/ntpclient.sh &
 
 

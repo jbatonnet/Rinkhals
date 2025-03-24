@@ -4,7 +4,7 @@ scripts/tmp
 
 # Build temp artifacts and cache
 build/dist
-build/.README.md
+build/dev.md
 build/1-buildroot/rootfs/rootfs.tar.gz
 build/cache
 

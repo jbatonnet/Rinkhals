@@ -1,8 +1,9 @@
 export TZ=UTC
 
 LEASE_FILE="/useremain/home/rinkhals/dhcp.lease"
-
 NTP_SERVER="pool.ntp.org"
+
+/sbin/udhcpc -i wlan0 > /dev/null 2>&1
 
 if [ -f "$LEASE_FILE" ]; then
     LEASE_NTP=$(grep "NTP-Server:" "$LEASE_FILE" | awk '{print $2}')
