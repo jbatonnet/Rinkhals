@@ -10,6 +10,7 @@ from datetime import datetime
 import paho.mqtt.client as paho
 
 from ..utils import ServerError, Sentinel
+from .power import PowerDevice
 
 
 class Kobra:
@@ -32,6 +33,7 @@ class Kobra:
 
     def __init__(self, config):
         self.server = config.get_server()
+        self.power = self.server.load_component(self.server.config, 'power')
 
         # Extract environment values from the printer
         try:
@@ -42,6 +44,7 @@ class Kobra:
             self.KOBRA_DEVICE_ID = environment['KOBRA_DEVICE_ID']
         except:
             pass
+
         if os.path.isfile('/userdata/app/gk/config/device_account.json'):
             with open('/userdata/app/gk/config/device_account.json', 'r') as f:
                 json_data = f.read()
@@ -51,6 +54,7 @@ class Kobra:
         
         # Monkey patch Moonraker for Kobra
         logging.info('Starting Kobra patching...')
+
         self.patch_status_updates()
         self.patch_network_interfaces()
         self.patch_spoolman()
@@ -59,10 +63,32 @@ class Kobra:
         self.patch_bed_mesh()
         self.patch_objects_list()
         self.patch_mainsail()
+
         logging.info('Completed Kobra patching! Yay!')
 
         # Trigger LAN mode warning if needed
         self.get_remote_mode()
+
+    async def component_init(self):
+        # Add camera and head lights power devices
+        config = self.server.config.read_supplemental_dict({
+            'power camera_light': {
+                'type': 'shell',
+                'power_on_command': "v4l2-ctl -d /dev/video10 -c gain=1 2>/dev/null || printf '{\"method\":\"Led/SetCameraLed\",\"params\":{\"enable\":1},\"id\":37}\x03' | socat -t0 -,ignoreeof UNIX-CONNECT:/tmp/unix_uds1,escape=0x03",
+                'power_off_command': "v4l2-ctl -d /dev/video10 -c gain=0 2>/dev/null || printf '{\"method\":\"Led/SetCameraLed\",\"params\":{\"enable\":0},\"id\":37}\x03' | socat -t0 -,ignoreeof UNIX-CONNECT:/tmp/unix_uds1,escape=0x03",
+                'get_state_command': "v4l2-ctl -d /dev/video10 -C gain | awk '{print $2}'",
+                'default_state': 'on'
+            },
+            'power head_light': {
+                'type': 'shell',
+                'power_on_command': "printf '{\"method\":\"led/set_led\",\"params\":{\"S\":1},\"id\":37}\x03' | socat -t0 -,ignoreeof UNIX-CONNECT:/tmp/unix_uds1,escape=0x03",
+                'power_off_command': "printf '{\"method\":\"led/set_led\",\"params\":{\"S\":0},\"id\":37}\x03' | socat -t0 -,ignoreeof UNIX-CONNECT:/tmp/unix_uds1,escape=0x03",
+                'default_state': 'on'
+            }
+        })
+
+        await self.power.add_device('camera_light', ShellPowerDevice(config.getsection('power camera_light')))
+        await self.power.add_device('head_light', ShellPowerDevice(config.getsection('power head_light')))
 
 
     def is_goklipper_running(self):
@@ -508,6 +534,61 @@ class Kobra:
         logging.debug(f'  Before: {KlippyConnection._request_standard}')
         setattr(KlippyConnection, '_request_standard', wrap__request_standard(KlippyConnection._request_standard))
         logging.debug(f'  After: {KlippyConnection._request_standard}')
+
+class ShellPowerDevice(PowerDevice):
+    def __init__(self, config):
+        super().__init__(config)
+        self.power_on_command = config.get('power_on_command', None)
+        if not self.power_on_command:
+            raise config.error(f"Option 'power_on_command' in section [{config.get_name()}] must be set")
+        self.power_off_command = config.get('power_off_command', None)
+        if not self.power_off_command:
+            raise config.error(f"Option 'power_off_command' in section [{config.get_name()}] must be set")
+        self.get_state_command = config.get('get_state_command', None)
+        self.state = config.get('default_state', None)
+
+    async def init_state(self):
+        await self.refresh_status()
+
+    async def refresh_status(self):
+        if not self.get_state_command:
+            return
+
+        try:
+            command = self.get_state_command
+            result = subprocess.check_output(['sh', '-c', command])
+            result = result.decode('utf-8').strip()
+            logging.debug(f'ShellPowerDevice "{command}" => "{result}"')
+
+            previous_state = self.state
+
+            if result and (result == '1' or str(result).lower() == 'true' or str(result).lower() == 'on'):
+                self.state = 'on'
+            else:
+                self.state = 'off'
+
+            if previous_state != self.state:
+                logging.info(f'ShellPowerDevice {self.name} is now {self.state}')
+                self.notify_power_changed()
+        except:
+            logging.exception(f"ShellPowerDevice error: {self.name}")
+
+    async def set_power(self, state):
+        if not self.get_state_command:
+            self.state = state
+
+        state = int(state == "on")
+
+        try:
+            command = self.power_on_command if state else self.power_off_command
+            result = subprocess.check_output(['sh', '-c', command])
+            result = result.decode('utf-8').strip()
+            logging.debug(f'ShellPowerDevice "{command}" => "{result}"')
+        except:
+            logging.exception(f"ShellPowerDevice error: {self.name}")
+
+        await self.refresh_status()
+
 
 
 def load_component(config):
