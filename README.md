@@ -8,7 +8,7 @@ I will likely not support all use cases, like running vanilla Klipper or your sp
 By using Rinkhals, you will keep all stock Anycubic features (print screen, Anycubic tools, calibration, ...) and get even more, like:
 - Mainsail, Fluidd (with Moonraker)
 - USB camera support in Mainsail, Fluidd
-- Orca will show the print progress on the printer screen
+- Prints from Orca will show the print screen
 - SSH access for customization (user: **root**, password: **rockchip**)
 - [Apps system](https://github.com/jbatonnet/Rinkhals.apps) (OctoApp, Cloudflare, Tailscale, ...)
 
@@ -44,21 +44,22 @@ For more information about installation, firmware updates and details about spec
 
 ## Touch UI
 
-_(Working for Kobra 2 Pro and Kobra 3, testing for Kobra S1)_
-
 After installation, Rinkhals provides a touch UI accessible from the printer screen when you tap the Settings icon, then tap Rinkhals.
 
-This UI allows you to stop or disable Rinkhals, and to control what feature and or app is enabled. This will allow you to customize your experience and keep the printer memory as low as needed based on your situation.
+This UI allows you to stop or disable Rinkhals, and to control what feature and or app is enabled. This will allow you to customize your experience and keep the printer memory as low as needed based on your needs.
 
 <p align="center">
-    <img width="192" src="./.github/images/screenshot-settings.png">
+    <!-- <img width="192" src="./.github/images/screenshot-settings.png"> -->
     <img width="192" src="./.github/images/screenshot-rinkhals-ui.png">
     <img width="192" src="./.github/images/screenshot-rinkhals-apps.png">
+    <img width="192" src="./.github/images/screenshot-rinkhals-app.png">
 </p>
 
 ## Apps system
 
-An apps system is provided in Rinkhals. It allows for the users to easily add some features to their printer. Some default ones are provided and other are available on a separate repo: https://github.com/jbatonnet/Rinkhals.apps
+An apps system is provided in Rinkhals. It allows for the users to easily add some features to their printer. Some default ones are provided and other are available on separate repos like:
+- https://github.com/jbatonnet/Rinkhals.apps (Tailscale, Cloudflare, OctoApp companion, some progress on vanilla Klipper, ...)
+- https://github.com/basvd/Rinkhals.WebUI (a web interface for Rinkhals)
 
 Instructions on how to install or develop apps are on the other repo as well.
 
@@ -130,6 +131,13 @@ Thanks to the following projects/persons:
 - utkabobr (https://github.com/utkabobr/DuckPro-Kobra3)
 - systemik (https://github.com/systemik/Kobra3-Firmware)
 - Anycubic for the cool printer and the few OSS items (https://github.com/ANYCUBIC-3D/Kobra)
-- Icon created by Freepik - Flaticon (https://www.flaticon.com/free-icons/snake)
+- Icon created by Freepik - Flaticon (https://www.flaticon.com/free-icon/cobra_375098)
 - moosbewohner for Kobra 2 Pro support (https://github.com/moosbewohner/Rinkhals)
 - Kalenell and woswai1337 for Kobra S1 support
+
+Thanks to the project and apps contributors, including the persons below and many more:
+- Matthias Goebl (https://github.com/matgoebl)
+- Tobias Göbel (https://github.com/kubax)
+- dan3805 (https://github.com/dan3805)
+- basvd (https://github.com/basvd)
+- Meowcat285 (https://github.com/Meowcat285)
