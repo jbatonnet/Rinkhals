@@ -16,6 +16,7 @@ from .power import PowerDevice
 class Kobra:
     # Environment
     KOBRA_MODEL_ID = None
+    KOBRA_MODEL_CODE = None
     KOBRA_DEVICE_ID = None
     MQTT_USERNAME = None
     MQTT_PASSWORD = None
@@ -41,6 +42,7 @@ class Kobra:
             environment = subprocess.check_output(['sh', '-c', command])
             environment = json.loads(environment.decode('utf-8').strip())
             self.KOBRA_MODEL_ID = environment['KOBRA_MODEL_ID']
+            self.KOBRA_MODEL_CODE = environment['KOBRA_MODEL_CODE']
             self.KOBRA_DEVICE_ID = environment['KOBRA_DEVICE_ID']
         except:
             pass
@@ -70,25 +72,40 @@ class Kobra:
         self.get_remote_mode()
 
     async def component_init(self):
-        # Add camera and head lights power devices
-        config = self.server.config.read_supplemental_dict({
-            'power camera_light': {
-                'type': 'shell',
-                'power_on_command': "v4l2-ctl -d /dev/video10 -c gain=1 2>/dev/null || printf '{\"method\":\"Led/SetCameraLed\",\"params\":{\"enable\":1},\"id\":37}\x03' | socat -t0 -,ignoreeof UNIX-CONNECT:/tmp/unix_uds1,escape=0x03",
-                'power_off_command': "v4l2-ctl -d /dev/video10 -c gain=0 2>/dev/null || printf '{\"method\":\"Led/SetCameraLed\",\"params\":{\"enable\":0},\"id\":37}\x03' | socat -t0 -,ignoreeof UNIX-CONNECT:/tmp/unix_uds1,escape=0x03",
-                'get_state_command': "v4l2-ctl -d /dev/video10 -C gain | awk '{print $2}'",
-                'default_state': 'on'
-            },
-            'power head_light': {
-                'type': 'shell',
-                'power_on_command': "printf '{\"method\":\"led/set_led\",\"params\":{\"S\":1},\"id\":37}\x03' | socat -t0 -,ignoreeof UNIX-CONNECT:/tmp/unix_uds1,escape=0x03",
-                'power_off_command': "printf '{\"method\":\"led/set_led\",\"params\":{\"S\":0},\"id\":37}\x03' | socat -t0 -,ignoreeof UNIX-CONNECT:/tmp/unix_uds1,escape=0x03",
-                'default_state': 'on'
-            }
-        })
 
-        await self.power.add_device('camera_light', ShellPowerDevice(config.getsection('power camera_light')))
-        await self.power.add_device('head_light', ShellPowerDevice(config.getsection('power head_light')))
+        if self.KOBRA_MODEL_CODE == 'K3':
+            # Add camera and head lights power devices
+            config = self.server.config.read_supplemental_dict({
+                'power camera_light': {
+                    'type': 'shell',
+                    'power_on_command': "v4l2-ctl -d /dev/video10 -c gain=1 2>/dev/null || printf '{\"method\":\"Led/SetCameraLed\",\"params\":{\"enable\":1},\"id\":37}\x03' | socat -t0 -,ignoreeof UNIX-CONNECT:/tmp/unix_uds1,escape=0x03",
+                    'power_off_command': "v4l2-ctl -d /dev/video10 -c gain=0 2>/dev/null || printf '{\"method\":\"Led/SetCameraLed\",\"params\":{\"enable\":0},\"id\":37}\x03' | socat -t0 -,ignoreeof UNIX-CONNECT:/tmp/unix_uds1,escape=0x03",
+                    'get_state_command': "v4l2-ctl -d /dev/video10 -C gain | awk '{print $2}'",
+                    'default_state': 'on'
+                },
+                'power head_light': {
+                    'type': 'shell',
+                    'power_on_command': "printf '{\"method\":\"led/set_led\",\"params\":{\"S\":1},\"id\":37}\x03' | socat -t0 -,ignoreeof UNIX-CONNECT:/tmp/unix_uds1,escape=0x03",
+                    'power_off_command': "printf '{\"method\":\"led/set_led\",\"params\":{\"S\":0},\"id\":37}\x03' | socat -t0 -,ignoreeof UNIX-CONNECT:/tmp/unix_uds1,escape=0x03",
+                    'default_state': 'on'
+                }
+            })
+
+            await self.power.add_device('camera_light', ShellPowerDevice(config.getsection('power camera_light')))
+            await self.power.add_device('head_light', ShellPowerDevice(config.getsection('power head_light')))
+
+        elif self.KOBRA_MODEL_CODE == 'KS1':
+            # Add camera and head lights power devices
+            config = self.server.config.read_supplemental_dict({
+                'power chamber_light': {
+                    'type': 'shell',
+                    'power_on_command': "printf '{\"method\":\"led/set_led\",\"params\":{\"S\":1},\"id\":37}\x03' | socat -t0 -,ignoreeof UNIX-CONNECT:/tmp/unix_uds1,escape=0x03",
+                    'power_off_command': "printf '{\"method\":\"led/set_led\",\"params\":{\"S\":0},\"id\":37}\x03' | socat -t0 -,ignoreeof UNIX-CONNECT:/tmp/unix_uds1,escape=0x03",
+                    'default_state': 'on'
+                }
+            })
+
+            await self.power.add_device('chamber_light', ShellPowerDevice(config.getsection('power chamber_light')))
 
 
     def is_goklipper_running(self):
