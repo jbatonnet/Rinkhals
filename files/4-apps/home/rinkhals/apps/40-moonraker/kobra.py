@@ -65,6 +65,7 @@ class Kobra:
         self.patch_bed_mesh()
         self.patch_objects_list()
         self.patch_mainsail()
+        self.patch_k2p_bug()
 
         logging.info('Completed Kobra patching! Yay!')
 
@@ -551,6 +552,26 @@ class Kobra:
         logging.debug(f'  Before: {KlippyConnection._request_standard}')
         setattr(KlippyConnection, '_request_standard', wrap__request_standard(KlippyConnection._request_standard))
         logging.debug(f'  After: {KlippyConnection._request_standard}')
+
+    def patch_k2p_bug(self):
+        from .klippy_apis import KlippyAPI
+
+        def wrap_get_klippy_info(original_get_klippy_info):
+            async def get_klippy_info(me, send_id, default = Sentinel.MISSING):
+                result = await original_get_klippy_info(me)
+                if self.is_goklipper_running():
+                    result['klipper_path'] = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))))
+                    result['python_path'] = ''
+                    logging.info('[Kobra] Injected missing paths')
+                return result
+            return get_klippy_info
+
+        logging.info('> Fix K2P startup bug...')
+
+        logging.debug(f'  Before: {KlippyAPI.get_klippy_info}')
+        setattr(KlippyAPI, 'get_klippy_info', wrap_get_klippy_info(KlippyAPI.get_klippy_info))
+        logging.debug(f'  After: {KlippyAPI.get_klippy_info}')
+
 
 class ShellPowerDevice(PowerDevice):
     def __init__(self, config):
