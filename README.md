@@ -36,6 +36,9 @@ Since people have been asking, I accept donations but please remember that I wor
 > [!WARNING]
 > **Make sure you're confident tweaking your printer and you understand what you're doing. I'm not responsible if you brick your printer (even if there's some [documentation](https://github.com/jbatonnet/Rinkhals/wiki/Boot-issues) about that)**
 
+> [!CAUTION]
+> Many users want to change their Klipper printer configuration (the printer.cfg file). I strongly advise not modifying the stock printer configuration. Rinkhals offers additional protection you don't have while modifying directly your printer configuration. **I won't offer any support** and **your printer might not work properly or not boot anymore**. Check the Wiki for more information: [Printer configuration](https://github.com/jbatonnet/Rinkhals/wiki/Rinkhals-%E2%80%90-Printer-configuration)
+
 Rinkhals uses an overlay system to keep its modifications isolated from the stock firmware. This way it's easier to revert back to stock if needed, or use multiple versions in parrallel.
 
 Download the release you want from the [Releases](https://github.com/jbatonnet/Rinkhals/releases) page, rename it as **update.swu** in a directory named **aGVscF9zb3Nf** on a FAT32 USB drive.
