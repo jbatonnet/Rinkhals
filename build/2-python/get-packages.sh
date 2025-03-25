@@ -2,7 +2,7 @@
 
 # From a Windows machine:
 #   docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
-#   docker run --platform=linux/arm/v7 --rm -it -v .\build\cache\pip:/root/.cache/pip -v .\build:/build -v .\files:/files ghcr.io/jbatonnet/rinkhals/rootfs /build/2-python/get-packages.sh
+#   docker run --platform=linux/arm/v7 --rm -it -v .\build\cache\pip:/root/.cache/pip -v .\build:/build -v .\files:/files ghcr.io/jbatonnet/armv7-uclibc:rinkhals /build/2-python/get-packages.sh
 
 
 cd /files/2-python/usr
