@@ -80,7 +80,6 @@ kill_by_name gkapi
 kill_by_name gklib
 
 if [ -f /ac_lib/lib/third_bin/ffmpeg ]; then
-
     if [ "$KOBRA_MODEL_CODE" = "KS1" ]; then
         ROTATION="PI"
         SCALE="0.75"
@@ -168,8 +167,17 @@ done
 source /etc/profile
 
 # Start time synchronization
-/sbin/udhcpc -i wlan0 > /dev/null 2>&1
 $RINKHALS_ROOT/opt/rinkhals/scripts/ntpclient.sh &
+
+
+################
+log "> Trimming old logs..."
+
+for LOG_FILE in $RINKHALS_ROOT/logs/*.log ; do
+    tail -c 1048576 $LOG_FILE > $LOG_FILE.tmp
+    cat $LOG_FILE.tmp > $LOG_FILE
+    rm $LOG_FILE.tmp
+done
 
 
 ################
