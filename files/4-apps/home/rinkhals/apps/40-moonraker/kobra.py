@@ -322,7 +322,7 @@ class Kobra:
     def patch_network_interfaces(self):
         from .machine import Machine
 
-        async def _parse_network_interfaces(me, sequence: int, notify: bool = True) -> None:
+        async def _parse_network_interfaces(me, sequence: int, notify: bool = True):
             logging.debug('[Kobra] Skipping call')
             return
 
@@ -336,11 +336,11 @@ class Kobra:
         from .spoolman import SpoolManager
 
         def wrap_set_active_spool(original_set_active_spool):
-            async def set_active_spool(me, spool_id = None, SPOOL_ID = None) -> None:
+            def set_active_spool(me, spool_id = None, SPOOL_ID = None):
                 if spool_id is None:
                     logging.info('[Kobra] Injected SPOOL_ID')
                     spool_id = int(SPOOL_ID)
-                return await original_set_active_spool(me, spool_id)
+                return original_set_active_spool(me, spool_id)
             return set_active_spool
 
         logging.info('> Allowing SPOOL_ID parameter...')
