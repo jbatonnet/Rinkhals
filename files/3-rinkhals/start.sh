@@ -80,8 +80,13 @@ kill_by_name gkapi
 kill_by_name gklib
 
 if [ -f /ac_lib/lib/third_bin/ffmpeg ]; then
-    ROTATION="PI/2"
-    SCALE="0.5"
+    if [ "$KOBRA_MODEL_CODE" = "KS1" ]; then
+        ROTATION="PI"
+        SCALE="0.75"
+    else
+        ROTATION="PI/2"
+        SCALE="0.5"
+    fi
 
     FILTER="[0:v] drawbox=x=0:y=0:w=iw:h=ih:t=fill:c=black"
     FILTER="$FILTER [1a]; [1:v] scale=w=iw*${SCALE}:h=ih*${SCALE} [1b]; [1a][1b] overlay=(main_w-overlay_w)/2:(main_h-overlay_h)/2"
