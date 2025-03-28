@@ -15,7 +15,7 @@ status() {
         return
     fi
 
-    report_status $APP_STATUS_STARTED
+    report_status $APP_STATUS_STARTED $PID
 }
 start() {
     stop

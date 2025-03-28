@@ -8,7 +8,7 @@ status() {
     if [ "$PIDS" == "" ]; then
         report_status $APP_STATUS_STOPPED
     else
-        report_status $APP_STATUS_STARTED
+        report_status $APP_STATUS_STARTED "$PIDS"
     fi
 }
 start() {

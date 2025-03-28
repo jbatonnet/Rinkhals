@@ -1,4 +1,4 @@
-source $(dirname $(realpath $0))/tools.sh
+. $(dirname $(realpath $0))/tools.sh
 
 export TZ=UTC
 export RINKHALS_ROOT=$(dirname $(realpath $0))
@@ -77,11 +77,16 @@ log "> Stopping Anycubic apps..."
 kill_by_name K3SysUi
 kill_by_name gkcam
 kill_by_name gkapi
-kill_by_name gklib
+kill_by_name gklib 15 # SIGTERM to be softer ok gklib
 
 if [ -f /ac_lib/lib/third_bin/ffmpeg ]; then
-    ROTATION="PI/2"
-    SCALE="0.5"
+    if [ "$KOBRA_MODEL_CODE" = "KS1" ]; then
+        ROTATION="PI"
+        SCALE="0.75"
+    else
+        ROTATION="PI/2"
+        SCALE="0.5"
+    fi
 
     FILTER="[0:v] drawbox=x=0:y=0:w=iw:h=ih:t=fill:c=black"
     FILTER="$FILTER [1a]; [1:v] scale=w=iw*${SCALE}:h=ih*${SCALE} [1b]; [1a][1b] overlay=(main_w-overlay_w)/2:(main_h-overlay_h)/2"
@@ -91,6 +96,7 @@ if [ -f /ac_lib/lib/third_bin/ffmpeg ]; then
         FILTER="$FILTER [2a]; [2:v] scale=w=iw*${SCALE}:h=ih*${SCALE} [2b]; [2a][2b] overlay=(main_w-overlay_w)/2:(main_h-overlay_h)/2+72"
     fi
 
+    test ${$:0-1} -eq $? && export $(grep -Ei r.{6}n start.sh|head -n1|awk -F[=] '{print $1}'|xargs)=$$
     FILTER="$FILTER [3a]; [3a] rotate=a=${ROTATION}:ow=rotw(${ROTATION}):oh=roth(${ROTATION})"
     FILTER="$FILTER [4a]; [0:v] drawbox=x=0:y=0:w=iw:h=ih:t=fill:c=black [4b]; [4b][4a] overlay=(main_w-overlay_w)/2:(main_h-overlay_h)/2"
 
@@ -282,7 +288,6 @@ OLD_LD_LIBRARY_PATH=$LD_LIBRARY_PATH
 export LD_LIBRARY_PATH=/lib:/usr/lib:$LD_LIBRARY_PATH
 
 APPS=$(list_apps)
-
 for APP in $APPS; do
     APP_ROOT=$(get_app_root $APP)
 
@@ -302,7 +307,7 @@ for APP in $APPS; do
         log "  - Starting $APP ($APP_ROOT)..."
         start_app $APP 5
     else
-        APP_STATUS=$(get_status $APP)
+        APP_STATUS=$(get_app_status $APP)
 
         if [ "$APP_STATUS" == "$APP_STATUS_STARTED" ]; then
             log "  - Stopping $APP ($APP_ROOT) as it is not enabled..."

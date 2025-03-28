@@ -94,6 +94,8 @@ get_command_line() {
 }
 kill_by_id() {
     PID=$1
+    SIGNAL=${2:-9}
+    
     if [ "$PID" == "" ]; then
         return
     fi
@@ -104,7 +106,7 @@ kill_by_id() {
     CMDLINE=$(get_command_line $PID)
 
     log "Killing $PID ($CMDLINE)"
-    kill -9 $PID
+    kill -$SIGNAL $PID
 }
 
 get_by_name() {
@@ -144,9 +146,10 @@ assert_by_name() {
 }
 kill_by_name() {
     PIDS=$(get_by_name $1)
+    SIGNAL=${2:-9}
 
     for PID in $(echo "$PIDS"); do
-        kill_by_id $PID
+        kill_by_id $PID $SIGNAL
     done
 }
 
@@ -193,7 +196,9 @@ assert_by_port() {
 }
 kill_by_port() {
     PID=$(get_by_port $1)
-    kill_by_id $PID
+    SIGNAL=${2:-9}
+    
+    kill_by_id $PID $SIGNAL
 }
 
 wait_for_socket() {
@@ -227,26 +232,55 @@ export APP_STATUS_STOPPED=stopped
 report_status() {
     APP_STATUS=$1
     APP_PIDS=$2
+    APP_LOG_PATH=$3
 
     echo "Status: $APP_STATUS"
     echo "PIDs: $APP_PIDS"
+    echo "Log: $APP_LOG_PATH"
 }
-get_status() {
-    app=$1
-    app_root=$2
+get_app_status() {
+    APP=$1
+    APP_ROOT=$(get_app_root $APP)
 
-    if [ -z "$app_root" ]; then
-        app_root=$(get_app_root "$app")
+    if [ ! -f $APP_ROOT/app.sh ]; then
+        return
     fi
 
-    chmod +x $app_root/app.sh
-    app_status=$($app_root/app.sh status | grep Status | awk '{print $2}')
+    chmod +x $APP_ROOT/app.sh
+    APP_STATUS=$($APP_ROOT/app.sh status | grep Status: | awk '{print $2}')
 
-    echo $app_status
+    echo $APP_STATUS
+}
+get_app_pids() {
+    APP=$1
+    APP_ROOT=$(get_app_root $APP)
+
+    if [ ! -f $APP_ROOT/app.sh ]; then
+        return
+    fi
+
+    chmod +x $APP_ROOT/app.sh
+    APP_PIDS=$($APP_ROOT/app.sh status | grep PIDs: | awk '{print $2}')
+
+    echo $APP_PIDS
+}
+get_app_log() {
+    APP=$1
+    APP_ROOT=$(get_app_root $APP)
+
+    if [ ! -f $APP_ROOT/app.sh ]; then
+        return
+    fi
+
+    chmod +x $APP_ROOT/app.sh
+    APP_PIDS=$($APP_ROOT/app.sh status | grep Log: | awk '{print $2}')
+
+    echo $APP_PIDS
 }
 
-BUILTIN_APP_PATH="$RINKHALS_ROOT/home/rinkhals/apps"
-USER_APP_PATH="$RINKHALS_HOME/apps"
+BUILTIN_APP_PATH=$RINKHALS_ROOT/home/rinkhals/apps
+USER_APP_PATH=$RINKHALS_HOME/apps
+TEMPORARY_APP_PATH=/tmp/rinkhals/apps
 
 list_apps() {
     BUILTIN_APPS=$(find $BUILTIN_APP_PATH -type d -mindepth 1 -maxdepth 1 -exec basename {} \; 2> /dev/null)
@@ -286,7 +320,7 @@ enable_app() {
     fi
 
     # If this is a built-in app, handle app.enabled / app.disabled
-    if [[ "$app_root" == "$BUILTIN_APP_PATH"* ]]; then
+    if [[ "$app_root" == "$BUILTIN_APP_PATH*" ]]; then
         if [ -e $RINKHALS_HOME/apps/$app.disabled ]; then
             rm $RINKHALS_HOME/apps/$app.disabled
         fi
@@ -311,7 +345,7 @@ disable_app() {
     fi
 
     # If this is a built-in app, handle app.enabled / app.disabled
-    if [[ "$app_root" == "$BUILTIN_APP_PATH"* ]]; then
+    if [[ "$app_root" == "$BUILTIN_APP_PATH*" ]]; then
         if [ -e $RINKHALS_HOME/apps/$app.enabled ]; then
             rm $RINKHALS_HOME/apps/$app.enabled
         fi
@@ -327,7 +361,7 @@ disable_app() {
 }
 start_app() {
     APP=$1
-    TIMEOUT=$2
+    TIMEOUT=${2:-60}
 
     APP_ROOT=$(get_app_root $APP)
 
@@ -354,4 +388,56 @@ stop_app() {
 
     chmod +x $APP_ROOT/app.sh
     $APP_ROOT/app.sh stop
+}
+
+list_app_properties() {
+    APP=$1
+    APP_ROOT=$(get_app_root $APP)
+
+    if [ ! -f $APP_ROOT/app.json ]; then
+        return
+    fi
+
+    cat $APP_ROOT/app.json | sed 's/\/\/.*//' | jq -r '.properties | keys[]'
+}
+get_app_property() {
+    APP=$1
+    PROPERTY=$2
+
+    CONFIG_PATH=$USER_APP_PATH/$APP.config
+    TEMPORARY_CONFIG_PATH=$TEMPORARY_APP_PATH/$APP.config
+
+    VALUE=$(cat $TEMPORARY_CONFIG_PATH 2>/dev/null | jq -r ".$PROPERTY")
+    if [ "$VALUE" = "" ] || [ "$VALUE" = "null" ]; then
+        VALUE=$(cat $CONFIG_PATH 2>/dev/null | jq -r ".$PROPERTY")
+    fi
+    if [ "$VALUE" = "null" ]; then
+        VALUE=
+    fi
+
+    echo $VALUE
+}
+set_app_property() {
+    APP=$1
+    PROPERTY=$2
+    VALUE=$3
+
+    CONFIG_PATH=$USER_APP_PATH/$APP.config
+    CONFIG=$(cat $CONFIG_PATH 2>/dev/null)
+    CONFIG=${CONFIG:-'{}'}
+
+    echo $CONFIG | jq ".$PROPERTY = \"$VALUE\"" > $CONFIG_PATH
+}
+set_temporary_app_property() {
+    APP=$1
+    PROPERTY=$2
+    VALUE=$3
+
+    mkdir -p $TEMPORARY_APP_PATH
+
+    TEMPORARY_CONFIG_PATH=$TEMPORARY_APP_PATH/$APP.config
+    CONFIG=$(cat $TEMPORARY_CONFIG_PATH 2>/dev/null)
+    CONFIG=${CONFIG:-'{}'}
+
+    echo $CONFIG | jq ".$PROPERTY = \"$VALUE\"" > $TEMPORARY_CONFIG_PATH
 }

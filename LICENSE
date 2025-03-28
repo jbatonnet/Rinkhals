@@ -27,6 +27,7 @@ All existing code / binaries / projects (included here to ease the build process
 
 - files/1-buildroot/* > https://github.com/flutter/buildroot/blob/master/LICENSE
 - files/\*\*/lib/python*/site-packages/* > Corresponding module licenses
+- files/3-rinkhals/opt/rinkhals/ui/MaterialIcons-Regular.ttf > https://github.com/google/material-design-icons/blob/master/LICENSE
 - files/4-apps/home/rinkhals/apps/25-mainsail/mainsail/* > https://github.com/mainsail-crew/mainsail/blob/master/LICENSE
 - files/4-apps/home/rinkhals/apps/26-fluidd/fluidd/* > https://github.com/fluidd-core/fluidd/blob/master/LICENSE
 - files/4-apps/home/rinkhals/apps/40-moonraker/moonraker/* > https://github.com/Arksine/moonraker/blob/master/LICENSE
