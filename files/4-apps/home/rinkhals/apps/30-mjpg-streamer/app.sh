@@ -12,17 +12,24 @@ status() {
     fi
 }
 start() {
-    if [ ! -e /dev/video10 ]; then
-        log "Webcam /dev/video10 not found. mjpg-streamer will not start"
+    kill_by_name mjpg_streamer
+
+    CAMERAS=$(ls /dev/v4l/by-id/*-index0 2> /dev/null)
+    if [ "$CAMERAS" = "" ]; then
+        log "No camera found. mjpg-streamer will not start"
         return
     fi
 
-    kill_by_name mjpg_streamer
     kill_by_name gkcam
     sleep 1
 
-    mjpg_streamer -i "/usr/lib/mjpg-streamer/input_uvc.so -d /dev/video10 -n" -o "/usr/lib/mjpg-streamer/output_http.so -w /usr/share/mjpg-streamer/www" >> $RINKHALS_ROOT/logs/app-mjpg-streamer.log 2>&1 &
-    wait_for_port 8080
+    PORT=8080
+    for CAMERA in $CAMERAS; do
+        #log "Starting mjpg-streamer for $CAMERA on port $PORT"
+        mjpg_streamer -i "/usr/lib/mjpg-streamer/input_uvc.so -d $CAMERA -n" -o "/usr/lib/mjpg-streamer/output_http.so -p $PORT -w /usr/share/mjpg-streamer/www" >> $RINKHALS_ROOT/logs/app-mjpg-streamer.log 2>&1 &
+        wait_for_port $PORT
+        PORT=$(($PORT + 1))
+    done
 }
 stop() {
     kill_by_name gkcam
