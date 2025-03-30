@@ -1,0 +1,3 @@
+#!/bin/sh
+
+/ac_lib/lib/third_bin/ffmpeg -i http://127.0.0.1:8080/?action=stream -r 5 -c copy -f flv -an -
