@@ -897,6 +897,8 @@ class RinkhalsUiApp(BaseApp):
                 password = 'U2FsdGVkX19deTfqpXHZnB5GeyQ/dtlbHjkUnwgCi+w='
             elif self.printer_info.model_code == 'KS1':
                 password = 'U2FsdGVkX1+lG6cHmshPLI/LaQr9cZCjA8HZt6Y8qmbB7riY'
+            elif self.printer_info.model_code == 'K3M':
+                password = '4DKXtEGStWHpPgZm8Xna9qluzAI8VJzpOsEIgd8brTLiXs8fLSu3vRx8o7fMf4h6'
 
             logging.info(f'Extracting Rinkhals update...')
 
@@ -1021,6 +1023,8 @@ class RinkhalsUiApp(BaseApp):
                         if (self.printer_info.model_code == 'K2P' or self.printer_info.model_code == 'K3') and asset['name'] == 'update-k2p-k3.swu':
                             self.modal_ota.latest_release_url = asset['browser_download_url']
                         elif self.printer_info.model_code == 'KS1' and asset['name'] == 'update-ks1.swu':
+                            self.modal_ota.latest_release_url = asset['browser_download_url']
+                        elif self.printer_info.model_code == 'K3M' and asset['name'] == 'update-k3m.swu':
                             self.modal_ota.latest_release_url = asset['browser_download_url']
 
                     logging.info(f'Found update {self.modal_ota.latest_version} from {self.modal_ota.latest_release_url}')

@@ -202,6 +202,7 @@ COPY ./files/*.* /files/
 RUN chmod +x /build/swu-tools/installer/build-swu.sh
 RUN KOBRA_MODEL_CODE=K3 /build/swu-tools/installer/build-swu.sh /swu/installer-k2p-k3.swu
 RUN KOBRA_MODEL_CODE=KS1 /build/swu-tools/installer/build-swu.sh /swu/installer-ks1.swu
+RUN KOBRA_MODEL_CODE=K3M /build/swu-tools/installer/build-swu.sh /swu/installer-k3m.swu
 
 ###############################################################
 # prepare-bundle collects all files and prepares a bundle
@@ -274,6 +275,7 @@ RUN <<EOT
     prepare_tgz /bundle /swu
     compress_swu K3 /swu/update-k2p-k3.swu &
     compress_swu KS1 /swu/update-ks1.swu &
+    compress_swu K3M /swu/update-k3m.swu &
     wait $(jobs -p)
 EOT
 

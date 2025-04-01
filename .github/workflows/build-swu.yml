@@ -49,3 +49,11 @@ jobs:
         compression-level: 0
         path: |
           build/dist/*-ks1.swu
+
+    - name: Upload artifact for K3M
+      uses: actions/upload-artifact@v4
+      with:
+        name: update-k3m
+        compression-level: 0
+        path: |
+          build/dist/*-k3m.swu

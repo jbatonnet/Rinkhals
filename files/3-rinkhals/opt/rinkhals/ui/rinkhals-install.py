@@ -1280,6 +1280,8 @@ class RinkhalsInstallApp(BaseApp):
                 password = 'U2FsdGVkX19deTfqpXHZnB5GeyQ/dtlbHjkUnwgCi+w='
             elif self.printer_info.model_code == 'KS1':
                 password = 'U2FsdGVkX1+lG6cHmshPLI/LaQr9cZCjA8HZt6Y8qmbB7riY'
+            elif self.printer_info.model_code == 'K3M':
+                password = '4DKXtEGStWHpPgZm8Xna9qluzAI8VJzpOsEIgd8brTLiXs8fLSu3vRx8o7fMf4h6'
 
             logging.info(f'Extracting Rinkhals update...')
 
@@ -1470,6 +1472,8 @@ class RinkhalsInstallApp(BaseApp):
                 password = 'U2FsdGVkX19deTfqpXHZnB5GeyQ/dtlbHjkUnwgCi+w='
             elif self.printer_info.model_code == 'KS1':
                 password = 'U2FsdGVkX1+lG6cHmshPLI/LaQr9cZCjA8HZt6Y8qmbB7riY'
+            elif self.printer_info.model_code == 'K3M':
+                password = '4DKXtEGStWHpPgZm8Xna9qluzAI8VJzpOsEIgd8brTLiXs8fLSu3vRx8o7fMf4h6'
 
             logging.info(f'Extracting Rinkhals update...')
 
