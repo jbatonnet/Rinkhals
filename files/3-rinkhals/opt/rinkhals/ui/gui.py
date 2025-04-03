@@ -860,7 +860,7 @@ class TouchFramebuffer(Screen):
     def shell(self, command):
         result = subprocess.check_output(['sh', '-c', command])
         result = result.decode('utf-8').strip()
-        logging.debug(f'Shell "{command}" => "{result}"')
+        logging.info(f'Shell "{command}" => "{result}"')
         return result
     def is_screen_on(self):
         brightness = self.shell('cat /sys/class/backlight/backlight/brightness')

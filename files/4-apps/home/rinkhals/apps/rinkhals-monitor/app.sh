@@ -14,8 +14,9 @@ status() {
 start() {
     stop
     cd $APP_ROOT
-    chmod +x rinkhals-monitor.sh
-    ./rinkhals-monitor.sh &
+    
+    chmod +x ./rinkhals-monitor
+    ./rinkhals-monitor >> $RINKHALS_ROOT/logs/app-monitor.log 2>&1 &
 }
 stop() {
     kill_by_name rinkhals-monitor

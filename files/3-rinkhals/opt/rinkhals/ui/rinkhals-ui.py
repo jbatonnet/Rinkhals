@@ -35,7 +35,7 @@ def wrap(txt, width):
 def shell(command):
     result = subprocess.check_output(['sh', '-c', command])
     result = result.decode('utf-8').strip()
-    logging.debug(f'Shell "{command}" => "{result}"')
+    logging.info(f'Shell "{command}" => "{result}"')
     return result
 def shell_async(command, callback):
     def thread():
@@ -442,17 +442,22 @@ class Program:
             shell_async(f'df -Ph {RINKHALS_ROOT} | tail -n 1 | awk \'{{print $3 " / " $2 " (" $5 ")"}}\'', update_disk_usage)
     def layout_apps(self):
         def show_app(app):
+            logging.info(f'Navigating to {app}...')
             self.layout_app(app)
             self.set_screen_panel(self.panel_app)
             self.screen.layout()
         def toggle_app(app, checked):
             if checked:
+                logging.info(f'Enabling {app}...')
                 enable_app(app)
                 if get_app_status(app) != 'started':
+                    logging.info(f'Starting {app}...')
                     start_app(app, 5)
             else:
+                logging.info(f'Disabling {app}...')
                 disable_app(app)
                 if get_app_status(app) == 'started':
+                    logging.info(f'Stopping {app}...')
                     stop_app(app)
             self.app_checkboxes[app].checked = is_app_enabled(app) == '1'
             
@@ -477,8 +482,10 @@ class Program:
             self.screen.layout()
         def toggle_app(app, checked):
             if checked:
+                logging.info(f'Enabling {app}...')
                 enable_app(app)
             else:
+                logging.info(f'Disabling {app}...')
                 disable_app(app)
             self.panel_app.app_toggle_enabled.checked = is_app_enabled(app) == '1'
         def _start_app(app):
