@@ -5,7 +5,6 @@
 ################################################################################
 
 LV_MICROPYTHON_VERSION = 9fe842956fc51e1df7a7e5e2b691daaaeeda7ca5
-# LV_MICROPYTHON_SITE = $(call github,lvgl,lv_micropython,$(LV_MICROPYTHON_VERSION))
 LV_MICROPYTHON_SITE = https://github.com/lvgl/lv_micropython
 LV_MICROPYTHON_SITE_METHOD = git
 LV_MICROPYTHON_GIT_SUBMODULES=YES
@@ -31,6 +30,7 @@ endif
 # When building from a tarball we don't have some of the dependencies that are in
 # the git repository as submodules
 LV_MICROPYTHON_MAKE_OPTS += \
+	VARIANT=lvgl \
 	MICROPY_PY_BTREE=0 \
 	MICROPY_PY_USSL=0 \
 	CROSS_COMPILE=$(TARGET_CROSS) \
