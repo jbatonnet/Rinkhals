@@ -8,9 +8,9 @@ for ease of use on all platforms, the Buildroot output stays inside the containe
 - `docker run -it -v .\build\1-buildroot:/config -v .\build\target:/output ghcr.io/jbatonnet/rinkhals/buildroot`
 - Copy configs to `/buildroot`
     - `cp /config/.config ./`
-    = `cp /config/busybox.confg ./`
+    - `cp /config/busybox.confg ./`
 - Run `make`
 - Run `prepare-final.sh`
-- Exit container
-- Get files using `get-final.sh`
-- Delete the Docker container
+- Files are now located in `build/1-buildroot/output/final`
+- Move files to `files/1-buildroot` for packaging
+- (Delete the Docker container)
