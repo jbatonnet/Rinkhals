@@ -17,7 +17,6 @@ python -m venv .
 echo "Installing requirements..."
 python -m pip install --upgrade pip
 python -m pip install paho-mqtt evdev pillow # rinkhals-ui
-python -m pip install websockets paho-mqtt aiohttp # moonraker-proxy
 
 echo "Cleaning up..."
 rm -rf bin
