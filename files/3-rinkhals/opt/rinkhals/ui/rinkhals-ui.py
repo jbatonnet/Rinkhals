@@ -34,15 +34,19 @@ def wrap(txt, width):
     if tmp:
         yield tmp.strip()
 def shell(command):
-    temp_output = f'/tmp/rinkhals/output-{random.randint(1000, 9999)}'
-
-    os.system(f'{command} > {temp_output}')
-    if os.path.exists(temp_output):
-        with open(temp_output) as f:
-            result = f.read().strip()
-        os.remove(temp_output)
+    if USING_SIMULATOR:
+        result = subprocess.check_output(['sh', '-c', command])
+        result = result.decode('utf-8').strip()
     else:
-        result = ''
+        temp_output = f'/tmp/rinkhals/output-{random.randint(1000, 9999)}'
+
+        os.system(f'{command} > {temp_output}')
+        if os.path.exists(temp_output):
+            with open(temp_output) as f:
+                result = f.read().strip()
+            os.remove(temp_output)
+        else:
+            result = ''
 
     logging.info(f'Shell "{command}" => "{result}"')
     return result
@@ -128,6 +132,8 @@ if USING_SIMULATOR:
     def get_app_property(app, property): return 'https://github.com/jbatonnet/Rinkhals' if property == 'link_output' else ''
     def set_app_property(app, property, value): pass
     def set_temporary_app_property(app, property, value): pass
+
+    def are_apps_enabled(): return { a: is_app_enabled(a) for a in list_apps().split(' ') }
 else:
     environment = shell(f'. /useremain/rinkhals/.current/tools.sh && python -c "import os, json; print(json.dumps(dict(os.environ)))"')
     environment = json.loads(environment)
@@ -159,6 +165,13 @@ else:
     get_app_property = load_tool_function('get_app_property')
     set_app_property = load_tool_function('set_app_property')
     set_temporary_app_property = load_tool_function('set_temporary_app_property')
+
+    def are_apps_enabled():
+        result = shell('. /useremain/rinkhals/.current/tools.sh && for a in $(list_apps); do echo "$a $(is_app_enabled $a)"; done')
+        apps = result.splitlines()
+        apps = [ a.split(' ') for a in apps ]
+        return { a[0]: a[1] for a in apps }
+        
 
 # Detect screen parameters
 screen_options = QT_QPA_PLATFORM.split(':')
@@ -486,9 +499,11 @@ class Program:
         self.panel_apps.apps_panel.components.clear()
         self.app_checkboxes = {}
 
+        apps_enabled = are_apps_enabled()
+
         apps = list_apps().split(' ')
         for app in apps:
-            enabled = is_app_enabled(app) == '1'
+            enabled = apps_enabled[app] == '1'
             logging.info(f'Found {app}: {enabled}')
 
             component = myPanel(left=0, right=0, top=4, bottom=4, height=48, components=[
