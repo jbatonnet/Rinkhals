@@ -16,7 +16,7 @@ python -m venv .
 
 echo "Installing requirements..."
 python -m pip install --upgrade pip
-python -m pip install paho-mqtt evdev pillow psutil # rinkhals-ui
+python -m pip install paho-mqtt evdev pillow psutil qrcode # rinkhals-ui
 
 echo "Cleaning up..."
 rm -rf bin

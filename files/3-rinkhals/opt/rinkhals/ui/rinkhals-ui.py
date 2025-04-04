@@ -11,6 +11,7 @@ import logging
 import psutil
 
 import paho.mqtt.client as paho
+import qrcode
 from gui import *
 
 
@@ -92,7 +93,7 @@ if USING_SIMULATOR:
     RINKHALS_VERSION = 'dev'
     KOBRA_MODEL = 'Anycubic Kobra'
     KOBRA_MODEL_CODE = 'KS1'
-    #KOBRA_MODEL_CODE = 'K3'
+    KOBRA_MODEL_CODE = 'K3'
     KOBRA_VERSION = '1.2.3.4'
 
     if KOBRA_MODEL_CODE == 'KS1':
@@ -100,8 +101,15 @@ if USING_SIMULATOR:
     else:
         QT_QPA_PLATFORM = 'linuxfb:fb=/dev/fb0:size=480x272:rotation=90:offset=0x0:nographicsmodeswitch'
 
-    def list_apps(): return ' '.join([ f.name for f in os.scandir(f'{RINKHALS_HOME}/apps') if f.is_dir() ]) + ' test-1 test-2 test-3 test-4 test-5 test-6 test-7 test-8'
-    def get_app_root(app): return f'{RINKHALS_HOME}/apps/{app}'
+    def list_apps():
+        system_apps = [ f.name for f in os.scandir(f'{RINKHALS_HOME}/apps') if f.is_dir() ]
+        user_apps = [ f.name for f in os.scandir(f'{RINKHALS_ROOT}/../../../Rinkhals.apps/apps') if f.is_dir() ] if os.path.exists(f'{RINKHALS_ROOT}/../../../Rinkhals.apps/apps') else []
+        additional_apps = [ 'test-1', 'test-2', 'test-3', 'test-4', 'test-5', 'test-6', 'test-7', 'test-8' ]
+        return ' '.join(system_apps + user_apps + additional_apps)
+    def get_app_root(app):
+        if os.path.exists(f'{RINKHALS_HOME}/apps/{app}'): return f'{RINKHALS_HOME}/apps/{app}'
+        if os.path.exists(f'{RINKHALS_ROOT}/../../../Rinkhals.apps/apps/{app}'): return f'{RINKHALS_ROOT}/../../../Rinkhals.apps/apps/{app}'
+        return ''
     def is_app_enabled(app): return '1' if os.path.exists(f'{RINKHALS_HOME}/apps/{app}/.enabled') else '0'
     def get_app_status(app): return 'started' if is_app_enabled(app) == '1' else 'stopped'
     def get_app_pids(app): return str(os.getpid()) if get_app_status(app) == 'started' else ''
@@ -109,6 +117,9 @@ if USING_SIMULATOR:
     def disable_app(app): pass
     def start_app(app): pass
     def stop_app(app): pass
+    def get_app_property(app, property): return 'https://github.com/jbatonnet/Rinkhals' if property == 'link_output' else ''
+    def set_app_property(app, property, value): pass
+    def set_temporary_app_property(app, property, value): pass
 else:
     environment = shell(f'. /useremain/rinkhals/.current/tools.sh && python -c "import os, json; print(json.dumps(dict(os.environ)))"')
     environment = json.loads(environment)
@@ -137,6 +148,9 @@ else:
     disable_app = load_tool_function('disable_app')
     start_app = load_tool_function('start_app')
     stop_app = load_tool_function('stop_app')
+    get_app_property = load_tool_function('get_app_property')
+    set_app_property = load_tool_function('set_app_property')
+    set_temporary_app_property = load_tool_function('set_temporary_app_property')
 
 # Detect screen parameters
 screen_options = QT_QPA_PLATFORM.split(':')
@@ -300,8 +314,8 @@ class Program:
         # Main manu
         self.panel_main = myStackPanel(left=0, right=0, bottom=0, components=[
             myButton('Manage apps', left=8, right=8, callback=lambda: self.set_screen_panel(self.panel_apps)),
-            myButton('Stop Rinkhals', left=8, right=8, callback=lambda: self.show_dialog('Are you sure you want\nto stop Rinkhals?\n\nYou will need to reboot\nyour printer in order to\nstart Rinkhals again', action='Yes', callback=lambda: self.stop_rinkhals())),
-            myButton('Disable Rinkhals', text_color=COLOR_DANGER, left=8, right=8, callback=lambda: self.show_dialog('Are you sure you want\nto disable Rinkhals?\n\nYou will need to reinstall\nRinkhals to start it again', action='Yes', action_color=COLOR_DANGER, callback=lambda: self.disable_rinkhals()))
+            myButton('Stop Rinkhals', left=8, right=8, callback=lambda: self.show_text_dialog('Are you sure you want\nto stop Rinkhals?\n\nYou will need to reboot\nyour printer in order to\nstart Rinkhals again', action='Yes', callback=lambda: self.stop_rinkhals())),
+            myButton('Disable Rinkhals', text_color=COLOR_DANGER, left=8, right=8, callback=lambda: self.show_text_dialog('Are you sure you want\nto disable Rinkhals?\n\nYou will need to reinstall\nRinkhals to start it again', action='Yes', action_color=COLOR_DANGER, callback=lambda: self.disable_rinkhals()))
         ])
 
         # App list and quick toggle
@@ -335,19 +349,16 @@ class Program:
                         app_cpu :=myLabel('?', left=0, right=0, top=18, height=24, auto_size=False),
                     ])
                 ]),
-                myPanel(left=0, right=0, top=4, height=40, components=[
-                    myLabel('Status', left=8, right=8, top=0, bottom=0, auto_size=False, text_align='lm'),
-                    app_status := myLabel('', left=8, right=8, top=0, bottom=0, auto_size=False, text_align='rm')
-                ]),
-                myPanel(left=0, right=0, top=4, height=40, components=[
-                    myLabel('Enabled', left=8, right=0, top=0, bottom=0, auto_size=False, text_align='lm'),
-                    app_toggle_enabled := myCheckBox(right=8, top=0)
-                ]),
-                # myPanel(left=0, right=0, top=8, height=48, components=[
-                #     app_configuration := myButton('Configuration', left=8, right=64, top=0, height=48),
-                #     app_qr_code := myButton('', font_path=ICON_FONT_PATH, font_size=28, left=None, right=8, top=0, height=48, width=48)
+                # myPanel(left=0, right=0, top=4, height=40, components=[
+                #     myLabel('Enabled', left=8, right=0, top=0, bottom=0, auto_size=False, text_align='lm'),
+                #     app_toggle_enabled := myCheckBox(right=8, top=0)
                 # ]),
-                app_toggle_started := myButton('Start', left=8, right=8, top=8, bottom=8, height=48)
+                myPanel(left=0, right=0, top=8, height=48, components=[
+                    app_enable := myButton('Enable', left=8, right=120, top=0, height=48),
+                    app_settings := myButton('', font_path=ICON_FONT_PATH, font_size=28, left=None, right=64, top=0, height=48, width=48),
+                    app_qr_code := myButton('', font_path=ICON_FONT_PATH, font_size=28, left=None, right=8, top=0, height=48, width=48)
+                ]),
+                app_start := myButton('Start', left=8, right=8, top=8, bottom=8, height=48)
             ]),
             myPanel(left=0, right=0, top=0, height=48, components=[
                 app_title := myLabel('', font_size=FONT_TITLE_SIZE, auto_size=False, left=0, right=0, top=0, bottom=0),
@@ -363,9 +374,10 @@ class Program:
         self.panel_app.app_size = app_size
         self.panel_app.app_memory = app_memory
         self.panel_app.app_cpu = app_cpu
-        self.panel_app.app_status = app_status
-        self.panel_app.app_toggle_enabled = app_toggle_enabled
-        self.panel_app.app_toggle_started = app_toggle_started
+        self.panel_app.app_settings = app_settings
+        self.panel_app.app_qr_code = app_qr_code
+        self.panel_app.app_enable = app_enable
+        self.panel_app.app_start = app_start
 
         # Dialog overlay
         def dismiss_dialog():
@@ -376,12 +388,14 @@ class Program:
         self.panel_dialog = StackPanel(left=0, right=0, top=0, bottom=0, background_color=(0, 0, 0, 192), layout_mode=Component.LayoutMode.Absolute, touch_callback=dismiss_dialog, components=[
             StackPanel(width=min(360, self.screen.width - 48), top=0, height=self.screen.height, background_color=None, layout_mode=Component.LayoutMode.Absolute, orientation=StackPanel.Orientation.Horizontal, touch_callback=dismiss_dialog, components=[
                 myStackPanel(auto_size=True, left=0, right=0, components=[
-                    dialog_text := myLabel('', top=12, bottom=16),
-                    dialog_button := myButton('', top=0, bottom=12, height=48, width=96)
+                    dialog_text := myLabel('', top=12, bottom=0),
+                    dialog_qr := Picture(top=12, bottom=0, height=160, width=160),
+                    dialog_button := myButton('', top=16, bottom=12, height=48, width=96)
                 ])
             ])
         ])
         self.panel_dialog.dialog_text = dialog_text
+        self.panel_dialog.dialog_qr = dialog_qr
         self.panel_dialog.dialog_button = dialog_button
         self.panel_dialog.visible = False
 
@@ -443,8 +457,8 @@ class Program:
     def layout_apps(self):
         def show_app(app):
             logging.info(f'Navigating to {app}...')
-            self.layout_app(app)
             self.set_screen_panel(self.panel_app)
+            self.layout_app(app)
             self.screen.layout()
         def toggle_app(app, checked):
             if checked:
@@ -480,14 +494,15 @@ class Program:
         def refresh_app(app):
             self.layout_app(app)
             self.screen.layout()
-        def toggle_app(app, checked):
-            if checked:
-                logging.info(f'Enabling {app}...')
-                enable_app(app)
-            else:
+        def toggle_app(app):
+            if is_app_enabled(app) == '1':
                 logging.info(f'Disabling {app}...')
                 disable_app(app)
-            self.panel_app.app_toggle_enabled.checked = is_app_enabled(app) == '1'
+            else:
+                logging.info(f'Enabling {app}...')
+                enable_app(app)
+            self.layout_app(app)
+            self.screen.layout()
         def _start_app(app):
             start_app(app)
             self.layout_app(app)
@@ -518,19 +533,43 @@ class Program:
         app_version = app_manifest.get('version') if app_manifest else ''
         app_enabled = is_app_enabled(app) == '1'
         app_status = get_app_status(app)
+        app_properties = app_manifest.get('properties', []) if app_manifest else []
 
         self.panel_app.app_title.text = ellipsis(app_name, 24)
         self.panel_app.app_refresh.callback = lambda app=app: refresh_app(app)
         self.panel_app.app_version.text = f'Version: {app_version}'
         self.panel_app.app_path.text = ellipsis(app_root, 40)
         self.panel_app.app_description.text = '\n'.join(i for i in wrap(app_description, 48))
-        self.panel_app.app_size.text = '?'
-        self.panel_app.app_memory.text = '?'
-        self.panel_app.app_cpu.text = '?'
-        self.panel_app.app_status.text = app_status
-        self.panel_app.app_toggle_enabled.checked = app_enabled
-        self.panel_app.app_toggle_enabled.callback = lambda checked, app=app: toggle_app(app, checked)
+        self.panel_app.app_size.text = '-'
+        self.panel_app.app_memory.text = '-'
+        self.panel_app.app_cpu.text = '-'
+        self.panel_app.app_enable.text = 'Disable app' if app_enabled else 'Enable app'
+        self.panel_app.app_enable.callback = lambda app=app: toggle_app(app)
+
+        if True:
+            self.panel_app.app_settings.visible = False
+
+        self.panel_app.app_qr_code.visible = False
+
+        qr_properties = [ p for p in app_properties if app_properties[p]['type'] == 'qr' ]
+        if qr_properties:
+             qr_property = qr_properties[0]
+             display = app_properties[qr_property].get('display')
+             content = get_app_property(app, qr_property)
+             if content:
+                self.panel_app.app_qr_code.visible = True
+                self.panel_app.app_qr_code.callback = lambda content=content: self.show_qr_dialog(content, display)
+
+        self.panel_app.app_enable.right = 8 + (56 if self.panel_app.app_qr_code.visible else 0) + (56 if self.panel_app.app_settings.visible else 0)
+        self.panel_app.app_settings.right = 8 + (56 if self.panel_app.app_qr_code.visible else 0)
+
+        # self.panel_app.app_settings = app_settings
+        # self.panel_app.app_qr_code = app_qr_code
+        # self.panel_app.app_enable = app_enable
+        # self.panel_app.app_start = app_start
         
+        self.panel_screen.layout()
+
         def update_app_size(result):
             self.panel_app.app_size.text = result
             self.panel_app.layout()
@@ -564,18 +603,16 @@ class Program:
             self.screen.draw()
         run_async(update_memory)
 
-        if app_status == 'started':
-            self.panel_app.app_toggle_started.visible = True
-            self.panel_app.app_toggle_started.text = 'Stop app'
-            self.panel_app.app_toggle_started.text_color = COLOR_DANGER
-            self.panel_app.app_toggle_started.callback = lambda app=app: _stop_app(app)
-        elif app_status == 'stopped':
-            self.panel_app.app_toggle_started.visible = True
-            self.panel_app.app_toggle_started.text = 'Start app'
-            self.panel_app.app_toggle_started.text_color = COLOR_TEXT
-            self.panel_app.app_toggle_started.callback = lambda app=app: _start_app(app)
+        if app_status == 'stopped':
+            self.panel_app.app_start.visible = True
+            self.panel_app.app_start.text = 'Start app'
+            self.panel_app.app_start.text_color = COLOR_TEXT
+            self.panel_app.app_start.callback = lambda app=app: _start_app(app)
         else:
-            self.panel_app.app_toggle_started.visible = False
+            self.panel_app.app_start.visible = True
+            self.panel_app.app_start.text = 'Stop app'
+            self.panel_app.app_start.text_color = COLOR_DANGER
+            self.panel_app.app_start.callback = lambda app=app: _stop_app(app)
 
     def set_screen_panel(self, panel):
         self.panel_screen.components = [ panel ]
@@ -584,7 +621,7 @@ class Program:
         if panel == self.panel_apps: self.layout_apps()
 
         self.panel_screen.layout()
-    def show_dialog(self, text, action='OK', action_color=COLOR_TEXT, callback=None):
+    def show_text_dialog(self, text, action='OK', action_color=COLOR_TEXT, callback=None):
         def button_callback():
             self.panel_dialog.visible = False
             self.screen.layout()
@@ -593,9 +630,28 @@ class Program:
             if callback:
                 callback()
         
+        self.panel_dialog.dialog_text.visible = True
         self.panel_dialog.dialog_text.text = text
+        self.panel_dialog.dialog_qr.visible = False
         self.panel_dialog.dialog_button.text = action
         self.panel_dialog.dialog_button.text_color = action_color
+        self.panel_dialog.dialog_button.callback = button_callback
+
+        self.panel_dialog.visible = True
+        self.screen.layout()
+        self.screen.draw()
+    def show_qr_dialog(self, content, text=None):
+        def button_callback():
+            self.panel_dialog.visible = False
+            self.screen.layout()
+            self.screen.draw()
+        
+        self.panel_dialog.dialog_qr.visible = True
+        self.panel_dialog.dialog_qr.image = qrcode.make(content, border=2, box_size=8).convert('RGBA')
+        self.panel_dialog.dialog_text.visible = not not text
+        self.panel_dialog.dialog_text.text = text
+        self.panel_dialog.dialog_button.text = 'OK'
+        self.panel_dialog.dialog_button.text_color = COLOR_TEXT
         self.panel_dialog.dialog_button.callback = button_callback
 
         self.panel_dialog.visible = True

@@ -493,19 +493,25 @@ class StackPanel(Panel):
             component.layout()
 
 class Picture(Component):
-    image_path: str
+    image: Image = None
 
     _image: Image = None
 
-    def __init__(self, image_path: str = None, left: int = None, width: int = None, right: int = None, top: int = None, height: int = None, bottom: int = None):
+    def __init__(self, image_path: str = None, image: Image = None, left: int = None, width: int = None, right: int = None, top: int = None, height: int = None, bottom: int = None):
         super().__init__(left=left, width=width, right=right, top=top, height=height, bottom=bottom)
-        self.image_path = image_path
+        
+        if image:
+            self.image = image
+        elif image_path:
+            image = Cache.get(image_path)
+            if not image:
+                image = Image.open(image_path).convert('RGBA')
+                Cache.set(image_path, image)
+            self.image = image
 
     def measure(self):
-        image = Cache.get(self.image_path)
-        if not image:
-            image = Image.open(self.image_path).convert('RGBA')
-            Cache.set(self.image_path, image)
+        if not self.image:
+            return (0, 0)
 
         width = self.width
         height = self.height
@@ -516,18 +522,19 @@ class Picture(Component):
             height = height * self.scale
 
         if width is None and height is None:
-            width = image.width
-            height = image.height
+            width = self.image.width
+            height = self.image.height
         elif width is None:
-            width = int(height * image.width / image.height)
+            width = int(height * self.image.width / self.image.height)
         elif height is None:
-            height = int(width * image.height / image.width)
+            height = int(width * self.image.height / self.image.width)
 
         size = (int(width), int(height))
-        self._image = image.resize(size)
+        self._image = self.image.resize(size)
         return size
     def draw(self, draw: ImageDraw, offset_x: int, offset_y: int):
-        draw._image.alpha_composite(self._image, (offset_x + self._x, offset_y + self._y))
+        if self._image:
+            draw._image.alpha_composite(self._image, (offset_x + self._x, offset_y + self._y))
 
 class CheckBox(Button):
     checked: bool
