@@ -1,0 +1,67 @@
+diff --git a/setup.py b/setup.py
+index ccbe7d4..c95b99f 100644
+--- a/setup.py
++++ b/setup.py
+@@ -37,8 +37,8 @@ if not os.path.exists(build_temp):
+ library_dirs = []
+ include_dirs = ['.']
+ linker_args = []
+-libraries = ['SDL2']
+-cpp_args = ['-DCPYTHON_SDL']
++libraries = []
++cpp_args = []
+ 
+ 
+ if sys.platform.startswith('win'):
+diff --git a/src/lv_conf.h b/src/lv_conf.h
+index f92ee19..3c00962 100644
+--- a/src/lv_conf.h
++++ b/src/lv_conf.h
+@@ -836,10 +836,10 @@
+ /*Use SDL to open window on PC and handle mouse and keyboard*/
+ 
+ #ifdef MICROPY_SDL
+-    #define LV_USE_SDL 1
++    #define LV_USE_SDL 0
+ #else
+ #ifdef CPYTHON_SDL
+-    #define LV_USE_SDL 1
++    #define LV_USE_SDL 0
+ #else
+     #define LV_USE_SDL 0
+ #endif
+@@ -854,7 +854,7 @@
+ /*Driver for /dev/fb*/
+ 
+ #ifdef MICROPY_FB
+-    #define LV_USE_LINUX_FBDEV      1
++    #define LV_USE_LINUX_FBDEV      0
+ #else
+     #define LV_USE_LINUX_FBDEV      0
+ #endif
+diff --git a/src/lvgl/src/misc/lv_printf.h b/src/lvgl/src/misc/lv_printf.h
+index 4d8adc2..2225781 100644
+--- a/src/lvgl/src/misc/lv_printf.h
++++ b/src/lvgl/src/misc/lv_printf.h
+@@ -78,7 +78,7 @@ typedef struct {
+ } lv_vaformat_t;
+ 
+ int lv_snprintf_builtin(char * buffer, size_t count, const char * format, ...);
+-int lv_vsnprintf_builtin(char * buffer, size_t count, const char * format, va_list va);
++//int lv_vsnprintf_builtin(char * buffer, size_t count, const char * format, va_list va);
+ 
+ #endif /*LV_USE_BUILTIN_SNPRINTF*/
+ 
+diff --git a/src/lvgl/src/misc/lv_txt.h b/src/lvgl/src/misc/lv_txt.h
+index 8048bda..0ca1534 100644
+--- a/src/lvgl/src/misc/lv_txt.h
++++ b/src/lvgl/src/misc/lv_txt.h
+@@ -166,7 +166,7 @@ void _lv_txt_cut(char * txt, uint32_t pos, uint32_t len);
+ 
+  * @return pointer to the allocated text string.
+  */
+-char * _lv_txt_set_text_vfmt(const char * fmt, va_list ap) LV_FORMAT_ATTRIBUTE(1, 0);
++//char * _lv_txt_set_text_vfmt(const char * fmt, va_list ap) LV_FORMAT_ATTRIBUTE(1, 0);
+ 
+ /**
+  * Decode two encoded character from a string.
