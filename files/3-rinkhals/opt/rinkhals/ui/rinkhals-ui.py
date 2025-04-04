@@ -3,7 +3,7 @@ import time
 import sys
 import json
 import re
-import subprocess
+import random
 import threading
 import platform
 import traceback
@@ -34,8 +34,16 @@ def wrap(txt, width):
     if tmp:
         yield tmp.strip()
 def shell(command):
-    result = subprocess.check_output(['sh', '-c', command])
-    result = result.decode('utf-8').strip()
+    temp_output = f'/tmp/rinkhals/output-{random.randint(1000, 9999)}'
+
+    os.system(f'{command} > {temp_output}')
+    if os.path.exists(temp_output):
+        with open(temp_output) as f:
+            result = f.read().strip()
+        os.remove(temp_output)
+    else:
+        result = ''
+
     logging.info(f'Shell "{command}" => "{result}"')
     return result
 def shell_async(command, callback):
@@ -93,7 +101,7 @@ if USING_SIMULATOR:
     RINKHALS_VERSION = 'dev'
     KOBRA_MODEL = 'Anycubic Kobra'
     KOBRA_MODEL_CODE = 'KS1'
-    KOBRA_MODEL_CODE = 'K3'
+    #KOBRA_MODEL_CODE = 'K3'
     KOBRA_VERSION = '1.2.3.4'
 
     if KOBRA_MODEL_CODE == 'KS1':
@@ -504,11 +512,13 @@ class Program:
             self.layout_app(app)
             self.screen.layout()
         def _start_app(app):
-            start_app(app)
+            logging.info(f'Starting {app}...')
+            start_app(app, 5)
             self.layout_app(app)
             self.panel_app.layout()
             self.screen.draw()
         def _stop_app(app):
+            logging.info(f'Stopping {app}...')
             stop_app(app)
             self.layout_app(app)
             self.panel_app.layout()
