@@ -10,7 +10,8 @@ By using Rinkhals, you will keep all stock Anycubic features (print screen, Anyc
 - USB camera support in Mainsail, Fluidd
 - Prints from Orca will show the print screen
 - SSH access for customization (user: **root**, password: **rockchip**)
-- [Apps system](https://github.com/jbatonnet/Rinkhals.apps) (OctoApp, Cloudflare, Tailscale, ...)
+- OTA Rinkhals updates
+- [Apps system](https://github.com/jbatonnet/Rinkhals.apps) (OctoEverywhere, Cloudflare, Tailscale, ...)
 
 For now the following printers and firmwares are tested / supported:
 | Model  | Tested firmwares | Notes |
@@ -49,13 +50,15 @@ For more information about installation, firmware updates and details about spec
 
 After installation, Rinkhals provides a touch UI accessible from the printer screen when you tap the Settings icon, then tap Rinkhals.
 
-This UI allows you to stop or disable Rinkhals, and to control what feature and or app is enabled. This will allow you to customize your experience and keep the printer memory as low as needed based on your needs.
+This UI allows you to manage installed apps, trigger an OTA update, reboot your printer and much more. This will allow you to customize your experience and keep the printer memory as low as needed based on your needs.
 
 <p align="center">
     <!-- <img width="192" src="./.github/images/screenshot-settings.png"> -->
-    <img width="192" src="./.github/images/screenshot-rinkhals-ui.png">
+    <img width="192" src="./.github/images/screenshot-rinkhals-main.png">
     <img width="192" src="./.github/images/screenshot-rinkhals-apps.png">
     <img width="192" src="./.github/images/screenshot-rinkhals-app.png">
+    <img width="192" src="./.github/images/screenshot-rinkhals-ota.png">
+    <!-- <img width="192" src="./.github/images/screenshot-rinkhals-advanced.png"> -->
 </p>
 
 ## Apps system
@@ -90,14 +93,13 @@ This repo contains some tools you can use **no matter what firmware you are usin
 
 They are available on this page: https://github.com/jbatonnet/Rinkhals/actions/workflows/build-swu-tools.yml
 
-You can download the SWU file for the tool you want, copy it on a FAT32 USB drive in a **aGVscF9zb3Nf** directory, plug the USB drive in the Kobra and it just works.
+You can download the SWU file for the tool you want, copy it as **update.swu** on a FAT32 USB drive in a **aGVscF9zb3Nf** directory, plug the USB drive in your printer and it just works.
 You will ear two beeps, the second one will tell you that the tool completed its work. There is no need to reboot afterwards.
 
 Here are the tools available:
 - **SSH**: get a SSH server running on port **2222**, even on stock firmware
 - **Backup partitions**: creates a dump of your userdata and useremain partition on the USB drive
 - **Debug bundle**: creates a zip file with printer and configuration information on the USB drive to ease debugging
-
 
 <p align="center">
     <img width="48" src="https://github.com/jbatonnet/Rinkhals/blob/master/icon.png?raw=true" />
@@ -111,21 +113,7 @@ Here are the tools available:
 > Run `git config core.autocrlf false` **BEFORE** cloning the repo
 
 You will need either a Linux machine or a Windows machine with Docker.
-
-Here are the steps: 
-- Clone the repo or Download the zip
-- Do your modifications
-- Open a terminal at the root of the repo, and run: `docker run --rm -it -e KOBRA_IP=x.x.x.x -v .\build:/build -v .\files:/files --entrypoint=/bin/sh rclone/rclone:1.68.2 /build/deploy-dev.sh`
-
-This will create a "dev" version on your printer. Using the script above will synchronize your workspace with your PC.
-Now you can start/restart your updated "dev" version using SSH:
-- `chmod +x /useremain/rinkhals/dev/start.sh`
-- `/useremain/rinkhals/dev/start.sh`
-
-If you ever want to create a full SWU with your version, use the `build-swu.sh` script with Docker, and you'll get your SWU in build/dist/update.swu:
-  `docker run --rm -it -e VERSION="yyyymmdd_nn" -v .\build:/build -v .\files:/files ghcr.io/jbatonnet/rinkhals/build /build/build-swu.sh`
-
-If you're ever stuck, reboot, use the SSH SWU tool to regain SSH if you lost it, or reflash the last version if things don't work.
+Read the documentation in the Wiki and join us on Dioscord to discuss development!
 
 
 ## Thanks

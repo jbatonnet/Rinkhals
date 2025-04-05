@@ -336,6 +336,7 @@ class Button(Label):
         self.background_color = background_color
         self.pressed_color = pressed_color
         self.disabled_text_color = disabled_text_color
+        self.text_color = text_color
         self._text_color = text_color
         self.border_color = border_color
         self.border_width = border_width
