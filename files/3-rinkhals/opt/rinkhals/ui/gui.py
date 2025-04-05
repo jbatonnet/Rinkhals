@@ -1,10 +1,8 @@
 import os
 import time
-import sys
-import json
 import re
-import platform
 import subprocess
+import threading
 import logging
 
 from PIL import Image, ImageDraw, ImageFont
@@ -44,6 +42,7 @@ class Component:
         Relative = 0
         Absolute = 1
 
+    tag = None
     parent = None
     visible: bool = True
     left: int
@@ -55,12 +54,13 @@ class Component:
     layout_mode: LayoutMode = LayoutMode.Relative
     scale: int = 1
 
+    _laid_out: bool = False
     _x: int = None
     _width: int = None
     _y: int = None
     _height: int = None
 
-    def __init__(self, left: int = None, width: int = None, right: int = None, top: int = None, height: int = None, bottom: int = None, layout_mode: LayoutMode = LayoutMode.Relative, **kwargs):
+    def __init__(self, left: int = None, width: int = None, right: int = None, top: int = None, height: int = None, bottom: int = None, layout_mode: LayoutMode = LayoutMode.Relative, tag=None, **kwargs):
         self.left = left
         self.width = width
         self.right = right
@@ -68,6 +68,7 @@ class Component:
         self.height = height
         self.bottom = bottom
         self.layout_mode = layout_mode
+        self.tag = tag
 
     def measure(self):
         width = self.width
@@ -163,9 +164,13 @@ class Panel(Component):
             component._y = int(y)
             component._width = int(width)
             component._height = int(height)
+            component._laid_out = True
 
             component.layout()
     def draw(self, draw: ImageDraw, offset_x: int, offset_y: int):
+        if self._width == 0 or self._height == 0:
+            return
+
         if self.background_color:
             if len(self.background_color) == 4:
                 buffer = Image.new('RGBA', (self._width, self._height), self.background_color)
@@ -182,7 +187,7 @@ class Panel(Component):
         if not self.components:
             return
         for component in self.components:
-            if not component.visible:
+            if not component.visible or not component._laid_out:
                 continue
             component.draw(draw, offset_x + self._x, offset_y + self._y)
             
@@ -193,7 +198,7 @@ class Panel(Component):
         self.on_touch_cancel()
 
         for component in reversed(self.components):
-            if not component.visible:
+            if not component.visible or not component._laid_out:
                 continue
             if touch_x >= component._x and touch_x < component._x + component._width and touch_y >= component._y and touch_y < component._y + component._height:
                 component.on_touch_down(touch_x - component._x, touch_y - component._y)
@@ -207,7 +212,7 @@ class Panel(Component):
             return
 
         for component in reversed(self.components):
-            if not component.visible:
+            if not component.visible or not component._laid_out:
                 continue
             if touch_x >= component._x and touch_x < component._x + component._width and touch_y >= component._y and touch_y < component._y + component._height:
                 if self._touched_component and self._touched_component != component:
@@ -224,7 +229,7 @@ class Panel(Component):
             return
 
         for component in reversed(self.components):
-            if not component.visible:
+            if not component.visible or not component._laid_out:
                 continue
             if touch_x >= component._x and touch_x < component._x + component._width and touch_y >= component._y and touch_y < component._y + component._height:
                 if self._touched_component and self._touched_component != component:
@@ -315,22 +320,30 @@ class Label(Component):
 class Button(Label):
     background_color: tuple[int, int, int]
     pressed_color: tuple[int, int, int]
+    disabled_text_color: tuple[int, int, int]
     border_color: tuple[int, int, int]
     border_width: int
     border_radius: int
+    disabled: bool
     callback: FunctionType
 
+    _text_color: tuple[int, int, int]
     _is_pressed: bool = False
 
-    def __init__(self, text='', callback=None, auto_size=False, background_color=None, pressed_color=(128, 128, 128), border_color=None, border_width=0, border_radius=0, **kwargs):
+    def __init__(self, text='', callback=None, auto_size=False, background_color=None, pressed_color=(128, 128, 128), disabled_text_color=(64, 64, 64), text_color=(0, 0, 0), border_color=None, border_width=0, border_radius=0, disabled=False, **kwargs):
         super().__init__(text=text, auto_size=auto_size, **kwargs)
         self.callback = callback
         self.background_color = background_color
         self.pressed_color = pressed_color
+        self.disabled_text_color = disabled_text_color
+        self._text_color = text_color
         self.border_color = border_color
         self.border_width = border_width
         self.border_radius = border_radius
+        self.disabled = disabled
 
+    def layout(self):
+        self.text_color = self.disabled_text_color if self.disabled else self._text_color
     def draw(self, draw: ImageDraw, offset_x: int, offset_y: int):
         xy = [(offset_x + self._x, offset_y + self._y), (offset_x + self._x + self._width - 1, offset_y + self._y + self._height - 1)]
         radius = self.border_radius or 0
@@ -340,6 +353,8 @@ class Button(Label):
         super().draw(draw, offset_x, offset_y)
 
     def on_touch_down(self, position_x: int, position_y: int):
+        if self.disabled:
+            return
         self._is_pressed = True
         self.on_refresh()
     def on_touch_up(self, position_x: int, position_y: int):
@@ -384,18 +399,22 @@ class StackPanel(Panel):
                 self._width = self.width * scale
             elif self.left is not None and self.right is not None:
                 self._width = self.parent._width - self.right * scale - self.left * scale
+            else:
+                self._width = None
 
             if self.height is not None:
                 self._height = self.height * scale
             elif self.top is not None and self.bottom is not None:
                 self._height = self.parent._height - self.bottom * scale - self.top * scale
+            else:
+                self._height = None
 
             self.layout()
             max_x = 0
             max_y = 0
 
             for component in self.components:
-                if not component.visible:
+                if not component.visible or not component._laid_out:
                     continue
                 max_x = max(max_x, component._x + component._width + (component.right or 0) * component.scale)
                 max_y = max(max_y, component._y + component._height + (component.bottom or 0) * component.scale)
@@ -489,6 +508,7 @@ class StackPanel(Panel):
             component._y = int(y)
             component._width = int(width)
             component._height = int(height)
+            component._laid_out = True
 
             component.layout()
 
@@ -665,6 +685,7 @@ class Screen(Panel):
     components: list[Component] = []
     scale: float = 1
     background_color: tuple[int, int, int] = None
+    draw_lock = threading.Lock()
 
     def layout(self):
         self._width = self.width
@@ -786,12 +807,13 @@ class TouchFramebuffer(Screen):
                 if pending_touch_up and now > pending_touch_up_expiration:
                     logging.debug(f'-- TOUCH_UP ({pending_touch_up[0]}, {pending_touch_up[1]})')
                     is_touch_down = False
-                    self.on_touch_up(pending_touch_up[0], pending_touch_up[1])
+                    with self.draw_lock:
+                        self.on_touch_up(pending_touch_up[0], pending_touch_up[1])
                     pending_touch_up = None
 
                 if self._dirty:
-                    self.force_draw()
                     self._dirty = False
+                    self.force_draw()
                 else:
                     time.sleep(0.1)
                 continue
@@ -823,12 +845,14 @@ class TouchFramebuffer(Screen):
                     if not pending_touch_up:
                         logging.debug(f'-- TOUCH_DOWN ({self.touch_down_builder[0]}, {self.touch_down_builder[1]})')
                         is_touch_down = True
-                        self.on_touch_down(self.touch_down_builder[0], self.touch_down_builder[1])
+                        with self.draw_lock:
+                            self.on_touch_down(self.touch_down_builder[0], self.touch_down_builder[1])
                     pending_touch_up = None
                     self.touch_down_builder = None
                 else:
                     if is_touch_down:
-                        self.on_touch_move(self.touch_last_x, self.touch_last_y)
+                        with self.draw_lock:
+                            self.on_touch_move(self.touch_last_x, self.touch_last_y)
 
             # Touch action
             elif event.code == evdev.ecodes.BTN_TOUCH: # EV_KEY
@@ -854,9 +878,10 @@ class TouchFramebuffer(Screen):
             return
 
         for component in self.components:
-            if not component.visible:
+            if not component.visible or not component._laid_out:
                 continue
-            component.draw(self._target_draw, 0, 0)
+            with self.draw_lock:
+                component.draw(self._target_draw, 0, 0)
 
         target_bytes = self._target.rotate(-self.rotation, expand = True).tobytes('raw', 'BGRA')
         with open(f'/dev/{self.framebuffer_device_name}', 'wb') as f:
@@ -943,7 +968,7 @@ class SimulatorScreen(Screen):
             return
 
         for component in self.components:
-            if not component.visible:
+            if not component.visible or not component._laid_out:
                 continue
             component.draw(self._target_draw, 0, 0)
 

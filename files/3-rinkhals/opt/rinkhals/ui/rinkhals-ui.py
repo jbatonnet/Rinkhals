@@ -9,6 +9,7 @@ import platform
 import traceback
 import logging
 import psutil
+import requests
 
 import paho.mqtt.client as paho
 import qrcode
@@ -221,13 +222,14 @@ COLOR_DISABLED = (176, 176, 176)
 COLOR_SHADOW = (96, 96, 96)
 
 def debug(kwargs):
+    kwargs['tag'] = f'line {sys._getframe().f_back.f_back.f_lineno}'
     if DEBUG:
         kwargs['border_color'] = (255, 0, 255)
         kwargs['border_width'] = 1
     return kwargs
 
-def myButton(*args, left=8, right=8, top=8, height=48, font_path=FONT_PATH, font_size=FONT_TEXT_SIZE, background_color=(48, 48, 48), pressed_color=(80, 80, 80), border_color=(96, 96, 96), border_width=1, border_radius=8, text_color=COLOR_TEXT, text_padding=12, **kwargs):
-    return Button(*args, left=left, right=right, top=top, height=height, font_path=font_path, font_size=font_size, background_color=background_color, pressed_color=pressed_color, border_color=border_color, border_width=border_width, border_radius=border_radius, text_color=text_color, text_padding=text_padding, **kwargs)
+def myButton(*args, left=8, right=8, top=8, height=48, font_path=FONT_PATH, font_size=FONT_TEXT_SIZE, background_color=(48, 48, 48), pressed_color=(80, 80, 80), disabled_text_color=(128, 128, 128), border_color=(96, 96, 96), border_width=1, border_radius=8, text_color=COLOR_TEXT, text_padding=12, **kwargs):
+    return Button(*args, left=left, right=right, top=top, height=height, font_path=font_path, font_size=font_size, background_color=background_color, pressed_color=pressed_color, disabled_text_color=disabled_text_color, border_color=border_color, border_width=border_width, border_radius=border_radius, text_color=text_color, text_padding=text_padding, **kwargs)
 def myStackPanel(*args, background_color=(32, 32, 32), **kwargs):
     return StackPanel(*args, background_color=background_color, **debug(kwargs))
 def myScrollPanel(*args, background_color=(32, 32, 32), distance_threshold=32, **kwargs):
@@ -332,10 +334,24 @@ class Program:
         self.panel_rinkhals.home_label = home_label
         self.panel_rinkhals.disk_label = disk_label
 
-        # Main manu
+        # Main menu
         self.panel_main = myStackPanel(left=0, right=0, bottom=0, components=[
             myButton('Manage apps', left=8, right=8, callback=lambda: self.set_screen_panel(self.panel_apps)),
-            myButton('Stop Rinkhals', left=8, right=8, callback=lambda: self.show_text_dialog('Are you sure you want\nto stop Rinkhals?\n\nYou will need to reboot\nyour printer in order to\nstart Rinkhals again', action='Yes', callback=lambda: self.stop_rinkhals())),
+            #myButton('Settings', left=8, right=8, callback=lambda: self.set_screen_panel(self.panel_apps)),
+            myButton('Check for updates', left=8, right=8, callback=self.layout_ota),
+            myButton('Advanced settings', left=8, right=8, text_color=COLOR_DANGER, callback=lambda: self.set_screen_panel(self.panel_advanced)),
+        ])
+
+        # Advanced menu
+        self.panel_advanced = myStackPanel(left=0, right=0, top=0, bottom=0, components=[
+            myPanel(left=0, right=0, top=0, height=48, components=[
+                myLabel('Advanced', font_size=FONT_TITLE_SIZE, auto_size=False, left=0, right=0, top=0, bottom=0),
+                myButton('', font_path=ICON_FONT_PATH, font_size=24, left=0, right=None, width=48, top=0, bottom=0, background_color=None, border_width=0, callback=lambda: self.set_screen_panel(self.panel_main)),
+            ]),
+
+            myButton('Reboot printer', left=8, right=8, callback=lambda: self.show_text_dialog('Are you sure you want\nto reboot your printer?', action='Yes', callback=lambda: self.reboot_printer())),
+            myButton('Restart Rinkhals', left=8, right=8, callback=lambda: self.show_text_dialog('Are you sure you want\nto restart Rinkhals?', action='Yes', callback=lambda: self.restart_rinkhals())),
+            myButton('Switch to stock', left=8, right=8, callback=lambda: self.show_text_dialog('Are you sure you want\nto switch to stock firmware?\n\nYou can reboot your printer\nto start Rinkhals again', action='Yes', callback=lambda: self.stop_rinkhals())),
             myButton('Disable Rinkhals', text_color=COLOR_DANGER, left=8, right=8, callback=lambda: self.show_text_dialog('Are you sure you want\nto disable Rinkhals?\n\nYou will need to reinstall\nRinkhals to start it again', action='Yes', action_color=COLOR_DANGER, callback=lambda: self.disable_rinkhals()))
         ])
 
@@ -370,10 +386,6 @@ class Program:
                         app_cpu :=myLabel('?', left=0, right=0, top=18, height=24, auto_size=False),
                     ])
                 ]),
-                # myPanel(left=0, right=0, top=4, height=40, components=[
-                #     myLabel('Enabled', left=8, right=0, top=0, bottom=0, auto_size=False, text_align='lm'),
-                #     app_toggle_enabled := myCheckBox(right=8, top=0)
-                # ]),
                 myPanel(left=0, right=0, top=8, height=48, components=[
                     app_enable := myButton('Enable', left=8, right=120, top=0, height=48),
                     app_settings := myButton('', font_path=ICON_FONT_PATH, font_size=28, left=None, right=64, top=0, height=48, width=48),
@@ -399,6 +411,55 @@ class Program:
         self.panel_app.app_qr_code = app_qr_code
         self.panel_app.app_enable = app_enable
         self.panel_app.app_start = app_start
+
+        # OTA dialog
+        self.panel_ota = StackPanel(left=0, right=0, top=0, bottom=0, background_color=(0, 0, 0, 192), layout_mode=Component.LayoutMode.Absolute, components=[
+            StackPanel(width=min(360, self.screen.width - 24), top=0, height=self.screen.height, background_color=None, layout_mode=Component.LayoutMode.Absolute, orientation=StackPanel.Orientation.Horizontal, components=[
+                myStackPanel(auto_size=True, left=0, right=0, components=[
+                    myLabel('Check for updates', font_size=FONT_TITLE_SIZE, top=8),
+                    # myPanel(left=8, right=8, top=16, height=56, components=[
+                    #     myLabel('Firmware', left=8, right=0, top=4, bottom=0, auto_size=False, text_align='mt'),
+                    #     myPanel(left=12, width=96, top=0, bottom=0, background_color=None, components=[
+                    #         myLabel('Current', left=0, right=0, top=18, height=20, auto_size=False, font_size=FONT_SUBTITLE_SIZE, text_color=COLOR_SUBTITLE),
+                    #         myLabel(f'{KOBRA_VERSION}', left=0, right=0, bottom=0, height=20, auto_size=False),
+                    #     ]),
+                    #     myPanel(right=12, width=96, top=0, bottom=0, background_color=None, components=[
+                    #         myLabel('Latest', left=0, right=0, top=18, height=20, auto_size=False, font_size=FONT_SUBTITLE_SIZE, text_color=COLOR_SUBTITLE),
+                    #         ota_latest_firmware := myLabel('-', left=0, right=0, bottom=0, height=20, auto_size=False),
+                    #     ])
+                    # ]),
+                    myPanel(left=8, right=8, top=16, height=56, components=[
+                        myLabel('Rinkhals', left=8, right=0, top=4, bottom=0, auto_size=False, text_align='mt'),
+                        myPanel(left=12, width=96, top=0, bottom=0, background_color=None, components=[
+                            myLabel('Current', left=0, right=0, top=18, height=20, auto_size=False, font_size=FONT_SUBTITLE_SIZE, text_color=COLOR_SUBTITLE),
+                            myLabel(f'{ellipsis(RINKHALS_VERSION, 16)}', left=0, right=0, bottom=0, height=20, auto_size=False),
+                        ]),
+                        myPanel(right=12, width=96, top=0, bottom=0, background_color=None, components=[
+                            myLabel('Latest', left=0, right=0, top=18, height=20, auto_size=False, font_size=FONT_SUBTITLE_SIZE, text_color=COLOR_SUBTITLE),
+                            ota_latest_rinkhals := myLabel('-', left=0, right=0, bottom=0, height=20, auto_size=False),
+                        ])
+                    ]),
+                    ota_progress_panel := myStackPanel(left=0, right=0, auto_size=True, components=[
+                        myPanel(width=192, top=16, height=8, background_color=(64, 64, 64), components=[
+                            ota_progress_bar := myPanel(left=0, width=48, top=0, bottom=0, background_color=COLOR_PRIMARY)
+                        ]),
+                        ota_progress_text := myLabel('24%', top=4)
+                    ]),
+                    myPanel(left=20, right=20, top=16, height=48, bottom=8, components=[
+                        ota_cancel := myButton('Cancel', left=0, width=96, top=0),
+                        ota_action := myButton('Refresh', left=None, right=0, width=96, top=0)
+                    ])
+                ])
+            ])
+        ])
+        #self.panel_ota.ota_latest_firmware = ota_latest_firmware
+        self.panel_ota.ota_latest_rinkhals = ota_latest_rinkhals
+        self.panel_ota.ota_progress_panel = ota_progress_panel
+        self.panel_ota.ota_progress_bar = ota_progress_bar
+        self.panel_ota.ota_progress_text = ota_progress_text
+        self.panel_ota.ota_cancel = ota_cancel
+        self.panel_ota.ota_action = ota_action
+        self.panel_ota.visible = False
 
         # Dialog overlay
         def dismiss_dialog():
@@ -455,6 +516,7 @@ class Program:
 
             self.screen.components.append(CallbackComponent(draw_callback=draw_callback, left=0, top=0, right=0, height=24))
         
+        self.screen.components.append(self.panel_ota)
         self.screen.components.append(self.panel_dialog)
         self.screen.layout_mode = Component.LayoutMode.Absolute
         self.screen.layout()
@@ -470,7 +532,9 @@ class Program:
 
         def update_disk_usage(result):
             self.panel_rinkhals.disk_label.text = f'Disk usage: {result}'
-            self.panel_rinkhals.layout()
+            
+            with self.screen.draw_lock:
+                self.panel_rinkhals.layout()
             self.screen.draw()
 
         if USING_SHELL:
@@ -597,7 +661,8 @@ class Program:
 
         def update_app_size(result):
             self.panel_app.app_size.text = result
-            self.panel_app.layout()
+            with self.screen.draw_lock:
+                self.panel_app.layout()
             self.screen.draw()
         if USING_SHELL:
             shell_async(f"du -sh {app_root} | awk '{{print $1}}'", update_app_size)
@@ -616,7 +681,8 @@ class Program:
                 app_memory += p.memory_info().rss / 1024 / 1024
 
             self.panel_app.app_memory.text = f'{round(app_memory, 1)}M'
-            self.panel_app.layout()
+            with self.screen.draw_lock:
+                self.panel_app.layout()
             self.screen.draw()
 
             for pid in app_pids:
@@ -624,7 +690,8 @@ class Program:
                 app_cpu += p.cpu_percent(interval=1)
 
             self.panel_app.app_cpu.text = f'{round(app_cpu, 1)}%'
-            self.panel_app.layout()
+            with self.screen.draw_lock:
+                self.panel_app.layout()
             self.screen.draw()
         run_async(update_memory)
 
@@ -638,6 +705,190 @@ class Program:
             self.panel_app.app_start.text = 'Stop app'
             self.panel_app.app_start.text_color = COLOR_DANGER
             self.panel_app.app_start.callback = lambda app=app: _stop_app(app)
+    def layout_ota(self):
+        def cancel_ota():
+            if not USING_SIMULATOR:
+                if os.path.exists('/useremain/update.swu'):
+                    os.remove('/useremain/update.swu')
+
+            self.panel_ota.visible = False
+            time.sleep(0.25)
+            
+            self.screen.layout()
+            self.screen.draw()
+
+        #self.panel_ota.ota_latest_firmware.text = '-'
+        self.panel_ota.ota_latest_rinkhals.text = '-'
+        self.panel_ota.ota_progress_panel.visible = False
+        self.panel_ota.ota_progress_bar.width = 0
+        self.panel_ota.ota_progress_text.text = '0%'
+        self.panel_ota.ota_action.text = 'Refresh'
+        self.panel_ota.ota_action.callback = lambda: run_async(check_rinkhals_update)
+        self.panel_ota.ota_action.disabled = False
+        self.panel_ota.ota_cancel.disabled = False
+        self.panel_ota.ota_cancel.callback = cancel_ota
+        self.panel_ota.visible = True
+
+        self.screen.layout()
+        self.screen.draw()
+
+        def install_rinkhals_update():
+            self.panel_ota.ota_action.disabled = True
+            self.panel_ota.ota_cancel.disabled = True
+            self.panel_ota.ota_progress_text.text = 'Extracting...'
+            with self.screen.draw_lock:
+                self.panel_ota.layout()
+            self.screen.draw()
+
+            if KOBRA_MODEL_CODE == 'K2P' or KOBRA_MODEL_CODE == 'K3':
+                password = 'U2FsdGVkX19deTfqpXHZnB5GeyQ/dtlbHjkUnwgCi+w='
+            elif KOBRA_MODEL_CODE == 'KS1':
+                password = 'U2FsdGVkX1+lG6cHmshPLI/LaQr9cZCjA8HZt6Y8qmbB7riY'
+
+            logging.info(f'Extracting Rinkhals update...')
+
+            for i in range(1):
+                if not USING_SIMULATOR:
+                    if os.system('rm -rf /useremain/update_swu') != 0:
+                        break
+                    if os.system(f'unzip -P {password} /useremain/update.swu -d /useremain') != 0:
+                        break
+                    if os.system('rm /useremain/update.swu') != 0:
+                        break
+                    if os.system('tar zxf /useremain/update_swu/setup.tar.gz -C /useremain/update_swu') != 0:
+                        break
+                    if os.system('chmod +x /useremain/update_swu/update.sh') != 0:
+                        break
+                else:
+                    time.sleep(1)
+
+                self.panel_ota.ota_progress_text.text = 'Installing...'
+                with self.screen.draw_lock:
+                    self.panel_ota.layout()
+                self.screen.draw()
+
+                # TODO: Replace reboot by something we control (like start.sh maybe?)
+
+                if not USING_SIMULATOR:
+                    logging.info('Starting Rinkhals update...')
+                    os.system('/useremain/update_swu/update.sh &')
+                else:
+                    time.sleep(1)
+                    self.quit()
+                return
+            
+            self.panel_ota.ota_progress_bar.background_color = COLOR_DANGER
+            self.panel_ota.ota_progress_text.text = 'Extraction failed'
+            self.panel_ota.ota_action.disabled = False
+            self.panel_ota.ota_cancel.disabled = False
+            
+            with self.screen.draw_lock:
+                self.panel_ota.layout()
+            self.screen.draw()
+
+        def download_rinkhals_update():
+            self.panel_ota.ota_action.disabled = True
+            self.panel_ota.ota_progress_panel.visible = True
+            self.panel_ota.ota_progress_bar.background_color = COLOR_PRIMARY
+            self.panel_ota.ota_progress_bar.width = 0
+            self.panel_ota.ota_progress_text.text = 'Starting...'
+            with self.screen.draw_lock:
+                self.panel_ota.layout()
+
+            target_path = f'{RINKHALS_ROOT}/../../build/dist/update-download.swu' if USING_SIMULATOR else '/useremain/update.swu'
+
+            try:
+                logging.info(f'Downloading Rinkhals {self.panel_ota.latest_version} from {self.panel_ota.latest_release_url}...')
+
+                with requests.get(self.panel_ota.latest_release_url, stream=True) as r:
+                    r.raise_for_status()
+                    with open(target_path, 'wb') as f:
+                        total_length = int(r.headers.get('content-length', 0))
+                        downloaded = 0
+                        last_update_time = 0
+
+                        for chunk in r.iter_content(chunk_size=8192):
+                            if chunk:
+                                if not self.panel_ota.visible:
+                                    logging.info('Download canceled.')
+                                    return
+                                
+                                f.write(chunk)
+                                downloaded += len(chunk)
+                                progress = int(downloaded / total_length * 100)
+
+                                current_time = time.time()
+                                if current_time - last_update_time >= 0.75:
+                                    last_update_time = current_time
+
+                                    self.panel_ota.ota_progress_bar.width = int(192 * progress / 100)
+                                    downloaded_mb = downloaded / (1024 * 1024)
+                                    total_mb = total_length / (1024 * 1024)
+                                    self.panel_ota.ota_progress_text.text = f'{progress}% ({downloaded_mb:.1f}M / {total_mb:.1f}M)'
+
+                                    with self.screen.draw_lock:
+                                        self.panel_ota.layout()
+                                    self.screen.draw()
+
+                logging.info('Download completed.')
+
+                self.panel_ota.ota_progress_bar.width = 192
+                self.panel_ota.ota_progress_text.text = 'Ready to install'
+
+                self.panel_ota.ota_action.text = 'Install'
+                self.panel_ota.ota_action.callback = lambda: run_async(install_rinkhals_update)
+            except Exception as e:
+                logging.info(f'Download failed. {e}')
+
+                self.panel_ota.ota_progress_bar.background_color = COLOR_DANGER
+                self.panel_ota.ota_progress_text.text = 'Failed'
+                
+            self.panel_ota.ota_action.disabled = False
+
+            with self.screen.draw_lock:
+                self.panel_ota.layout()
+            self.screen.draw()
+
+        def check_rinkhals_update():
+            self.panel_ota.latest_release = None
+            self.panel_ota.latest_version = None
+            self.panel_ota.latest_release_url = None
+            
+            try:
+                logging.info('Checking latest Rinkhals update...')
+                response = requests.get('https://api.github.com/repos/jbatonnet/Rinkhals/releases/latest')
+
+                if response.status_code == 200:
+                    self.panel_ota.latest_release = response.json()
+                    self.panel_ota.latest_version = self.panel_ota.latest_release.get('tag_name')
+
+                    assets = self.panel_ota.latest_release.get('assets', [])
+                    for asset in assets:
+                        if (KOBRA_MODEL_CODE == 'K2P' or KOBRA_MODEL_CODE == 'K3') and asset['name'] == 'update-k2p-k3.swu':
+                            self.panel_ota.latest_release_url = asset['browser_download_url']
+                        elif KOBRA_MODEL_CODE == 'KS1' and asset['name'] == 'update-ks1.swu':
+                            self.panel_ota.latest_release_url = asset['browser_download_url']
+
+                    logging.info(f'Found update {self.panel_ota.latest_version} from {self.panel_ota.latest_release_url}')
+                else:
+                    logging.error(f'Failed to fetch latest release: {response.status_code}')
+            except Exception as e:
+                logging.error(f'Error checking Rinkhals update: {e}')
+
+            if self.panel_ota.latest_version and self.panel_ota.latest_release_url:
+                self.panel_ota.ota_latest_rinkhals.text = ellipsis(self.panel_ota.latest_version, 16)
+                self.panel_ota.ota_action.text = 'Download' if self.panel_ota.latest_version != RINKHALS_VERSION else 'Refresh'
+                self.panel_ota.ota_action.callback = lambda: run_async(download_rinkhals_update) if self.panel_ota.latest_version != RINKHALS_VERSION else lambda: run_async(check_rinkhals_update)
+            else:
+                self.panel_ota.ota_latest_rinkhals.text = '-'
+                self.panel_ota.ota_action.text = 'Refresh'
+                self.panel_ota.ota_action.callback = lambda: run_async(check_rinkhals_update)
+
+            with self.screen.draw_lock:
+                self.panel_ota.layout()
+            self.screen.draw()
+
+        run_async(check_rinkhals_update)
 
     def set_screen_panel(self, panel):
         self.panel_screen.components = [ panel ]
@@ -683,16 +934,30 @@ class Program:
         self.screen.layout()
         self.screen.draw()
 
+    def reboot_printer(self):
+        logging.info('Rebooting printer...')
+
+        if not USING_SIMULATOR:
+            self.clear()
+            os.system('sync && reboot')
+        else:
+            self.quit()
+    def restart_rinkhals(self):
+        logging.info('Restarting Rinkhals...')
+
+        if not USING_SIMULATOR:
+            self.clear()
+            os.system(RINKHALS_ROOT + '/start.sh')
+
+        self.quit()
     def stop_rinkhals(self):
         logging.info('Stopping Rinkhals...')
-
-        screen = None
 
         if not USING_SIMULATOR:
             self.clear()
             os.system(RINKHALS_ROOT + '/stop.sh')
-        else:
-            self.quit()
+
+        self.quit()
     def disable_rinkhals(self):
         logging.info('Disabling Rinkhals...')
 
@@ -706,7 +971,7 @@ class Program:
 
     def clear(self):
         if not USING_SIMULATOR:
-            os.system(f'dd if=/dev/zero of=/dev/fb0 bs={self.width * 4} count={self.height}')
+            os.system(f'dd if=/dev/zero of=/dev/fb0 bs={self.screen.width * 4} count={self.screen.height}')
     def run(self):
         self.screen.run()
         self.quit()
@@ -725,6 +990,16 @@ if __name__ == "__main__":
             program = Program()
             program.run()
         except:
-            logging.error(traceback.format_exc())
+            frames = sys._current_frames()
+            threads = {}
+            for thread in threading.enumerate():
+                threads[thread.ident] = thread
+            for thread_id, stack in frames.items():
+                if thread_id == threading.main_thread().ident:
+                    print(traceback.format_exc())
+                else:
+                    print(f'-- Thread {thread_id}: {threads[thread_id]} --')
+                    print(' '.join(traceback.format_list(traceback.extract_stack(stack))))
             
+    print('', flush=True)
     os.kill(os.getpid(), 9)
