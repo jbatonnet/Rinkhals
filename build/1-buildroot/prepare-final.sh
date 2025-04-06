@@ -27,6 +27,9 @@ for dir in ./output/final/etc/*; do
     rm -rf "$dir"
 done
 
+# Create certificate bundle
+cat ./output/final/etc/ssl/certs/*.pem > ./output/final/etc/ssl/cert.pem
+
 # Clean GCC copies
 rm -rf ./output/final/usr/bin/arm-buildroot-linux-uclibcgnueabihf-*
 
@@ -36,3 +39,8 @@ rm -rf ./output/final/usr/lib/python3.*/site-packages/*
 
 # Clean python .pyc files
 find ./output/final/usr/lib/python3.* -name '*.pyc' -type f -delete
+
+# Copy output to volume mount and derefence symlinks
+mkdir -p /config/output/final
+rm -rf /config/output/final/*
+cp -pr -L ./output/final/* /config/output/final/
