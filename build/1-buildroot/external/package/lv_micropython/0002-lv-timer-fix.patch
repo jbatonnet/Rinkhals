@@ -1,0 +1,26 @@
+diff --git a/user_modules/lv_binding_micropython/lib/lv_utils.py b/user_modules/lv_binding_micropython/lib/lv_utils.py
+index a43e3aa..6799acf 100644
+--- a/user_modules/lv_binding_micropython/lib/lv_utils.py
++++ b/user_modules/lv_binding_micropython/lib/lv_utils.py
+@@ -34,17 +34,14 @@ import lvgl as lv
+ import micropython
+ import sys
+
+-# Try standard machine.Timer, or custom timer from lv_timer, if available
++# Custom timer from lv_timer, not machine.Timer because it works differently now
+
+ try:
+-    from machine import Timer
++    from lv_timer import Timer
+ except:
+-    try:
+-        from lv_timer import Timer
+-    except:
+-        if sys.platform != "darwin":
+-            raise RuntimeError("Missing machine.Timer implementation!")
+-        Timer = False
++    if sys.platform != "darwin":
++        raise RuntimeError("Missing machine.Timer implementation!")
++    Timer = False
+
+ # Try to determine default timer id
