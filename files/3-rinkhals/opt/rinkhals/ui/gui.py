@@ -337,21 +337,22 @@ class Button(Label):
         self.pressed_color = pressed_color
         self.disabled_text_color = disabled_text_color
         self.text_color = text_color
-        self._text_color = text_color
         self.border_color = border_color
         self.border_width = border_width
         self.border_radius = border_radius
         self.disabled = disabled
 
-    def layout(self):
-        self.text_color = self.disabled_text_color if self.disabled else self._text_color
     def draw(self, draw: ImageDraw, offset_x: int, offset_y: int):
         xy = [(offset_x + self._x, offset_y + self._y), (offset_x + self._x + self._width - 1, offset_y + self._y + self._height - 1)]
         radius = self.border_radius or 0
         fill = self.pressed_color if self._is_pressed else self.background_color
 
         draw.rounded_rectangle(xy, radius=radius, fill=fill, outline=self.border_color, width=self.border_width)
+        
+        original_text_color = self.text_color
+        self.text_color = self.disabled_text_color if self.disabled else original_text_color
         super().draw(draw, offset_x, offset_y)
+        self.text_color = original_text_color
 
     def on_touch_down(self, position_x: int, position_y: int):
         if self.disabled:
