@@ -61,7 +61,7 @@ ls -al /useremain > $TMP_PATH/ls-useremain.log 2> /dev/null
 ls -al /useremain/rinkhals > $TMP_PATH/ls-rinkhals.log 2> /dev/null
 
 mkdir -p $TMP_PATH/config
-cp /userdata/app/gk/printer_data/config/* $TMP_PATH/config/ 2> /dev/null
+cp /useremain/home/rinkhals/printer_data/config/* $TMP_PATH/config/ 2> /dev/null
 
 # Collect webcam path and video formats
 ls -al /dev/v4l/by-id/* > $TMP_PATH/ls-dev-v4l.log 2> /dev/null
