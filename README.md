@@ -13,12 +13,13 @@ By using Rinkhals, you will keep all stock Anycubic features (print screen, Anyc
 - OTA Rinkhals updates
 - [Apps system](https://github.com/jbatonnet/Rinkhals.apps) (OctoEverywhere, Cloudflare, Tailscale, ...)
 
-For now the following printers and firmwares are tested / supported:
+Latest version will likely support the two latest firmwares from Anycubic, unless specified. For older firmware please check older releases.
+Here are the suported printers and firmwares with latest Rinkhals release:
 | Model  | Tested firmwares | Notes |
 | -- | -- | -- |
-| Kobra 3 (+ combo) | `2.3.5.3` `2.3.8` | `2.3.7` and `2.3.7.1` have some instabilities |
+| Kobra 3 (+ combo) | `2.3.8` `2.3.8.9` | `2.3.7` and `2.3.7.1` have some instabilities |
 | Kobra 2 Pro | `3.1.2.3` | Only with mainboard [Trigorilla Spe **B** v1.0.x](https://1coderookie.github.io/Kobra2ProInsights/hardware/mainboard/#trigorilla_spe_b_v10x-stock-new-revision). `3.1.4` is buggy |
-| Kobra S1 (+ combo) | `2.4.8.3` `2.5.0.2` `2.5.0.6` |
+| Kobra S1 (+ combo) | `2.4.8.3` `2.5.0.6` `2.5.1.6` |
 
 In case you're wondering this project is named after rinkhals, a sub-species of Cobras ... Kobra ... Rinkhals 👏
 

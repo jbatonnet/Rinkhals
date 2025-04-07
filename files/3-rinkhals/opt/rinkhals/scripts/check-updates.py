@@ -50,16 +50,19 @@ class Program:
                 self.firmware_version = '1.2.3.4'
             elif args[1] == 'K2P':
                 self.model_id = '20021'
-                self.firmware_version = '3.1.2.3'
+                self.firmware_version = '3.1.4'
             elif args[1] == 'K3':
                 self.model_id = '20024'
-                self.firmware_version = '2.3.5.3'
+                self.firmware_version = '2.3.8.9'
             elif args[1] == 'KS1':
                 self.model_id = '20025'
-                self.firmware_version = '2.4.6.6'
+                self.firmware_version = '2.5.1.6'
             elif args[1] == 'K3M':
                 self.model_id = '20026'
                 self.firmware_version = '1.2.3.4'
+
+            if len(args) > 2:
+                self.firmware_version = args[2]
 
     def get_cloud_config(self):
         config = configparser.ConfigParser()

@@ -498,6 +498,7 @@ class Program:
             self.panel_screen.left = 0
             self.panel_screen.top = 24
             self.panel_dialog.top = 24
+            self.panel_ota.top = 24
             self.panel_main.top = self.screen.height - 210
 
             self.panel_main = Panel(left=0, right=0, top=0, bottom=0, components=[
