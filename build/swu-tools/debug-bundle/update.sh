@@ -17,7 +17,7 @@ cp /useremain/rinkhals/*.log $TMP_PATH/ 2> /dev/null
 cp /useremain/rinkhals/.version $TMP_PATH/.version 2> /dev/null
 
 mkdir -p $TMP_PATH/moonraker
-cp /userdata/app/gk/printer_data/logs/*.log $TMP_PATH/moonraker/ 2> /dev/null
+cp /useremain/home/rinkhals/printer_data/logs/*.log $TMP_PATH/moonraker/ 2> /dev/null
 
 # Collect different Rinkhals versions logs
 cd /useremain/rinkhals
