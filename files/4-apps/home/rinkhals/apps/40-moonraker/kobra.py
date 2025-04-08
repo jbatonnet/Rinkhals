@@ -1,16 +1,21 @@
 import os
-import sys
 import uuid
 import json
 import re
 import time
 import logging
 import subprocess
-from datetime import datetime
 import paho.mqtt.client as paho
 
-from ..utils import ServerError, Sentinel
+from ..utils import Sentinel
 from .power import PowerDevice
+
+
+def shell(command):
+    result = subprocess.check_output(['sh', '-c', command])
+    result = result.decode('utf-8').strip()
+    logging.info(f'Shell "{command}" => "{result}"')
+    return result
 
 
 class Kobra:
@@ -38,12 +43,19 @@ class Kobra:
 
         # Extract environment values from the printer
         try:
-            command = f'. /useremain/rinkhals/.current/tools.sh && python -c "import os, json; print(json.dumps(dict(os.environ)))"'
-            environment = subprocess.check_output(['sh', '-c', command])
-            environment = json.loads(environment.decode('utf-8').strip())
+            environment = shell(f'. /useremain/rinkhals/.current/tools.sh && python -c "import os, json; print(json.dumps(dict(os.environ)))"')
+            environment = json.loads(environment)
+
             self.KOBRA_MODEL_ID = environment['KOBRA_MODEL_ID']
             self.KOBRA_MODEL_CODE = environment['KOBRA_MODEL_CODE']
             self.KOBRA_DEVICE_ID = environment['KOBRA_DEVICE_ID']
+            
+            def load_tool_function(function_name):
+                def tool_function(*args):
+                    return shell(f'. /useremain/rinkhals/.current/tools.sh && {function_name} ' + ' '.join([ str(a) for a in args ]))
+                return tool_function
+            
+            self.get_app_property = load_tool_function('get_app_property')
         except:
             pass
 
@@ -156,17 +168,26 @@ class Kobra:
     def mqtt_print_file(self, file):
         logging.info(f'Trying to print {file} using MQTT...')
 
-        payload = """{{
+        auto_leveling = self.get_app_property('40-moonraker', 'mqtt_print_auto_leveling').lower() == 'true'
+        vibration_compensation = self.get_app_property('40-moonraker', 'mqtt_print_vibration_compensation').lower() == 'true'
+        flow_calibration = self.get_app_property('40-moonraker', 'mqtt_print_flow_calibration').lower() == 'true'
+
+        payload = f"""{{
             "type": "print",
             "action": "start",
-            "msgid": "{0}",
-            "timestamp": {1},
+            "msgid": "{uuid.uuid4()}",
+            "timestamp": {round(time.time() * 1000)},
             "data": {{
                 "taskid": "-1",
-                "filename": "{2}",
-                "filetype": 1
+                "filename": "{file}",
+                "filetype": 1,
+                "task_settings": {{
+                    "auto_leveling": {'1' if auto_leveling else '0'},
+                    "vibration_compensation": {'1' if vibration_compensation else '0'},
+                    "flow_calibration": {'1' if flow_calibration else '0'}
+                }}
             }}
-        }}""".format(uuid.uuid4(), round(time.time() * 1000), file)
+        }}"""
 
         self.mqtt_print_report = False
         self.mqtt_print_error = None
