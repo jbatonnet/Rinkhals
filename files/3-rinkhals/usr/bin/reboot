@@ -1,0 +1,12 @@
+#!/bin/sh
+
+PRESENT=$(cat /userdata/app/gk/start.sh | grep "Rinkhals/begin")
+if [ "$PRESENT" = "" ]; then
+    cat /useremain/rinkhals/start.sh.patch >> /userdata/app/gk/start.sh
+    if [ -f /userdata/app/gk/restart_k3c.sh ]; then
+        cat /useremain/rinkhals/start.sh.patch >> /userdata/app/gk/restart_k3c.sh
+    fi
+fi
+
+sync
+/sbin/reboot $@
