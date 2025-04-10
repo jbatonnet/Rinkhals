@@ -1,7 +1,6 @@
 #!/bin/sh
 
-# Run from Docker:
-#   docker run --rm -it -v .\build:/build -v .\files:/files ghcr.io/jbatonnet/rinkhals/build /build/4-apps/40-moonraker/get-moonraker.sh
+# Used by main Dockerfile
 
 mkdir /work
 cd /work

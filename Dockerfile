@@ -96,7 +96,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN --mount=type=cache,sharing=locked,target=/var/cache/apt \
     apt-get update && \
     apt-get install -y --no-install-recommends \
-        wget sed rsync unzip ca-certificates && \
+        wget sed rsync zip unzip ca-certificates && \
     rm -rf /var/lib/apt/lists/*
 
 
@@ -123,22 +123,74 @@ COPY ./build/4-apps/40-moonraker/* /build/
 COPY ./files/4-apps/home/rinkhals/apps/40-moonraker/app.json /files/4-apps/home/rinkhals/apps/40-moonraker/app.json
 RUN /build/get-moonraker.sh
 
+###############################################################
+# prepare-bundle collects all files and prepares a bundle
+FROM build-base AS prepare-bundle
+ARG version="dev"
+
+COPY --from=buildroot /files/1-buildroot/ /bundle/rinkhals/
+COPY --from=buildroot-rebuild /files/1-buildroot/ /bundle/rinkhals/
+COPY --from=build-armv7 /files/2-python/ /bundle/rinkhals/
+COPY --from=build-armv7 /files/4-apps/ /bundle/rinkhals/
+COPY --from=app-mainsail /files/4-apps/ /bundle/rinkhals/
+COPY --from=app-fluidd /files/4-apps/ /bundle/rinkhals/
+COPY --from=app-moonraker /files/4-apps/ /bundle/rinkhals/
+COPY ./files/3-rinkhals /bundle/rinkhals/
+COPY ./files/4-apps /bundle/rinkhals/
+COPY ./files/*.* /bundle/
+
+# TODO Only the patch create script is still there, it can be moved to /build and this line removed
+# Remove everything but shell patches
+RUN find /bundle/rinkhals/opt/rinkhals/patches -type f ! -name "*.sh" -exec rm {} +
+
+# Rename busybox (to avoid conflict with stock) and update all symlinks
+RUN <<EOT
+    mv /bundle/rinkhals/bin/busybox /bundle/rinkhals/bin/busybox.rinkhals
+    find /bundle/ -type l -exec sh -c '
+        for link; do
+            target=$(readlink "$link")
+            if [ "$(basename "$target")" = "busybox" ]; then
+                dir=$(dirname "$target")
+                newtarget="$dir/busybox.rinkhals"
+                newtarget="${newtarget#./}"
+                ln -snf "$newtarget" "$link"
+            fi
+        done
+        ' sh {} +
+EOT
+
+# Validate and set Rinkhals version
+RUN <<EOT
+    if [ -z "$version" ] || [ "$version" != "dev" ] \
+        || ! (echo "$version" | grep -P '^[0-9]\{8\}_[0-9]\{2\}$' > /dev/null \
+            && date -d "$(echo "$version" | cut -d'_' -f1)" +"%Y%m%d" &>/dev/null); then
+        echo "Invalid version format: $version"
+        exit 1
+    else
+        echo "$version" > /bundle/.version
+        echo "$version" > /bundle/rinkhals/.version
+    fi
+EOT
 
 ###############################################################
-# file-bundle collects all files for distribution
-FROM scratch AS file-bundle
-COPY --from=buildroot /files/1-buildroot/ /
-COPY --from=buildroot-rebuild /files/1-buildroot/ /
-COPY --from=build-armv7 /files/2-python/ /
-COPY --from=build-armv7 /files/4-apps/ /
-COPY --from=app-mainsail /files/4-apps/ /
-COPY --from=app-fluidd /files/4-apps/ /
-COPY --from=app-moonraker /files/4-apps/ /
-COPY ./files/3-rinkhals /
-COPY ./files/4-apps /
-COPY ./files/*.* /
-
+# files-export creates the files export image
+FROM scratch AS files-export
+COPY --from=prepare-bundle /bundle/ /
 
 ###############################################################
-# swu-bundle
-#FROM build-base AS swu-bundle
+# build-swu
+FROM prepare-bundle AS build-swu
+COPY ./build/tools.sh /
+
+RUN <<EOT
+    . /tools.sh
+    mkdir -p /swu
+    SWU_PATH=${1:-/build/dist/update.swu}
+    build_swu K3 /bundle /swu/update-k2p-k3.swu
+    build_swu KS1 /bundle /swu/update-ks1.swu
+EOT
+
+###############################################################
+# swu-export creates the firmware updates export image
+FROM scratch AS swu-export
+COPY --from=build-swu /swu/ /
