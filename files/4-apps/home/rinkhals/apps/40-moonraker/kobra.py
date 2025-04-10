@@ -434,6 +434,12 @@ class Kobra:
                     elif script.lower().startswith("bed_mesh_calibrate"):
                         logging.info('[Kobra] Injected bed mesh calibration script')
                         web_request.get_args()["script"] = "MOVE_HEAT_POS\nM109 S140\nWIPE_NOZZLE\nBED_MESH_CALIBRATE\nSAVE_CONFIG"
+                    elif script.lower().startswith('bed_mesh_profile'):
+                        name = re.search('save=(\"(?:[^\"]+)\"|(?:[^\s]+))', script.lower())
+                        if name and name[1] != 'default':
+                            message = 'GoKlipper only support one default bed mesh'
+                            logging.error(message)
+                            raise self.server.error(message)
                 return await original_request(me, web_request)
             return request
 
