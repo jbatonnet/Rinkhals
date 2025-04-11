@@ -1,13 +1,34 @@
 #
-# TODO Document usage in header
+# Main Dockerfile for building Rinkhals
 #
-# Needed once on host for build-armv7:
-# docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+# This multi-stage Dockerfile includes all steps to go from a clean repository to an installable SWU package.
+# Note: Buildkit is required, but should already be enabled in most Docker installations.
 #
-# Use with local filesystem output: https://docs.docker.com/build/exporters/local-tar/
-# docker build --output type=local,dest=./build/dist .
+# Enable QEMU for ARMv7 stages (needed once per session):
+# - docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
 #
-# Note: This multi-stage Dockerfile requires Buildkit
+# Building with local filesystem output (https://docs.docker.com/build/exporters/local-tar/):
+# - docker build --output type=local,dest=./build/dist .
+#
+# Building a release:
+# - docker build --build-arg version=yyyymmdd_nn --output type=local,dest=./build/dist .
+#
+# Making quick changes to buildroot during development:
+# - Copy `.config`, `busybox.config`, `external/` from `/build/1-buildroot` to `/build/1-buildroot/rebuild`
+# - Make changes in the copied files
+# - Rebuild packages using the build-arg `rebuild`:
+# - docker build --build-arg rebuild=lv_micropython --output type=local,dest=./build/dist .
+# - When done, copy back your changes to the original files
+# - Do a normal build to verify your results
+#
+# Debugging/inspecting a specific stage:
+# - docker build --target <stage>
+# - Take note of the image hash in the output
+# - docker run --rm -it <hash> sh
+#
+# Deploying a development build to a printer:
+# - docker build --output type=local,dest=./build/dist .
+# - docker run --rm -it -e KOBRA_IP=x.x.x.x --mount type=bind,ro,source=./build,target=/build rclone/rclone:1.69.1 /build/deploy-dev.sh
 #
 
 ###############################################################
