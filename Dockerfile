@@ -37,14 +37,11 @@ COPY ./build/1-buildroot/gcc-target.patch /buildroot/
 RUN git apply ./gcc-target.patch
 
 # Make using bind mounted Buildroot config and external tree
-# - This prevents layer cache invalidation on changes, so a complete rebuild is not automatically required
-# - Use `docker build --target buildroot-rebuild` instead to rebuild specific packages
-# - Use `docker build --no-cache-filter buildroot` to invalidate the cache for a complete rebuild
+COPY ./build/1-buildroot/.config /buildroot/.config
+COPY ./build/1-buildroot/busybox.config /buildroot/busybox.config
+COPY ./build/1-buildroot/external/ /external/
 ENV KCONFIG_NOSILENTUPDATE=1
-RUN --mount=type=bind,source=./build/1-buildroot/.config,target=/buildroot/.config \
-    --mount=type=bind,source=./build/1-buildroot/busybox.config,target=/buildroot/busybox.config \
-    --mount=type=bind,source=./build/1-buildroot/external,target=/external \
-    make BR2_EXTERNAL=/external
+RUN make BR2_EXTERNAL=/external
 
 COPY ./build/1-buildroot/prepare-final.sh /buildroot/
 RUN /buildroot/prepare-final.sh
@@ -54,11 +51,14 @@ RUN /buildroot/prepare-final.sh
 FROM buildroot AS buildroot-rebuild
 ARG rebuild=""
 
-# Invalidates cache when files are changed, so make rebuild is executed
+# Use files from rebuild/ (if it exists) to rebuild without invalidating the base image
+# Note: pattern matching 'rebuil[d]' is a trick to copy-if-exists
+COPY ./build/1-buildroot/rebuil[d]/.config /buildroot/
+COPY ./build/1-buildroot/rebuil[d]/busybox.config /buildroot/
+COPY ./build/1-buildroot/rebuil[d]/external/ /external/
+
+# Perform dirclean and rebuild for selected packages
 # https://buildroot.org/downloads/manual/manual.html#rebuild-pkg
-COPY ./build/1-buildroot/.config /buildroot/.config
-COPY ./build/1-buildroot/busybox.config /buildroot/busybox.config
-COPY ./build/1-buildroot/external/ /external/
 ENV KCONFIG_NOSILENTUPDATE=1
 RUN <<EOT
     if [ -n "$rebuild" ]; then
@@ -129,9 +129,7 @@ RUN --mount=type=cache,sharing=locked,target=/root/.cache/pip \
 ###############################################################
 # prepare-bundle collects all files and prepares a bundle
 FROM build-base AS prepare-bundle
-ARG version="dev"
 
-COPY --from=buildroot /files/1-buildroot/ /bundle/rinkhals/
 COPY --from=buildroot-rebuild /files/1-buildroot/ /bundle/rinkhals/
 COPY --from=build-python-armv7 /files/2-python/ /bundle/rinkhals/
 COPY --from=app-mainsail /files/4-apps/ /bundle/rinkhals/
@@ -142,7 +140,6 @@ COPY ./files/3-rinkhals /bundle/rinkhals/
 COPY ./files/4-apps /bundle/rinkhals/
 COPY ./files/*.* /bundle/
 
-# TODO Only the patch create script is still there, it can be moved to /build and this line removed
 # Remove everything but shell patches
 RUN find /bundle/rinkhals/opt/rinkhals/patches -type f ! -name "*.sh" -exec rm {} +
 
@@ -163,6 +160,7 @@ RUN <<EOT
 EOT
 
 # Validate and set Rinkhals version
+ARG version="dev"
 RUN <<EOT
     if [ -z "$version" ] || [ "$version" != "dev" ] \
         || ! (echo "$version" | grep -P '^[0-9]\{8\}_[0-9]\{2\}$' > /dev/null \
