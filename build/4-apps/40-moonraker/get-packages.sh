@@ -1,8 +1,8 @@
 #!/bin/sh
 
-# From a Windows machine:
-#   docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
-#   docker run --platform=linux/arm/v7 --rm -it -v .\build\cache\pip:/root/.cache/pip -v .\build:/build -v .\files:/files ghcr.io/jbatonnet/armv7-uclibc:rinkhals /build/4-apps/40-moonraker/get-packages.sh
+# Used by main Dockerfile
+
+set -e
 
 mkdir -p /files/4-apps/home/rinkhals/apps/40-moonraker
 cd /files/4-apps/home/rinkhals/apps/40-moonraker

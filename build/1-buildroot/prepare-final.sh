@@ -39,8 +39,3 @@ rm -rf /files/1-buildroot/usr/lib/python3.*/site-packages/*
 
 # Clean python .pyc files
 find /files/1-buildroot/usr/lib/python3.* -name '*.pyc' -type f -delete
-
-# Copy output to volume mount and dereference symlinks
-# mkdir -p /config/output/final
-# rm -rf /config/output/final/*
-# cp -pr -L /files/1-buildroot/* /config/output/final/

@@ -5,9 +5,9 @@
 # docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
 #
 # Use with local filesystem output: https://docs.docker.com/build/exporters/local-tar/
-# docker build --output type=tar,dest=./bundle.tar .
+# docker build --output type=local,dest=./build/dist .
 #
-# Note: This multi-stage Dockerfile is intended to be built with Buildkit enabled for best performance
+# Note: This multi-stage Dockerfile requires Buildkit
 #
 
 ###############################################################
@@ -49,7 +49,6 @@ RUN --mount=type=bind,source=./build/1-buildroot/.config,target=/buildroot/.conf
 COPY ./build/1-buildroot/prepare-final.sh /buildroot/
 RUN /buildroot/prepare-final.sh
 
-
 ###############################################################
 # buildroot-rebuild rebuilds selected buildroot packages
 FROM buildroot AS buildroot-rebuild
@@ -61,31 +60,28 @@ COPY ./build/1-buildroot/.config /buildroot/.config
 COPY ./build/1-buildroot/busybox.config /buildroot/busybox.config
 COPY ./build/1-buildroot/external/ /external/
 ENV KCONFIG_NOSILENTUPDATE=1
-RUN if [ -n "$rebuild" ]; then \
-        echo "Rebuilding packages: $rebuild" && \
-        echo $rebuild | tr ',' ' ' | while read -r p; do \
-            make ${p}-dirclean && \
-            make ${p}-rebuild; \
-        done; \
-    else \
-        echo "No packages to rebuild"; \
+RUN <<EOT
+    if [ -n "$rebuild" ]; then
+        echo "Rebuilding packages: $rebuild"
+        echo $rebuild | tr ',' ' ' | while read -r p; do
+            make ${p}-dirclean
+            make ${p}-rebuild
+        done;
+    else
+        echo "No packages to rebuild";
     fi
+EOT
 
 COPY ./build/1-buildroot/prepare-final.sh /buildroot/
 RUN /buildroot/prepare-final.sh
 
-
 ###############################################################
-# build-armv7 builds dependencies that require custom compilation
-FROM --platform=linux/arm/v7 ghcr.io/jbatonnet/armv7-uclibc:rinkhals AS build-armv7
+# build-python-armv7 builds Python dependencies that require ARMv7 compilation
+FROM --platform=linux/arm/v7 ghcr.io/jbatonnet/armv7-uclibc:rinkhals AS build-python-armv7
 
 COPY ./build/2-python/get-packages.sh /build/2-python/get-packages.sh
-COPY ./build/4-apps/40-moonraker/get-packages.sh /build/4-apps/40-moonraker/get-packages.sh
-
-# Execute all scripts named get-packages.sh (for python and apps)
-RUN --mount=type=cache,target=/root/.cache/pip \
-    find /build -type f -name get-packages.sh -exec sh {} \;
-
+RUN --mount=type=cache,sharing=locked,target=/root/.cache/pip \
+    /build/2-python/get-packages.sh
 
 ###############################################################
 # build-base provides the basis for common build steps
@@ -99,7 +95,6 @@ RUN --mount=type=cache,sharing=locked,target=/var/cache/apt \
         wget sed rsync zip unzip ca-certificates && \
     rm -rf /var/lib/apt/lists/*
 
-
 ###############################################################
 # app-mainsail prepares Mainsail app files
 FROM build-base AS app-mainsail
@@ -107,14 +102,12 @@ COPY ./build/4-apps/25-mainsail/* /build/
 COPY ./files/4-apps/home/rinkhals/apps/25-mainsail/app.json /files/4-apps/home/rinkhals/apps/25-mainsail/app.json
 RUN /build/get-mainsail.sh
 
-
 ###############################################################
 # app-fluidd prepares Fluidd app files
 FROM build-base AS app-fluidd
 COPY ./build/4-apps/26-fluidd/* /build/
 COPY ./files/4-apps/home/rinkhals/apps/26-fluidd/app.json /files/4-apps/home/rinkhals/apps/26-fluidd/app.json
 RUN /build/get-fluidd.sh
-
 
 ###############################################################
 # app-moonraker prepares Moonraker app files
@@ -124,17 +117,27 @@ COPY ./files/4-apps/home/rinkhals/apps/40-moonraker/app.json /files/4-apps/home/
 RUN /build/get-moonraker.sh
 
 ###############################################################
+# app-moonraker-armv7 builds Moonraker dependencies that require ARMv7 compilation
+FROM --platform=linux/arm/v7 ghcr.io/jbatonnet/armv7-uclibc:rinkhals AS app-moonraker-armv7
+
+COPY --from=app-moonraker /files/4-apps/ /files/4-apps/
+COPY ./build/4-apps/40-moonraker/get-packages.sh /build/4-apps/40-moonraker/get-packages.sh
+
+RUN --mount=type=cache,sharing=locked,target=/root/.cache/pip \
+    /build/4-apps/40-moonraker/get-packages.sh
+
+###############################################################
 # prepare-bundle collects all files and prepares a bundle
 FROM build-base AS prepare-bundle
 ARG version="dev"
 
 COPY --from=buildroot /files/1-buildroot/ /bundle/rinkhals/
 COPY --from=buildroot-rebuild /files/1-buildroot/ /bundle/rinkhals/
-COPY --from=build-armv7 /files/2-python/ /bundle/rinkhals/
-COPY --from=build-armv7 /files/4-apps/ /bundle/rinkhals/
+COPY --from=build-python-armv7 /files/2-python/ /bundle/rinkhals/
 COPY --from=app-mainsail /files/4-apps/ /bundle/rinkhals/
 COPY --from=app-fluidd /files/4-apps/ /bundle/rinkhals/
 COPY --from=app-moonraker /files/4-apps/ /bundle/rinkhals/
+COPY --from=app-moonraker-armv7 /files/4-apps/ /bundle/rinkhals/
 COPY ./files/3-rinkhals /bundle/rinkhals/
 COPY ./files/4-apps /bundle/rinkhals/
 COPY ./files/*.* /bundle/
@@ -164,7 +167,7 @@ RUN <<EOT
     if [ -z "$version" ] || [ "$version" != "dev" ] \
         || ! (echo "$version" | grep -P '^[0-9]\{8\}_[0-9]\{2\}$' > /dev/null \
             && date -d "$(echo "$version" | cut -d'_' -f1)" +"%Y%m%d" &>/dev/null); then
-        echo "Invalid version format: $version"
+        echo "Invalid version (must be 'yyyymmdd_nn' or 'dev'): $version"
         exit 1
     else
         echo "$version" > /bundle/.version
@@ -185,7 +188,6 @@ COPY ./build/tools.sh /
 RUN <<EOT
     . /tools.sh
     mkdir -p /swu
-    SWU_PATH=${1:-/build/dist/update.swu}
     build_swu K3 /bundle /swu/update-k2p-k3.swu
     build_swu KS1 /bundle /swu/update-ks1.swu
 EOT

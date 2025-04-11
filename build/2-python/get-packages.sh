@@ -1,9 +1,8 @@
 #!/bin/sh
 
-# From a Windows machine:
-#   docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
-#   docker run --platform=linux/arm/v7 --rm -it -v .\build\cache\pip:/root/.cache/pip -v .\build:/build -v .\files:/files ghcr.io/jbatonnet/armv7-uclibc:rinkhals /build/2-python/get-packages.sh
+# Used by main Dockerfile
 
+set -e
 
 mkdir -p /files/2-python/usr
 cd /files/2-python/usr
