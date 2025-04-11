@@ -1,21 +1,46 @@
-import asyncio
 import time
-import platform
 
 import lvgl as lv
 import lv_utils
+
+# Detect current platform
+_using_micropython = None
+_platform = None
+
+try:
+    import micropython
+    _using_micropython = True
+    _platform = 'linux'
+except:
+    _using_micropython = False
+
+try:
+    import platform
+
+    architecture = platform.architecture()
+    if architecture[1] == 'WindowsPE':
+        _platform = 'windows'
+    elif architecture[1] == 'ELF':
+        _platform = 'linux'
+except:
+    pass
+
+# Load matching imports
+if _using_micropython:
+    import uasyncio as asyncio
+else:
+    import asyncio
 
 
 def init():
     lv.init()
 
-    system = platform.system()
-    if system == 'Windows':
+    if _platform == 'windows':
         disp = lv.windows_create_display('Rinkhals', 272, 480)
         touch = lv.windows_acquire_pointer_indev(disp)
         touch.set_display(disp)
 
-    elif system == 'Linux':
+    elif _platform == 'linux':
         disp = lv.linux_fbdev_create()
         lv.linux_fbdev_set_file(disp, '/dev/fb0')
 

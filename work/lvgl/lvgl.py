@@ -1,80 +1,120 @@
 import os
-import platform
 
-from cffi import FFI
+# Detect current platform
+_using_micropython = None
+_target_library = None
 
-ffi = FFI()
+try:
+    import micropython
 
-_architecture = platform.architecture()
-_path = f'{os.getcwd()}/work/lvgl'
+    _using_micropython = True
+    _target_library = 'lvgl-arm-linux-uclibc.so'
+except:
+    _using_micropython = False
 
-if _architecture[1] == 'WindowsPE':
-    _lvgl = ffi.dlopen(_path + '/lvgl-x64-windows.dll')
-elif _architecture[1] == 'ELF':
-    _lvgl = ffi.dlopen(f'{os.getcwd()}/lvgl-arm-linux-uclibc.so')
+    try:
+        import cffi
+        import platform
+
+        architecture = platform.architecture()
+        if architecture[1] == 'WindowsPE':
+            _target_library = 'lvgl-x64-windows.dll'
+        elif architecture[1] == 'ELF':
+            _target_library = 'lvgl-arm-linux-uclibc.so'
+    except:
+        pass
+
+if _using_micropython is None or _target_library is None:
+    raise Exception('Current platform is not supported')
+
+# Find the library
+def exists(path):
+    try:
+        os.stat(path)
+        return True
+    except:
+        return False
+
+_library_path = f'{os.getcwd()}/{_target_library}'
+if not exists(_library_path):
+    _library_path = f'{os.path.dirname(os.path.realpath(__file__))}/{_target_library}'
+if not exists(_library_path):
+    raise Exception(f'Unable to find library {_target_library}')
+
+# Load the library
+if _using_micropython:
+    import ffi
+    _lvgl = ffi.open(_library_path)
+else:
+    from cffi import FFI
+    ffi = FFI()
+    _lvgl = ffi.dlopen(_library_path)
+
 
 
 # General
-ffi.cdef("""
-    void lv_init(void);
-    bool lv_is_initialized(void);
-    void lv_tick_inc(uint32_t tick_period);
-    uint32_t lv_timer_handler(void);
-""")
+if not _using_micropython:
+    ffi.cdef("""
+        void lv_init(void);
+        bool lv_is_initialized(void);
+        void lv_tick_inc(uint32_t tick_period);
+        uint32_t lv_timer_handler(void);
+    """)
 
 # Display and Input device
-ffi.cdef("""
-    typedef void lv_display_t;
-    typedef void lv_indev_t;
-         
-    typedef enum {
-        LV_DISPLAY_ROTATION_0 = 0,
-        LV_DISPLAY_ROTATION_90,
-        LV_DISPLAY_ROTATION_180,
-        LV_DISPLAY_ROTATION_270
-    } lv_display_rotation_t;
-         
-    typedef enum {
-        LV_DISPLAY_RENDER_MODE_PARTIAL,
-        LV_DISPLAY_RENDER_MODE_DIRECT,
-        LV_DISPLAY_RENDER_MODE_FULL,
-    } lv_display_render_mode_t;
-         
-    typedef struct {
-        int32_t x1;
-        int32_t y1;
-        int32_t x2;
-        int32_t y2;
-    } lv_area_t;
-         
-    typedef enum {
-        LV_INDEV_TYPE_NONE,
-        LV_INDEV_TYPE_POINTER,
-        LV_INDEV_TYPE_KEYPAD,
-        LV_INDEV_TYPE_BUTTON,
-        LV_INDEV_TYPE_ENCODER,
-    } lv_indev_type_t;
-         
-    typedef void (*lv_display_flush_cb_t)(lv_display_t * disp, const lv_area_t * area, uint8_t * px_map);
-         
-    lv_display_t *lv_windows_create_display(const wchar_t *title, int32_t hor_res, int32_t ver_res, int32_t zoom_level, bool allow_dpi_override, bool simulator_mode);
-    lv_indev_t *lv_windows_acquire_pointer_indev(lv_display_t *display);
-    lv_indev_t *lv_windows_acquire_keypad_indev(lv_display_t *display);
-    lv_indev_t *lv_windows_acquire_encoder_indev(lv_display_t *display);
-         
-    lv_display_t* lv_linux_fbdev_create();
-    void lv_linux_fbdev_set_file(lv_display_t * disp, const char * str);
-    lv_indev_t *lv_evdev_create(lv_indev_type_t indev_type, const char *dev_path);
-    void lv_evdev_set_swap_axes(lv_indev_t *indev, bool swap_axes);
-    void lv_evdev_set_calibration(lv_indev_t *indev, int min_x, int min_y, int max_x, int max_y);
+if not _using_micropython:
+    ffi.cdef("""
+        typedef void lv_display_t;
+        typedef void lv_indev_t;
+            
+        typedef enum {
+            LV_DISPLAY_ROTATION_0 = 0,
+            LV_DISPLAY_ROTATION_90,
+            LV_DISPLAY_ROTATION_180,
+            LV_DISPLAY_ROTATION_270
+        } lv_display_rotation_t;
+            
+        typedef enum {
+            LV_DISPLAY_RENDER_MODE_PARTIAL,
+            LV_DISPLAY_RENDER_MODE_DIRECT,
+            LV_DISPLAY_RENDER_MODE_FULL,
+        } lv_display_render_mode_t;
+            
+        typedef struct {
+            int32_t x1;
+            int32_t y1;
+            int32_t x2;
+            int32_t y2;
+        } lv_area_t;
+            
+        typedef enum {
+            LV_INDEV_TYPE_NONE,
+            LV_INDEV_TYPE_POINTER,
+            LV_INDEV_TYPE_KEYPAD,
+            LV_INDEV_TYPE_BUTTON,
+            LV_INDEV_TYPE_ENCODER,
+        } lv_indev_type_t;
+            
+        typedef void (*lv_display_flush_cb_t)(lv_display_t * disp, const lv_area_t * area, uint8_t * px_map);
+            
+        lv_display_t *lv_windows_create_display(const wchar_t *title, int32_t hor_res, int32_t ver_res, int32_t zoom_level, bool allow_dpi_override, bool simulator_mode);
+        lv_indev_t *lv_windows_acquire_pointer_indev(lv_display_t *display);
+        lv_indev_t *lv_windows_acquire_keypad_indev(lv_display_t *display);
+        lv_indev_t *lv_windows_acquire_encoder_indev(lv_display_t *display);
+            
+        lv_display_t* lv_linux_fbdev_create();
+        void lv_linux_fbdev_set_file(lv_display_t * disp, const char * str);
+        lv_indev_t *lv_evdev_create(lv_indev_type_t indev_type, const char *dev_path);
+        void lv_evdev_set_swap_axes(lv_indev_t *indev, bool swap_axes);
+        void lv_evdev_set_calibration(lv_indev_t *indev, int min_x, int min_y, int max_x, int max_y);
 
-    void lv_indev_set_display(lv_indev_t * indev, struct _lv_display_t * disp);
-         
-    lv_display_t * lv_display_create(int32_t hor_res, int32_t ver_res);
-    void lv_display_set_buffers(lv_display_t * disp, void * buf1, void * buf2, uint32_t buf_size, lv_display_render_mode_t render_mode);
-    void lv_display_set_rotation(lv_display_t * disp, lv_display_rotation_t rotation);
-    void lv_display_set_flush_cb(lv_display_t * disp, lv_display_flush_cb_t flush_cb);
-""")
+        void lv_indev_set_display(lv_indev_t * indev, struct _lv_display_t * disp);
+            
+        lv_display_t * lv_display_create(int32_t hor_res, int32_t ver_res);
+        void lv_display_set_buffers(lv_display_t * disp, void * buf1, void * buf2, uint32_t buf_size, lv_display_render_mode_t render_mode);
+        void lv_display_set_rotation(lv_display_t * disp, lv_display_rotation_t rotation);
+        void lv_display_set_flush_cb(lv_display_t * disp, lv_display_flush_cb_t flush_cb);
+    """)
 
 DISPLAY_ROTATION_0 = _lvgl.LV_DISPLAY_ROTATION_0
 DISPLAY_ROTATION_90 = _lvgl.LV_DISPLAY_ROTATION_90
