@@ -11,7 +11,7 @@ _path = f'{os.getcwd()}/work/lvgl'
 if _architecture[1] == 'WindowsPE':
     _lvgl = ffi.dlopen(_path + '/lvgl-x64-windows.dll')
 elif _architecture[1] == 'ELF':
-    _lvgl = ffi.dlopen(_path + '/lvgl-arm-linux-uclibc.so')
+    _lvgl = ffi.dlopen(f'{os.getcwd()}/lvgl-arm-linux-uclibc.so')
 
 
 # General
@@ -47,6 +47,14 @@ ffi.cdef("""
         int32_t y2;
     } lv_area_t;
          
+    typedef enum {
+        LV_INDEV_TYPE_NONE,
+        LV_INDEV_TYPE_POINTER,
+        LV_INDEV_TYPE_KEYPAD,
+        LV_INDEV_TYPE_BUTTON,
+        LV_INDEV_TYPE_ENCODER,
+    } lv_indev_type_t;
+         
     typedef void (*lv_display_flush_cb_t)(lv_display_t * disp, const lv_area_t * area, uint8_t * px_map);
          
     lv_display_t *lv_windows_create_display(const wchar_t *title, int32_t hor_res, int32_t ver_res, int32_t zoom_level, bool allow_dpi_override, bool simulator_mode);
@@ -55,6 +63,10 @@ ffi.cdef("""
     lv_indev_t *lv_windows_acquire_encoder_indev(lv_display_t *display);
          
     lv_display_t* lv_linux_fbdev_create();
+    void lv_linux_fbdev_set_file(lv_display_t * disp, const char * str);
+    lv_indev_t *lv_evdev_create(lv_indev_type_t indev_type, const char *dev_path);
+    void lv_evdev_set_swap_axes(lv_indev_t *indev, bool swap_axes);
+    void lv_evdev_set_calibration(lv_indev_t *indev, int min_x, int min_y, int max_x, int max_y);
 
     void lv_indev_set_display(lv_indev_t * indev, struct _lv_display_t * disp);
          
@@ -64,14 +76,20 @@ ffi.cdef("""
     void lv_display_set_flush_cb(lv_display_t * disp, lv_display_flush_cb_t flush_cb);
 """)
 
-LV_DISPLAY_ROTATION_0 = _lvgl.LV_DISPLAY_ROTATION_0
-LV_DISPLAY_ROTATION_90 = _lvgl.LV_DISPLAY_ROTATION_90
-LV_DISPLAY_ROTATION_180 = _lvgl.LV_DISPLAY_ROTATION_180
-LV_DISPLAY_ROTATION_270 = _lvgl.LV_DISPLAY_ROTATION_270
+DISPLAY_ROTATION_0 = _lvgl.LV_DISPLAY_ROTATION_0
+DISPLAY_ROTATION_90 = _lvgl.LV_DISPLAY_ROTATION_90
+DISPLAY_ROTATION_180 = _lvgl.LV_DISPLAY_ROTATION_180
+DISPLAY_ROTATION_270 = _lvgl.LV_DISPLAY_ROTATION_270
 
-LV_DISPLAY_RENDER_MODE_PARTIAL = _lvgl.LV_DISPLAY_RENDER_MODE_PARTIAL
-LV_DISPLAY_RENDER_MODE_DIRECT = _lvgl.LV_DISPLAY_RENDER_MODE_DIRECT
-LV_DISPLAY_RENDER_MODE_FULL = _lvgl.LV_DISPLAY_RENDER_MODE_FULL
+DISPLAY_RENDER_MODE_PARTIAL = _lvgl.LV_DISPLAY_RENDER_MODE_PARTIAL
+DISPLAY_RENDER_MODE_DIRECT = _lvgl.LV_DISPLAY_RENDER_MODE_DIRECT
+DISPLAY_RENDER_MODE_FULL = _lvgl.LV_DISPLAY_RENDER_MODE_FULL
+
+INDEV_TYPE_NONE = _lvgl.LV_INDEV_TYPE_NONE
+INDEV_TYPE_POINTER = _lvgl.LV_INDEV_TYPE_POINTER
+INDEV_TYPE_KEYPAD = _lvgl.LV_INDEV_TYPE_KEYPAD
+INDEV_TYPE_BUTTON = _lvgl.LV_INDEV_TYPE_BUTTON
+INDEV_TYPE_ENCODER = _lvgl.LV_INDEV_TYPE_ENCODER
 
 # Objects
 ffi.cdef("""
@@ -113,28 +131,28 @@ ffi.cdef("""
     void lv_screen_load(struct _lv_obj_t * scr);
 """)
       
-LV_ALIGN_DEFAULT = _lvgl.LV_ALIGN_DEFAULT
-LV_ALIGN_TOP_LEFT = _lvgl.LV_ALIGN_TOP_LEFT
-LV_ALIGN_TOP_MID = _lvgl.LV_ALIGN_TOP_MID
-LV_ALIGN_TOP_RIGHT = _lvgl.LV_ALIGN_TOP_RIGHT
-LV_ALIGN_BOTTOM_LEFT = _lvgl.LV_ALIGN_BOTTOM_LEFT
-LV_ALIGN_BOTTOM_MID = _lvgl.LV_ALIGN_BOTTOM_MID
-LV_ALIGN_BOTTOM_RIGHT = _lvgl.LV_ALIGN_BOTTOM_RIGHT
-LV_ALIGN_LEFT_MID = _lvgl.LV_ALIGN_LEFT_MID
-LV_ALIGN_RIGHT_MID = _lvgl.LV_ALIGN_RIGHT_MID
-LV_ALIGN_CENTER = _lvgl.LV_ALIGN_CENTER
-LV_ALIGN_OUT_TOP_LEFT = _lvgl.LV_ALIGN_OUT_TOP_LEFT
-LV_ALIGN_OUT_TOP_MID = _lvgl.LV_ALIGN_OUT_TOP_MID
-LV_ALIGN_OUT_TOP_RIGHT = _lvgl.LV_ALIGN_OUT_TOP_RIGHT
-LV_ALIGN_OUT_BOTTOM_LEFT = _lvgl.LV_ALIGN_OUT_BOTTOM_LEFT
-LV_ALIGN_OUT_BOTTOM_MID = _lvgl.LV_ALIGN_OUT_BOTTOM_MID
-LV_ALIGN_OUT_BOTTOM_RIGHT = _lvgl.LV_ALIGN_OUT_BOTTOM_RIGHT
-LV_ALIGN_OUT_LEFT_TOP = _lvgl.LV_ALIGN_OUT_LEFT_TOP
-LV_ALIGN_OUT_LEFT_MID = _lvgl.LV_ALIGN_OUT_LEFT_MID
-LV_ALIGN_OUT_LEFT_BOTTOM = _lvgl.LV_ALIGN_OUT_LEFT_BOTTOM
-LV_ALIGN_OUT_RIGHT_TOP = _lvgl.LV_ALIGN_OUT_RIGHT_TOP
-LV_ALIGN_OUT_RIGHT_MID = _lvgl.LV_ALIGN_OUT_RIGHT_MID
-LV_ALIGN_OUT_RIGHT_BOTTOM = _lvgl.LV_ALIGN_OUT_RIGHT_BOTTOM
+ALIGN_DEFAULT = _lvgl.LV_ALIGN_DEFAULT
+ALIGN_TOP_LEFT = _lvgl.LV_ALIGN_TOP_LEFT
+ALIGN_TOP_MID = _lvgl.LV_ALIGN_TOP_MID
+ALIGN_TOP_RIGHT = _lvgl.LV_ALIGN_TOP_RIGHT
+ALIGN_BOTTOM_LEFT = _lvgl.LV_ALIGN_BOTTOM_LEFT
+ALIGN_BOTTOM_MID = _lvgl.LV_ALIGN_BOTTOM_MID
+ALIGN_BOTTOM_RIGHT = _lvgl.LV_ALIGN_BOTTOM_RIGHT
+ALIGN_LEFT_MID = _lvgl.LV_ALIGN_LEFT_MID
+ALIGN_RIGHT_MID = _lvgl.LV_ALIGN_RIGHT_MID
+ALIGN_CENTER = _lvgl.LV_ALIGN_CENTER
+ALIGN_OUT_TOP_LEFT = _lvgl.LV_ALIGN_OUT_TOP_LEFT
+ALIGN_OUT_TOP_MID = _lvgl.LV_ALIGN_OUT_TOP_MID
+ALIGN_OUT_TOP_RIGHT = _lvgl.LV_ALIGN_OUT_TOP_RIGHT
+ALIGN_OUT_BOTTOM_LEFT = _lvgl.LV_ALIGN_OUT_BOTTOM_LEFT
+ALIGN_OUT_BOTTOM_MID = _lvgl.LV_ALIGN_OUT_BOTTOM_MID
+ALIGN_OUT_BOTTOM_RIGHT = _lvgl.LV_ALIGN_OUT_BOTTOM_RIGHT
+ALIGN_OUT_LEFT_TOP = _lvgl.LV_ALIGN_OUT_LEFT_TOP
+ALIGN_OUT_LEFT_MID = _lvgl.LV_ALIGN_OUT_LEFT_MID
+ALIGN_OUT_LEFT_BOTTOM = _lvgl.LV_ALIGN_OUT_LEFT_BOTTOM
+ALIGN_OUT_RIGHT_TOP = _lvgl.LV_ALIGN_OUT_RIGHT_TOP
+ALIGN_OUT_RIGHT_MID = _lvgl.LV_ALIGN_OUT_RIGHT_MID
+ALIGN_OUT_RIGHT_BOTTOM = _lvgl.LV_ALIGN_OUT_RIGHT_BOTTOM
 
 
 
@@ -161,9 +179,19 @@ def windows_acquire_pointer_indev(display):
     result = _lvgl.lv_windows_acquire_pointer_indev(display._pointer)
     return indev(result) if result else None
 
-def linux_fbdev_create() -> None:
-    return _lvgl.lv_linux_fbdev_create()
-
+def linux_fbdev_create():
+    result = _lvgl.lv_linux_fbdev_create()
+    return display(result) if result else None
+def linux_fbdev_set_file(disp, str) -> None:
+    _lvgl.lv_linux_fbdev_set_file(disp._pointer, str.encode('utf-8'))
+def evdev_create(indev_type, dev_path):
+    result = _lvgl.lv_evdev_create(indev_type, dev_path.encode('utf-8'))
+    return indev(result) if result else None
+def evdev_set_swap_axes(indev, swap_axes: bool) -> None:
+    _lvgl.lv_evdev_set_swap_axes(indev._pointer, swap_axes)
+def evdev_set_calibration(indev, min_x, min_y, max_x, max_y) -> None:
+    _lvgl.lv_evdev_set_calibration(indev._pointer, min_x, min_y, max_x, max_y)
+    
 def screen_load(scr) -> None:
     return _lvgl.lv_screen_load(scr._pointer)
 
