@@ -30,6 +30,12 @@
 # - docker build --output type=local,dest=./build/dist .
 # - docker run --rm -it -e KOBRA_IP=x.x.x.x --mount type=bind,ro,source=./build,target=/build rclone/rclone:1.69.1 /build/deploy-dev.sh
 #
+# Seeding cache for Github Actions:
+# - docker login ghcr.io <etc...>
+# - docker buildx create --name rinkhals-builder --driver docker-container
+# - docker build --builder rinkhals-builder --cache-to type=registry,mode=max,ref=ghcr.io/jbatonnet/rinkhals:buildcache --output type=cacheonly .
+# - Note: Using a different builder requires a full rebuild, so make it default for development if you want to avoid that.
+#
 
 ###############################################################
 # buildroot builds the root filesystem and core packages
