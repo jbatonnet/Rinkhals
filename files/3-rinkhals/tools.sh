@@ -421,6 +421,10 @@ set_app_property() {
     APP=$1
     PROPERTY=$2
     VALUE=$3
+    
+    if [ ! -d $RINKHALS_HOME/apps ]; then
+        mkdir -p $RINKHALS_HOME/apps
+    fi
 
     CONFIG_PATH=$USER_APP_PATH/$APP.config
     CONFIG=$(cat $CONFIG_PATH 2>/dev/null)
