@@ -183,10 +183,15 @@ EOT
 # Validate and set Rinkhals version
 ARG version="dev"
 RUN <<EOT
-    if [ -z "$version" ] || [ "$version" != "dev" ] \
-        || ! (echo "$version" | grep -P '^[0-9]\{8\}_[0-9]\{2\}$' > /dev/null \
-            && date -d "$(echo "$version" | cut -d'_' -f1)" +"%Y%m%d" &>/dev/null); then
-        echo "Invalid version (must be 'yyyymmdd_nn' or 'dev'): $version"
+    if [ -z "$version" ] || {
+        [ "$version" != "dev" ] &&
+        ! echo "$version" | grep -Eq '^[0-9]{8}_[0-9]{2}$' &&
+        ! echo "$version" | grep -Eq '^[0-9a-f]{40}$'
+    } || {
+        echo "$version" | grep -Eq '^[0-9]{8}_[0-9]{2}$' &&
+        ! date -d "$(echo "$version" | cut -d'_' -f1)" +"%Y%m%d" >/dev/null 2>&1
+    }; then
+        echo "Invalid version (must be 'yyyymmdd_nn', Git commit ID, or 'dev'): $version"
         exit 1
     else
         echo "$version" > /bundle/.version

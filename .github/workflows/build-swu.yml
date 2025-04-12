@@ -2,7 +2,7 @@ name: Build SWU
 
 on:
   workflow_dispatch:
-  
+
 jobs:
 
   build:
@@ -11,22 +11,33 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - run: |
-        docker run --rm -e VERSION="${{ github.sha }}" -e KOBRA_MODEL_CODE="K3" -v ${{ github.workspace }}/build:/build -v ${{ github.workspace }}/files:/files ghcr.io/jbatonnet/rinkhals/build /bin/bash -c "chmod +x /build/*.sh && /build/build-swu.sh"
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v3
 
-    - name: Archive production artifacts
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build and export
+      uses: docker/build-push-action@v6
+      with:
+        push: false
+        build-args: version=${{ github.sha }}
+        outputs: type=local,dest=./build/dist
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: Upload artifact for K2P, K3
       uses: actions/upload-artifact@v4
       with:
         name: update-k2p-k3
+        compression-level: 0
         path: |
-          build/dist/update.swu
+          build/dist/update-k2p-k3.swu
 
-    - run: |
-        docker run --rm -e VERSION="${{ github.sha }}" -e KOBRA_MODEL_CODE="KS1" -v ${{ github.workspace }}/build:/build -v ${{ github.workspace }}/files:/files ghcr.io/jbatonnet/rinkhals/build /bin/bash -c "chmod +x /build/*.sh && /build/build-swu.sh"
-
-    - name: Archive production artifacts
+    - name: Upload artifact for KS1
       uses: actions/upload-artifact@v4
       with:
         name: update-ks1
+        compression-level: 0
         path: |
-          build/dist/update.swu
+          build/dist/update-ks1.swu

@@ -4,7 +4,7 @@ on:
   push:
     tags:
       - '*'
-  
+
 jobs:
   build:
 
@@ -13,9 +13,20 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - run: |
-        docker run --rm -e VERSION="${{ github.ref_name }}" -e KOBRA_MODEL_CODE="K3" -v ${{ github.workspace }}/build:/build -v ${{ github.workspace }}/files:/files ghcr.io/jbatonnet/rinkhals/build /bin/bash -c "chmod +x /build/build-swu.sh && /build/build-swu.sh /build/dist/update-k2p-k3.swu"
-        docker run --rm -e VERSION="${{ github.ref_name }}" -e KOBRA_MODEL_CODE="KS1" -v ${{ github.workspace }}/build:/build -v ${{ github.workspace }}/files:/files ghcr.io/jbatonnet/rinkhals/build /bin/bash -c "chmod +x /build/build-swu.sh && /build/build-swu.sh /build/dist/update-ks1.swu"
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v3
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build and export
+      uses: docker/build-push-action@v6
+      with:
+        push: false
+        build-args: version=${{ github.ref_name }}
+        outputs: type=local,dest=./build/dist
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
 
     - name: Create release
       env:
