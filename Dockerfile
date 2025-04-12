@@ -65,7 +65,8 @@ ENV KCONFIG_NOSILENTUPDATE=1
 RUN make BR2_EXTERNAL=/external
 
 COPY ./build/1-buildroot/prepare-final.sh /buildroot/
-RUN /buildroot/prepare-final.sh
+RUN chmod +x /buildroot/prepare-final.sh && \
+    /buildroot/prepare-final.sh
 
 ###############################################################
 # buildroot-rebuild rebuilds selected buildroot packages
@@ -94,7 +95,8 @@ RUN <<EOT
 EOT
 
 COPY ./build/1-buildroot/prepare-final.sh /buildroot/
-RUN /buildroot/prepare-final.sh
+RUN chmod +x /buildroot/prepare-final.sh && \
+    /buildroot/prepare-final.sh
 
 ###############################################################
 # build-python-armv7 builds Python dependencies that require ARMv7 compilation
@@ -102,6 +104,7 @@ FROM --platform=linux/arm/v7 ghcr.io/jbatonnet/armv7-uclibc:rinkhals AS build-py
 
 COPY ./build/2-python/get-packages.sh /build/2-python/get-packages.sh
 RUN --mount=type=cache,sharing=locked,target=/root/.cache/pip \
+    chmod +x /build/2-python/get-packages.sh && \
     /build/2-python/get-packages.sh
 
 ###############################################################
@@ -121,21 +124,24 @@ RUN --mount=type=cache,sharing=locked,target=/var/cache/apt \
 FROM build-base AS app-mainsail
 COPY ./build/4-apps/25-mainsail/* /build/
 COPY ./files/4-apps/home/rinkhals/apps/25-mainsail/app.json /files/4-apps/home/rinkhals/apps/25-mainsail/app.json
-RUN /build/get-mainsail.sh
+RUN chmod +x /build/get-mainsail.sh && \
+    /build/get-mainsail.sh
 
 ###############################################################
 # app-fluidd prepares Fluidd app files
 FROM build-base AS app-fluidd
 COPY ./build/4-apps/26-fluidd/* /build/
 COPY ./files/4-apps/home/rinkhals/apps/26-fluidd/app.json /files/4-apps/home/rinkhals/apps/26-fluidd/app.json
-RUN /build/get-fluidd.sh
+RUN chmod +x /build/get-fluidd.sh && \
+    /build/get-fluidd.sh
 
 ###############################################################
 # app-moonraker prepares Moonraker app files
 FROM build-base AS app-moonraker
 COPY ./build/4-apps/40-moonraker/* /build/
 COPY ./files/4-apps/home/rinkhals/apps/40-moonraker/app.json /files/4-apps/home/rinkhals/apps/40-moonraker/app.json
-RUN /build/get-moonraker.sh
+RUN chmod +x /build/get-moonraker.sh && \
+    /build/get-moonraker.sh
 
 ###############################################################
 # app-moonraker-armv7 builds Moonraker dependencies that require ARMv7 compilation
@@ -145,6 +151,7 @@ COPY --from=app-moonraker /files/4-apps/ /files/4-apps/
 COPY ./build/4-apps/40-moonraker/get-packages.sh /build/4-apps/40-moonraker/get-packages.sh
 
 RUN --mount=type=cache,sharing=locked,target=/root/.cache/pip \
+    chmod +x /build/4-apps/40-moonraker/get-packages.sh && \
     /build/4-apps/40-moonraker/get-packages.sh
 
 ###############################################################
