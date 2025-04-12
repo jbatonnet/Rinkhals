@@ -23,6 +23,7 @@ jobs:
       uses: docker/build-push-action@v6
       with:
         push: false
+        context: .
         build-args: version=${{ github.ref_name }}
         outputs: type=local,dest=./build/dist
         cache-from: type=gha
