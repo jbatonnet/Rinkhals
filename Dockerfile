@@ -17,7 +17,8 @@
 # - Copy `.config`, `busybox.config`, `external/` from `/build/1-buildroot` to `/build/1-buildroot/rebuild`
 # - Make changes in the copied files
 # - Rebuild packages using the build-arg `rebuild`:
-# - docker build --build-arg rebuild=lv_micropython --output type=local,dest=./build/dist .
+# - docker build --build-arg clean_buildroot=0 --build-arg rebuild=lv_micropython --output type=local,dest=./build/dist .
+# - Note that `clean_buildroot=0` will require a full rebuild the first time, because the intermediate files are normally deleted to save space
 # - When done, copy back your changes to the original files
 # - Do a normal build to verify your results
 #
@@ -35,6 +36,9 @@
 # - docker buildx create --name rinkhals-builder --driver docker-container
 # - docker build --builder rinkhals-builder --cache-to type=registry,mode=max,ref=ghcr.io/jbatonnet/rinkhals:buildcache --output type=cacheonly .
 # - Note: Using a different builder requires a full rebuild, so make it default for development if you want to avoid that.
+#
+# Note: On Windows, all files copied to Docker will have +x set by default (due to WSL). To avoid inconsistency in cache keys between Windows and
+# Linux (Github), run the build from the WSL filesystem (i.e. `/home` not `/mnt/c`).
 #
 
 ###############################################################
@@ -63,21 +67,32 @@ WORKDIR /buildroot
 COPY ./build/1-buildroot/gcc-target.patch /buildroot/
 RUN git apply ./gcc-target.patch
 
-# Make using bind mounted Buildroot config and external tree
 COPY ./build/1-buildroot/.config /buildroot/.config
 COPY ./build/1-buildroot/busybox.config /buildroot/busybox.config
 COPY ./build/1-buildroot/external/ /external/
-ENV KCONFIG_NOSILENTUPDATE=1
-RUN make BR2_EXTERNAL=/external
-
 COPY ./build/1-buildroot/prepare-final.sh /buildroot/
-RUN chmod +x /buildroot/prepare-final.sh && \
+
+# Remove downloads and output after build to reduce layer size
+ARG clean_buildroot=1
+
+# Make Buildroot using provided config and external tree
+ENV KCONFIG_NOSILENTUPDATE=1
+RUN <<EOT
+    set -e
+    make BR2_EXTERNAL=/external
+    chmod +x /buildroot/prepare-final.sh
     /buildroot/prepare-final.sh
+    if [ ${clean_buildroot} -eq 1 ]; then
+        rm -rf /buildroot/dl
+        make clean
+    fi
+EOT
 
 ###############################################################
 # buildroot-rebuild rebuilds selected buildroot packages
 FROM buildroot AS buildroot-rebuild
 ARG rebuild=""
+ARG clean_buildroot
 
 # Use files from rebuild/ (if it exists) to rebuild without invalidating the base image
 # Note: pattern matching 'rebuil[d]' is a trick to copy-if-exists
@@ -89,20 +104,23 @@ COPY ./build/1-buildroot/rebuil[d]/external/ /external/
 # https://buildroot.org/downloads/manual/manual.html#rebuild-pkg
 ENV KCONFIG_NOSILENTUPDATE=1
 RUN <<EOT
+    set -e
+    if [ $clean_buildroot -eq 1 ] && [ -n "$rebuild" ]; then
+        echo "Unable to rebuild because Buildroot stage was cleaned"
+        exit 1
+    fi
     if [ -n "$rebuild" ]; then
         echo "Rebuilding packages: $rebuild"
         echo $rebuild | tr ',' ' ' | while read -r p; do
             make ${p}-dirclean
             make ${p}-rebuild
         done;
+        chmod +x /buildroot/prepare-final.sh
+        /buildroot/prepare-final.sh
     else
         echo "No packages to rebuild";
     fi
 EOT
-
-COPY ./build/1-buildroot/prepare-final.sh /buildroot/
-RUN chmod +x /buildroot/prepare-final.sh && \
-    /buildroot/prepare-final.sh
 
 ###############################################################
 # build-python-armv7 builds Python dependencies that require ARMv7 compilation
@@ -179,6 +197,7 @@ RUN find /bundle/rinkhals/opt/rinkhals/patches -type f ! -name "*.sh" -exec rm {
 
 # Rename busybox (to avoid conflict with stock) and update all symlinks
 RUN <<EOT
+    set -e
     mv /bundle/rinkhals/bin/busybox /bundle/rinkhals/bin/busybox.rinkhals
     find /bundle/ -type l -exec sh -c '
         for link; do
@@ -196,6 +215,7 @@ EOT
 # Validate and set Rinkhals version
 ARG version="dev"
 RUN <<EOT
+    set -e
     if [ -z "$version" ] || {
         [ "$version" != "dev" ] &&
         ! echo "$version" | grep -Eq '^[0-9]{8}_[0-9]{2}$' &&
@@ -221,8 +241,8 @@ COPY --from=prepare-bundle /bundle/ /
 # build-swu
 FROM prepare-bundle AS build-swu
 COPY ./build/tools.sh /
-
 RUN <<EOT
+    set -e
     . /tools.sh
     mkdir -p /swu
     build_swu K3 /bundle /swu/update-k2p-k3.swu
