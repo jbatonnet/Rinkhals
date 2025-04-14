@@ -22,6 +22,7 @@ rm -rf /tmp/target/*
 tar -xzf /build/dist/update_swu/setup.tar.gz  -C /tmp/target
 
 echo "dev" > /tmp/target/rinkhals/.version
+touch /tmp/target/rinkhals/.enable-rinkhals
 
 # Sync startup files
 rclone -v sync --absolute --copy-links \

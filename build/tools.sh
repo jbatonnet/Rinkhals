@@ -1,18 +1,22 @@
 #!/bin/sh
 
-build_swu() {
-    KOBRA_MODEL_CODE=$1
-    UPDATE_DIRECTORY=${2:-/tmp/update_swu}
-    SWU_PATH=${3:-/build/dist/update.swu}
-
-    SWU_DIR=$(dirname $SWU_PATH)
-    SWU_NAME=$(basename $SWU_PATH)
+prepare_tgz() {
+    UPDATE_DIRECTORY=${1:-/tmp/update_swu}
+    SWU_DIR=${2:-/build/dist}
 
     mkdir -p $SWU_DIR/update_swu
     rm -rf $SWU_DIR/update_swu/*
 
     cd $UPDATE_DIRECTORY
     tar -czf $SWU_DIR/update_swu/setup.tar.gz --exclude='setup.tar.gz' .
+    #tar -cf $SWU_DIR/update_swu/setup.tar --exclude='setup.tar' .
+}
+compress_swu() {
+    KOBRA_MODEL_CODE=$1
+    SWU_PATH=${2:-/build/dist/update.swu}
+
+    SWU_DIR=$(dirname $SWU_PATH)
+    SWU_NAME=$(basename $SWU_PATH)
 
     rm -f $SWU_PATH
     cd $SWU_DIR
@@ -25,4 +29,15 @@ build_swu() {
         echo "Unknown Kobra model code: $KOBRA_MODEL_CODE"
         exit 1
     fi
+}
+
+build_swu() {
+    KOBRA_MODEL_CODE=$1
+    UPDATE_DIRECTORY=${2:-/tmp/update_swu}
+    SWU_PATH=${3:-/build/dist/update.swu}
+
+    SWU_DIR=$(dirname $SWU_PATH)
+
+    prepare_tgz $UPDATE_DIRECTORY $SWU_DIR
+    compress_swu $KOBRA_MODEL_CODE $SWU_PATH
 }
