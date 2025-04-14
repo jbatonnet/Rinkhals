@@ -1,6 +1,7 @@
 build/tmp
 scripts/tmp
 *.env
+*.pyc
 
 # Build temp artifacts and cache
 build/cache

@@ -29,7 +29,7 @@
 #
 # Deploying a development build to a printer:
 # - docker build --output type=local,dest=./build/dist .
-# - docker run --rm -it -e KOBRA_IP=x.x.x.x --mount type=bind,ro,source=./build,target=/build rclone/rclone:1.69.1 /build/deploy-dev.sh
+# - docker run --rm -it -e KOBRA_IP=x.x.x.x --mount type=bind,ro,source=.\build,target=/build --entrypoint=/bin/sh rclone/rclone:1.69.1 /build/deploy-dev.sh
 #
 # Seeding cache for Github Actions:
 # - docker login ghcr.io <etc...>
@@ -245,8 +245,10 @@ RUN <<EOT
     set -e
     . /tools.sh
     mkdir -p /swu
-    build_swu K3 /bundle /swu/update-k2p-k3.swu
-    build_swu KS1 /bundle /swu/update-ks1.swu
+    prepare_tgz /bundle /swu
+    compress_swu K3 /swu/update-k2p-k3.swu &
+    compress_swu KS1 /swu/update-ks1.swu &
+    wait $(jobs -p)
 EOT
 
 ###############################################################
