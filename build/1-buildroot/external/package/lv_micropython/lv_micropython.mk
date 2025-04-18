@@ -62,8 +62,9 @@ endef
 
 ifeq ($(BR2_PACKAGE_LV_MICROPYTHON_LIB),y)
 define LV_MICROPYTHON_COLLECT_LIBS
+	chmod +x $(LV_MICROPYTHON_PKGDIR)collect_micropython_lib.py
 	$(EXTRA_ENV) PYTHONPATH=$(@D)/tools \
-		$(LV_MICROPYTHON_PKGDIR)/collect_micropython_lib.py \
+		$(LV_MICROPYTHON_PKGDIR)collect_micropython_lib.py \
 		$(@D) $(@D)/.built_pylib
 endef
 
