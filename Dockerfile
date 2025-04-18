@@ -54,7 +54,7 @@ RUN --mount=type=cache,sharing=locked,target=/var/cache/apt \
         which sed make binutils build-essential diffutils gcc g++ bash patch gzip bzip2 perl tar cpio unzip rsync file bc findutils wget \
         python3 libncurses5 git mercurial ca-certificates \
         locales whois vim bison flex \
-        libncurses5-dev libdevmapper-dev libsystemd-dev libssl-dev libfdt-dev && \
+        libncurses5-dev libdevmapper-dev libsystemd-dev libssl-dev libfdt-dev libvncserver-dev libdrm-dev && \
     rm -rf /var/lib/apt/lists/*
 
 # Sometimes Buildroot needs proper locale, e.g. when using a toolchain based on glibc
@@ -93,8 +93,6 @@ EOT
 ###############################################################
 # buildroot-build builds the root filesystem and core packages
 FROM buildroot-build AS buildroot-rebuild
-ARG rebuild=""
-ARG clean_buildroot
 
 # Use files from rebuild/ (if it exists) to rebuild without invalidating the base image
 # Note: pattern matching 'rebuil[d]' is a trick to copy-if-exists
@@ -105,6 +103,8 @@ COPY ./build/1-buildroot/rebuil[d]/external/ /external/
 # Perform dirclean and rebuild for selected packages
 # https://buildroot.org/downloads/manual/manual.html#rebuild-pkg
 ENV KCONFIG_NOSILENTUPDATE=1
+ARG clean_buildroot=1
+ARG rebuild=""
 RUN --mount=type=cache,target=/buildroot/dl \
 <<EOT
     set -e
