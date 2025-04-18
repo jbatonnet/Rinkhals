@@ -114,7 +114,7 @@ Here are the tools available:
 > Run `git config core.autocrlf false` **BEFORE** cloning the repo
 
 You will need either a Linux machine or a Windows machine with Docker.
-Read the documentation in the Wiki and join us on Dioscord to discuss development!
+Read the documentation in the Wiki and join us on Discord to discuss development!
 
 
 ## Thanks
