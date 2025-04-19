@@ -3,7 +3,7 @@
     "defaultMode": "dark",
     "defaultTheme": "mainsail",
     "hostname": null,
-    "port": null,
+    "port": 7125,
     "path": null,
     "instancesDB": "moonraker",
     "instances": []
