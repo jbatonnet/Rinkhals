@@ -12,21 +12,23 @@ jobs:
     - uses: actions/checkout@v4
 
     - run: |
-        docker run --rm -e VERSION="${{ github.sha }}" -e KOBRA_MODEL_CODE="K3" -v ${{ github.workspace }}/build:/build -v ${{ github.workspace }}/files:/files ghcr.io/jbatonnet/rinkhals/build /bin/bash -c "chmod +x /build/*.sh && /build/build-swu.sh"
+        docker run --rm -e VERSION="${{ github.sha }}" -e KOBRA_MODEL_CODE="K3" -v ${{ github.workspace }}/build:/build -v ${{ github.workspace }}/files:/files ghcr.io/jbatonnet/rinkhals/build /bin/bash -c "chmod +x /build/*.sh && /build/build-swu.sh /build/dist/update.swu"
+        docker run --rm -e KOBRA_MODEL_CODE="K3" -v ${{ github.workspace }}/build:/build -v ${{ github.workspace }}/files:/files ghcr.io/jbatonnet/rinkhals/build /bin/bash -c "chmod +x /build/swu-tools/installer/build-swu.sh && /build/swu-tools/installer/build-swu.sh /build/dist/installer.swu"
 
     - name: Archive production artifacts
       uses: actions/upload-artifact@v4
       with:
         name: update-k2p-k3
         path: |
-          build/dist/update.swu
+          build/dist/*.swu
 
     - run: |
         docker run --rm -e VERSION="${{ github.sha }}" -e KOBRA_MODEL_CODE="KS1" -v ${{ github.workspace }}/build:/build -v ${{ github.workspace }}/files:/files ghcr.io/jbatonnet/rinkhals/build /bin/bash -c "chmod +x /build/*.sh && /build/build-swu.sh"
+        docker run --rm -e KOBRA_MODEL_CODE="KS1" -v ${{ github.workspace }}/build:/build -v ${{ github.workspace }}/files:/files ghcr.io/jbatonnet/rinkhals/build /bin/bash -c "chmod +x /build/swu-tools/installer/build-swu.sh && /build/swu-tools/installer/build-swu.sh /build/dist/installer.swu"
 
     - name: Archive production artifacts
       uses: actions/upload-artifact@v4
       with:
         name: update-ks1
         path: |
-          build/dist/update.swu
+          build/dist/*.swu

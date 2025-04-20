@@ -67,6 +67,7 @@ is_verified_firmware() {
 
 install_swu() {
     SWU_FILE=$1
+    shift
 
     echo "> Extracting $SWU_FILE ..."
 
@@ -76,12 +77,16 @@ install_swu() {
     cd /useremain/update_swu
 
     unzip -P U2FsdGVkX19deTfqpXHZnB5GeyQ/dtlbHjkUnwgCi+w= $SWU_FILE -d /useremain
-    tar -xzf /useremain/update_swu/setup.tar.gz -C /useremain/update_swu
+    if [ -f /useremain/update_swu/setup.tar.gz ]; then
+        tar -xzf /useremain/update_swu/setup.tar.gz -C /useremain/update_swu
+    elif [ -f /useremain/update_swu/setup.tar ]; then
+        tar -xf /useremain/update_swu/setup.tar -C /useremain/update_swu
+    fi
 
     echo "> Running update.sh ..."
 
     chmod +x update.sh
-    ./update.sh
+    ./update.sh $@
 }
 
 get_command_line() {
