@@ -1,7 +1,6 @@
 import os
 import sys
 import configparser
-import base64
 import subprocess
 import hashlib
 import json
@@ -11,8 +10,7 @@ import time
 import ssl
 import uuid
 import traceback
-
-from datetime import datetime
+import base64
 
 
 def md5(input: str) -> str:
@@ -21,7 +19,13 @@ def now() -> int:
     return round(time.time() * 1000)
 
 
-class Program:
+ORIGINAL_LD_LIBRARY_PATH = os.environ.get('LD_LIBRARY_PATH', '')
+LD_LIBRARY_PATH = ORIGINAL_LD_LIBRARY_PATH.split(':')
+LD_LIBRARY_PATH = [ p for p in LD_LIBRARY_PATH if not p.startswith('/tmp') ]
+LD_LIBRARY_PATH = ':'.join(LD_LIBRARY_PATH)
+
+
+class CheckUpdateProgram:
 
     # Configuration
     cloud_config = None
@@ -34,35 +38,12 @@ class Program:
 
     # MQTT
     cloud_client = None
+    mqtt_result = None
+    mqtt_error = None
 
     def __init__(self):
         self.cloud_config = self.get_cloud_config()
         self.api_config = self.get_api_config()
-
-        self.firmware_version = self.get_firmware_version()
-        self.model_id = self.api_config['cloud']['modelId']
-        self.cloud_device_id = self.cloud_config['deviceUnionId']
-
-        args = sys.argv
-        if len(args) > 1:
-            if args[1].isdigit():
-                self.model_id = args[1]
-                self.firmware_version = '1.2.3.4'
-            elif args[1] == 'K2P':
-                self.model_id = '20021'
-                self.firmware_version = '3.1.4'
-            elif args[1] == 'K3':
-                self.model_id = '20024'
-                self.firmware_version = '2.3.8.9'
-            elif args[1] == 'KS1':
-                self.model_id = '20025'
-                self.firmware_version = '2.5.1.6'
-            elif args[1] == 'K3M':
-                self.model_id = '20026'
-                self.firmware_version = '1.2.3.4'
-
-            if len(args) > 2:
-                self.firmware_version = args[2]
 
     def get_cloud_config(self):
         config = configparser.ConfigParser()
@@ -81,7 +62,6 @@ class Program:
     def get_api_config(self):
         with open('/userdata/app/gk/config/api.cfg', 'r') as f:
             return json.loads(f.read())
-
     def get_ssl_context(self) -> ssl.SSLContext:
         cert_path = self.cloud_config['certPath']
         cert_file = f'{cert_path}/deviceCrt'
@@ -101,24 +81,53 @@ class Program:
     def get_firmware_version(self) -> str:
         with open('/useremain/dev/version', 'r') as f:
             return f.read().strip()
-
     def get_cloud_mqtt_credentials(self):
         device_key = self.cloud_config['deviceKey']
         cert_path = self.cloud_config['certPath']
 
-        command = f'printf "{device_key}" | openssl rsautl -encrypt -inkey {cert_path}/caCrt -certin -pkcs | base64 -w 0'
+        os.environ['LD_LIBRARY_PATH'] = LD_LIBRARY_PATH
+
+        command = f'printf "{device_key}" | openssl rsautl -encrypt -inkey {cert_path}/caCrt -certin -pkcs | xxd -p -c 256'
         encrypted_device_key = subprocess.check_output(['sh', '-c', command])
-        encrypted_device_key = encrypted_device_key.decode('utf-8').strip()
+        encrypted_device_key = encrypted_device_key.decode().strip()
+        encrypted_device_key = bytes.fromhex(encrypted_device_key)
+        encrypted_device_key = base64.b64encode(encrypted_device_key).decode()
+
+        os.environ['LD_LIBRARY_PATH'] = ORIGINAL_LD_LIBRARY_PATH
 
         taco = f'{self.cloud_device_id}{encrypted_device_key}{self.cloud_device_id}'
         username = f'dev|fdm|{self.model_id}|{md5(taco)}'
 
         return (username, encrypted_device_key)
 
-    def main(self):
+    def get_latest_update(self, model_code=None, current_version=None):
+        self.firmware_version = self.get_firmware_version()
+        self.model_id = self.api_config['cloud']['modelId']
+        self.cloud_device_id = self.cloud_config['deviceUnionId']
+
+        if model_code:
+            if model_code == 'K2P':
+                self.model_id = '20021'
+                self.firmware_version = '3.1.4'
+            elif model_code == 'K3':
+                self.model_id = '20024'
+                self.firmware_version = '2.3.8.9'
+            elif model_code == 'KS1':
+                self.model_id = '20025'
+                self.firmware_version = '2.5.1.6'
+            elif model_code == 'K3M':
+                self.model_id = '20026'
+                self.firmware_version = '1.2.3.4'
+            else:
+                return None
+        if current_version:
+            self.firmware_version = current_version
 
         mqtt_broker = self.cloud_config['mqttBroker']
         mqtt_username, mqtt_password = self.get_cloud_mqtt_credentials()
+
+        self.mqtt_result = None
+        self.mqtt_error = None
 
         def mqtt_on_connect(client, userdata, connect_flags, reason_code, properties):
             self.cloud_client.subscribe(f'anycubic/anycubicCloud/v1/+/printer/{self.model_id}/{self.cloud_device_id}/ota')
@@ -141,22 +150,19 @@ class Program:
             }
             self.cloud_client.publish(f'anycubic/anycubicCloud/v1/printer/public/{self.model_id}/{self.cloud_device_id}/ota/report', json.dumps(payload))
         def mqtt_on_connect_fail(client, userdata):
+            self.mqtt_error = 'Failed to connect to Anycubic MQTT server'
             self.cloud_client.disconnect()
-            sys.exit(1)
         def mqtt_on_message(client, userdata, msg):
             ota = msg.payload.decode("utf-8")
             ota = json.loads(ota)
-            data = ota.get('data')
+            data = ota.get('data') if ota else None
 
-            if data:
-                print(json.dumps(data))
-
+            self.mqtt_result = json.dumps(data) if data else ''
             self.cloud_client.disconnect()
-            sys.exit(0)
 
         mqtt_broker_endpoint = urllib.parse.urlparse(mqtt_broker)
 
-        self.cloud_client = mqtt.Client(protocol=mqtt.MQTTv5, client_id=self.cloud_device_id)
+        self.cloud_client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, protocol=mqtt.MQTTv5, client_id=self.cloud_device_id)
 
         if mqtt_broker_endpoint.scheme == 'ssl':
             self.cloud_client.tls_set_context(self.get_ssl_context())
@@ -170,10 +176,31 @@ class Program:
         self.cloud_client.connect(mqtt_broker_endpoint.hostname, mqtt_broker_endpoint.port or 1883)
         self.cloud_client.loop_forever()
 
+        return (self.mqtt_result, self.mqtt_error)
+        
+    def main(self):
+        model_code = None
+        current_version = None
+
+        args = sys.argv
+        if len(args) > 1:
+            model_code = args[1]
+        if len(args) > 2:
+            current_version = args[2]
+
+        (result, error) = self.get_latest_update(model_code, current_version)
+
+        if not error:
+            if result:
+                print(result)
+            sys.exit(0)
+        else:
+            sys.exit(1)
+
 
 if __name__ == "__main__":
     try:
-        program = Program()
+        program = CheckUpdateProgram()
         program.main()
     except Exception as e:
         print(traceback.format_exc())

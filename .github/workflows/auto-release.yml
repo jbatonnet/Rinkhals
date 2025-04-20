@@ -16,6 +16,8 @@ jobs:
     - run: |
         docker run --rm -e VERSION="${{ github.ref_name }}" -e KOBRA_MODEL_CODE="K3" -v ${{ github.workspace }}/build:/build -v ${{ github.workspace }}/files:/files ghcr.io/jbatonnet/rinkhals/build /bin/bash -c "chmod +x /build/build-swu.sh && /build/build-swu.sh /build/dist/update-k2p-k3.swu"
         docker run --rm -e VERSION="${{ github.ref_name }}" -e KOBRA_MODEL_CODE="KS1" -v ${{ github.workspace }}/build:/build -v ${{ github.workspace }}/files:/files ghcr.io/jbatonnet/rinkhals/build /bin/bash -c "chmod +x /build/build-swu.sh && /build/build-swu.sh /build/dist/update-ks1.swu"
+        docker run --rm -e KOBRA_MODEL_CODE="K3" -v ${{ github.workspace }}/build:/build -v ${{ github.workspace }}/files:/files ghcr.io/jbatonnet/rinkhals/build /bin/bash -c "chmod +x /build/swu-tools/installer/build-swu.sh && /build/swu-tools/installer/build-swu.sh /build/dist/installer-k2p-k3.swu"
+        docker run --rm -e KOBRA_MODEL_CODE="KS1" -v ${{ github.workspace }}/build:/build -v ${{ github.workspace }}/files:/files ghcr.io/jbatonnet/rinkhals/build /bin/bash -c "chmod +x /build/swu-tools/installer/build-swu.sh && /build/swu-tools/installer/build-swu.sh /build/dist/installer-ks1.swu"
 
     - name: Create release
       env:
@@ -27,4 +29,4 @@ jobs:
             --title="${GITHUB_REPOSITORY#*/} ${tag}" \
             --generate-notes \
             --draft \
-            build/dist/update-*.swu
+            build/dist/*.swu
