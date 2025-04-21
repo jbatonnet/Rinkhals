@@ -43,7 +43,7 @@
 
 ###############################################################
 # buildroot builds the root filesystem and core packages
-FROM debian:12.8 AS buildroot
+FROM debian:12.10 AS buildroot
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Install buildroot dependencies
@@ -64,20 +64,22 @@ ADD https://gitlab.com/buildroot.org/buildroot.git#2023.02.6 /buildroot
 WORKDIR /buildroot
 
 # Patch buildroot to enable the gcc package (and change a few others)
-COPY ./build/1-buildroot/gcc-target.patch /buildroot/
-RUN git apply ./gcc-target.patch
+COPY ./build/1-buildroot/*.patch /buildroot/
+RUN git apply ./*.patch
 
 COPY ./build/1-buildroot/.config /buildroot/.config
 COPY ./build/1-buildroot/busybox.config /buildroot/busybox.config
 COPY ./build/1-buildroot/external/ /external/
 COPY ./build/1-buildroot/prepare-final.sh /buildroot/
 
+FROM buildroot AS buildroot-build
 # Remove downloads and output after build to reduce layer size
 ARG clean_buildroot=1
 
 # Make Buildroot using provided config and external tree
 ENV KCONFIG_NOSILENTUPDATE=1
-RUN <<EOT
+RUN --mount=type=cache,target=/buildroot/dl \
+<<EOT
     set -e
     make BR2_EXTERNAL=/external
     chmod +x /buildroot/prepare-final.sh
@@ -90,7 +92,7 @@ EOT
 
 ###############################################################
 # buildroot-rebuild rebuilds selected buildroot packages
-FROM buildroot AS buildroot-rebuild
+FROM buildroot-build AS buildroot-rebuild
 ARG rebuild=""
 ARG clean_buildroot
 
@@ -103,7 +105,8 @@ COPY ./build/1-buildroot/rebuil[d]/external/ /external/
 # Perform dirclean and rebuild for selected packages
 # https://buildroot.org/downloads/manual/manual.html#rebuild-pkg
 ENV KCONFIG_NOSILENTUPDATE=1
-RUN <<EOT
+RUN --mount=type=cache,target=/buildroot/dl \
+<<EOT
     set -e
     if [ $clean_buildroot -eq 1 ] && [ -n "$rebuild" ]; then
         echo "Unable to rebuild because Buildroot stage was cleaned"
@@ -133,7 +136,7 @@ RUN --mount=type=cache,sharing=locked,target=/root/.cache/pip \
 
 ###############################################################
 # build-base provides the basis for common build steps
-FROM debian:12.8 AS build-base
+FROM debian:12.10 AS build-base
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Install common utilities
