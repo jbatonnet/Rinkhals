@@ -8,21 +8,25 @@ fi
 
 export RINKHALS_VERSION=$(cat $RINKHALS_ROOT/.version)
 
-export KOBRA_MODEL_ID=$(cat /userdata/app/gk/config/api.cfg | sed -nr 's/.*"modelId"\s*:\s*"([0-9]+)".*/\1/p')
+export KOBRA_MODEL="Anycubic Kobra 2 Pro"
+export KOBRA_MODEL_CODE=K2P
+export KOBRA_VERSION="3.1.2"
 
-if [ "$KOBRA_MODEL_ID" == "20021" ]; then
-    export KOBRA_MODEL="Anycubic Kobra 2 Pro"
-    export KOBRA_MODEL_CODE=K2P
-elif [ "$KOBRA_MODEL_ID" == "20024" ]; then
-    export KOBRA_MODEL="Anycubic Kobra 3"
-    export KOBRA_MODEL_CODE=K3
-elif [ "$KOBRA_MODEL_ID" == "20025" ]; then
-    export KOBRA_MODEL="Anycubic Kobra S1"
-    export KOBRA_MODEL_CODE=KS1
-fi
+# export KOBRA_MODEL_ID=$(cat /userdata/app/gk/config/api.cfg | sed -nr 's/.*"modelId"\s*:\s*"([0-9]+)".*/\1/p')
 
-export KOBRA_VERSION=$(cat /useremain/dev/version)
-export KOBRA_DEVICE_ID=$(cat /useremain/dev/device_id 2> /dev/null)
+# if [ "$KOBRA_MODEL_ID" == "20021" ]; then
+#     export KOBRA_MODEL="Anycubic Kobra 2 Pro"
+#     export KOBRA_MODEL_CODE=K2P
+# elif [ "$KOBRA_MODEL_ID" == "20024" ]; then
+#     export KOBRA_MODEL="Anycubic Kobra 3"
+#     export KOBRA_MODEL_CODE=K3
+# elif [ "$KOBRA_MODEL_ID" == "20025" ]; then
+#     export KOBRA_MODEL="Anycubic Kobra S1"
+#     export KOBRA_MODEL_CODE=KS1
+# fi
+
+# export KOBRA_VERSION=$(cat /useremain/dev/version)
+# export KOBRA_DEVICE_ID=$(cat /useremain/dev/device_id 2> /dev/null)
 
 export ORIGINAL_ROOT=/tmp/rinkhals/original
 
