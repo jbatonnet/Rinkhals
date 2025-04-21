@@ -1,6 +1,12 @@
-export RINKHALS_ROOT=$(realpath /useremain/rinkhals/.current)
+if [ -e /etc/board.json ]; then
+    export RINKHALS_ROOT=$(realpath /mnt/UDISK/rinkhals/.current)
+    export RINKHALS_HOME=/mnt/UDISK/home/rinkhals
+elif [ -e /useremain ]; then
+    export RINKHALS_ROOT=$(realpath /useremain/rinkhals/.current)
+    export RINKHALS_HOME=/useremain/home/rinkhals
+fi
+
 export RINKHALS_VERSION=$(cat $RINKHALS_ROOT/.version)
-export RINKHALS_HOME=/useremain/home/rinkhals
 
 export KOBRA_MODEL_ID=$(cat /userdata/app/gk/config/api.cfg | sed -nr 's/.*"modelId"\s*:\s*"([0-9]+)".*/\1/p')
 
