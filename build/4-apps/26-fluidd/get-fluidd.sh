@@ -1,7 +1,6 @@
 #!/bin/sh
 
-# Run from Docker:
-#   docker run --rm -it -v .\build:/build -v .\files:/files ghcr.io/jbatonnet/rinkhals/build /build/4-apps/26-fluidd/get-fluidd.sh
+# Used by main Dockerfile
 
 mkdir /work
 cd /work

@@ -1,12 +1,14 @@
 build/tmp
 scripts/tmp
 *.env
+*.pyc
 
 # Build temp artifacts and cache
+build/cache
 build/dist
 build/dev.md
+build/1-buildroot/rebuild
 build/1-buildroot/rootfs/rootfs.tar.gz
-build/cache
 
 # Patches system
 files/3-rinkhals/opt/rinkhals/patches/K3SysUi.*.[0-9]
@@ -15,19 +17,5 @@ files/3-rinkhals/opt/rinkhals/patches/gk*.*.[0-9]
 files/3-rinkhals/opt/rinkhals/patches/gk*.*.patch
 files/3-rinkhals/opt/rinkhals/patches/cache_*.json
 
-# Python venv and pip cache
-*.pyc
-files/4-apps/**/.cache
-files/4-apps/**/.ash_history
-files/4-apps/**/pyvenv.cfg
-files/4-apps/**/lib/python3.11/site-packages/pip
-files/4-apps/**/lib/python3.11/site-packages/pip*
-files/4-apps/**/lib/python3.11/site-packages/pkg_resources
-files/4-apps/**/lib/python3.11/site-packages/_distutils_hack
-files/4-apps/**/lib/python3.11/site-packages/distutils-precedence.pth
-files/4-apps/**/lib/python3.11/site-packages/setuptools
-files/4-apps/**/lib/python3.11/site-packages/setuptools*
-
 # App specific
 files/4-apps/home/rinkhals/apps/40-moonraker/bin
-
