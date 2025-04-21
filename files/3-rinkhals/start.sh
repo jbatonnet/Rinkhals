@@ -1,7 +1,7 @@
-. $(dirname $(realpath $0))/tools.sh
+. $(dirname $(readlink -f $0))/tools.sh
 
 export TZ=UTC
-export RINKHALS_ROOT=$(dirname $(realpath $0))
+export RINKHALS_ROOT=$(dirname $(readlink -f $0))
 export RINKHALS_VERSION=$(cat $RINKHALS_ROOT/.version)
 
 # Check Kobra model and firmware version

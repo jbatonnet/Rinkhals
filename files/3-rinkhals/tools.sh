@@ -1,8 +1,8 @@
 if [ -e /etc/board.json ]; then
-    export RINKHALS_ROOT=$(realpath /mnt/UDISK/rinkhals/.current)
+    export RINKHALS_ROOT=$(readlink -f /mnt/UDISK/rinkhals/.current)
     export RINKHALS_HOME=/mnt/UDISK/home/rinkhals
 elif [ -e /useremain ]; then
-    export RINKHALS_ROOT=$(realpath /useremain/rinkhals/.current)
+    export RINKHALS_ROOT=$(readlink -f /useremain/rinkhals/.current)
     export RINKHALS_HOME=/useremain/home/rinkhals
 fi
 
