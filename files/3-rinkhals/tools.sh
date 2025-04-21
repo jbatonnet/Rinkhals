@@ -1,11 +1,12 @@
-if [ -e /etc/board.json ]; then
-    export RINKHALS_ROOT=$(readlink -f /mnt/UDISK/rinkhals/.current)
+if [ -e /app/resources/configs/printer.cfg ]; then
+    export RINKHALS_BASE=/mnt/UDISK/rinkhals
     export RINKHALS_HOME=/mnt/UDISK/home/rinkhals
 elif [ -e /useremain ]; then
-    export RINKHALS_ROOT=$(readlink -f /useremain/rinkhals/.current)
+    export RINKHALS_BASE=/useremain/rinkhals
     export RINKHALS_HOME=/useremain/home/rinkhals
 fi
 
+export RINKHALS_ROOT=$(readlink -f $RINKHALS_BASE/.current)
 export RINKHALS_VERSION=$(cat $RINKHALS_ROOT/.version)
 
 export KOBRA_MODEL="Anycubic Kobra 2 Pro"

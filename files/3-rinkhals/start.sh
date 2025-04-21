@@ -16,14 +16,14 @@ quit() {
     beep 500
 
     ./stop.sh
-    touch /useremain/rinkhals/.disable-rinkhals
+    touch $RINKHALS_BASE/.disable-rinkhals
 
     exit 1
 }
 
 cd $RINKHALS_ROOT
-rm -rf /useremain/rinkhals/.current 2> /dev/null
-ln -s $RINKHALS_ROOT /useremain/rinkhals/.current
+rm -rf $RINKHALS_BASE/.current 2> /dev/null
+ln -s $RINKHALS_ROOT $RINKHALS_BASE/.current
 
 mkdir -p ./logs
 
@@ -62,10 +62,10 @@ log "| Rinkhals home: $RINKHALS_HOME"
 log " --------------------------------------------------"
 echo
 
-touch /useremain/rinkhals/.disable-rinkhals
+touch $RINKHALS_BASE/.disable-rinkhals
 
 VERIFIED_FIRMWARE=$(is_verified_firmware)
-if [ "$VERIFIED_FIRMWARE" != "1" ] && [ ! -f /mnt/udisk/.enable-rinkhals ] && [ ! -f /useremain/rinkhals/.enable-rinkhals ]; then
+if [ "$VERIFIED_FIRMWARE" != "1" ] && [ ! -f /mnt/udisk/.enable-rinkhals ] && [ ! -f $RINKHALS_BASE/.enable-rinkhals ]; then
     log "Unsupported firmware version, use .enable-rinkhals file to force startup"
     exit 1
 fi
@@ -325,7 +325,7 @@ export LD_LIBRARY_PATH=$OLD_LD_LIBRARY_PATH
 ################
 log "> Cleaning up..."
 
-rm /useremain/rinkhals/.disable-rinkhals
+rm $RINKHALS_BASE/.disable-rinkhals
 
 echo
 log "Rinkhals started"
