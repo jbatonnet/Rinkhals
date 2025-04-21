@@ -122,7 +122,7 @@ progress 0.2
 RINKHALS_VERSION=$(cat $SOURCE_PATH/.version)
 
 TARGET_PATH=/useremain/rinkhals/$RINKHALS_VERSION
-CURRENT_RINKHALS_PATH=$(realpath /useremain/rinkhals/.current 2> /dev/null)
+CURRENT_RINKHALS_PATH=$(readlink -f /useremain/rinkhals/.current 2> /dev/null)
 
 if [ "$CURRENT_RINKHALS_PATH" != "" ] && [ "$TARGET_PATH" = "$CURRENT_RINKHALS_PATH" ]; then
     TARGET_PATH="${TARGET_PATH}-2"

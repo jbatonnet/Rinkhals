@@ -10,7 +10,7 @@ if [ "$KOBRA_MODEL_CODE" = "" ]; then
 fi
 
 set -e
-BUILD_ROOT=$(dirname $(realpath $0))
+BUILD_ROOT=$(dirname $(readlink -f $0))
 . $BUILD_ROOT/tools.sh
 
 

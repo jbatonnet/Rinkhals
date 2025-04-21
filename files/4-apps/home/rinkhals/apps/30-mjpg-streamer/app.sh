@@ -1,6 +1,6 @@
 source /useremain/rinkhals/.current/tools.sh
 
-APP_ROOT=$(dirname $(realpath $0))
+APP_ROOT=$(dirname $(readlink -f $0))
 
 status() {
     PIDS=$(get_by_name mjpg_streamer)

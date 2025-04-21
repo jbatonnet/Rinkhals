@@ -1,4 +1,4 @@
-. $(dirname $(realpath $0))/tools.sh
+. $(dirname $(readlink -f $0))/tools.sh
 
 cd $RINKHALS_ROOT
 mkdir -p ./logs
