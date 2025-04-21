@@ -1,5 +1,7 @@
 . $(dirname $(readlink -f $0))/tools.sh
 
+set -x
+
 export TZ=UTC
 export RINKHALS_ROOT=$(dirname $(readlink -f $0))
 export RINKHALS_VERSION=$(cat $RINKHALS_ROOT/.version)

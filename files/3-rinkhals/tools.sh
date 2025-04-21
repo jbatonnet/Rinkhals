@@ -1,9 +1,9 @@
-if [ -e /app/resources/configs/printer.cfg ]; then
-    export RINKHALS_BASE=/mnt/UDISK/rinkhals
-    export RINKHALS_HOME=/mnt/UDISK/home/rinkhals
-elif [ -e /useremain ]; then
+if [ -e /useremain ]; then
     export RINKHALS_BASE=/useremain/rinkhals
     export RINKHALS_HOME=/useremain/home/rinkhals
+elif [ -e /mnt/UDISK ]; then
+    export RINKHALS_BASE=/mnt/UDISK/rinkhals
+    export RINKHALS_HOME=/mnt/UDISK/home/rinkhals
 fi
 
 export RINKHALS_ROOT=$(readlink -f $RINKHALS_BASE/.current)
@@ -13,18 +13,27 @@ export KOBRA_MODEL="Anycubic Kobra 2 Pro"
 export KOBRA_MODEL_CODE=K2P
 export KOBRA_VERSION="3.1.2"
 
-# export KOBRA_MODEL_ID=$(cat /userdata/app/gk/config/api.cfg | sed -nr 's/.*"modelId"\s*:\s*"([0-9]+)".*/\1/p')
+export KOBRA_MODEL_ID=$(cat /userdata/app/gk/config/api.cfg 2>/dev/null | sed -nr 's/.*"modelId"\s*:\s*"([0-9]+)".*/\1/p')
 
-# if [ "$KOBRA_MODEL_ID" == "20021" ]; then
-#     export KOBRA_MODEL="Anycubic Kobra 2 Pro"
-#     export KOBRA_MODEL_CODE=K2P
-# elif [ "$KOBRA_MODEL_ID" == "20024" ]; then
-#     export KOBRA_MODEL="Anycubic Kobra 3"
-#     export KOBRA_MODEL_CODE=K3
-# elif [ "$KOBRA_MODEL_ID" == "20025" ]; then
-#     export KOBRA_MODEL="Anycubic Kobra S1"
-#     export KOBRA_MODEL_CODE=KS1
-# fi
+if [ "$KOBRA_MODEL_ID" = "20021" ]; then
+    export KOBRA_MODEL="Anycubic Kobra 2 Pro"
+    export KOBRA_MODEL_CODE=K2P
+elif [ "$KOBRA_MODEL_ID" = "20024" ]; then
+    export KOBRA_MODEL="Anycubic Kobra 3"
+    export KOBRA_MODEL_CODE=K3
+elif [ "$KOBRA_MODEL_ID" = "20025" ]; then
+    export KOBRA_MODEL="Anycubic Kobra S1"
+    export KOBRA_MODEL_CODE=KS1
+elif [ "$KOBRA_MODEL_ID" = "" ]; then
+    if [ -f /app/resources/configs/printer.cfg ]; then
+        # TODO: Find the right printer.cfg by `strings /app/app | grep printer.cfg`
+        export KOBRA_MODEL=$(cat /app/resources/configs/printer.cfg | grep device_model | awk -F ":" '{print $NF}' | xargs)
+        if [ "$KOBRA_MODEL_ID" = "20021" ]; then
+            export KOBRA_MODEL="Anycubic Kobra 2 Pro"
+            export KOBRA_MODEL_CODE=K2P
+        fi
+    fi
+fi
 
 # export KOBRA_VERSION=$(cat /useremain/dev/version)
 # export KOBRA_DEVICE_ID=$(cat /useremain/dev/device_id 2> /dev/null)
