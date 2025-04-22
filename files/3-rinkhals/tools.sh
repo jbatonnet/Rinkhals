@@ -56,7 +56,7 @@ is_verified_firmware() {
             return
         fi
     elif [ "$KOBRA_MODEL_CODE" = "KS1" ]; then
-        if [ "$KOBRA_VERSION" = "2.5.1.6" ] || [ "$KOBRA_VERSION" = "2.5.2.2" ]; then
+        if [ "$KOBRA_VERSION" = "2.5.1.6" ] || [ "$KOBRA_VERSION" = "2.5.2.3" ]; then
             echo 1
             return
         fi
