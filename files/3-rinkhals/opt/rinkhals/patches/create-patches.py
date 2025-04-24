@@ -277,10 +277,10 @@ def patch_K3SysUi(binaryPath, modelCode, version):
         k3sysui.write(address, i)
         address = address + 4
 
-    if modelCode == 'KS1':
-        k3sysui.asm(address + 0,  'mov r1, #0x4')
-    elif modelCode == 'K2P':
+    if modelCode == 'K2P':
         k3sysui.asm(address + 0,  'mov r1, #0x0')
+    else:
+        k3sysui.asm(address + 0,  'mov r1, #0x4')
 
     if useTailCall:
         k3sysui.asm(address + 4, f'b 0x{acDisplayWaitHide:x}')
