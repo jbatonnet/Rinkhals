@@ -268,6 +268,9 @@ sleep 2
 
 ./gkapi >> $RINKHALS_ROOT/logs/gkapi.log 2>&1 &
 ./K3SysUi >> $RINKHALS_ROOT/logs/K3SysUi.log 2>&1 &
+
+sleep 2
+
 ./gkcam >> $RINKHALS_ROOT/logs/gkcam.log 2>&1 &
 
 for TARGET in $TARGETS; do
