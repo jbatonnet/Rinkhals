@@ -390,16 +390,16 @@ stop_app() {
     $APP_ROOT/app.sh stop
 }
 
-list_app_properties() {
-    APP=$1
-    APP_ROOT=$(get_app_root $APP)
+# list_app_properties() {
+#     APP=$1
+#     APP_ROOT=$(get_app_root $APP)
 
-    if [ ! -f $APP_ROOT/app.json ]; then
-        return
-    fi
+#     if [ ! -f $APP_ROOT/app.json ]; then
+#         return
+#     fi
 
-    cat $APP_ROOT/app.json | sed 's/\/\/.*//' | jq -r '.properties | keys[]'
-}
+#     cat $APP_ROOT/app.json | sed 's/\/\/.*//' | jq -r '.properties | keys[]'
+# }
 get_app_property() {
     APP=$1
     PROPERTY=$2
@@ -444,4 +444,28 @@ set_temporary_app_property() {
     CONFIG=${CONFIG:-'{}'}
 
     echo $CONFIG | jq ".$PROPERTY = \"$VALUE\"" > $TEMPORARY_CONFIG_PATH
+}
+remove_app_property() {
+    APP=$1
+    PROPERTY=$2
+    
+    if [ ! -d $RINKHALS_HOME/apps ]; then
+        return
+    fi
+
+    CONFIG_PATH=$USER_APP_PATH/$APP.config
+    CONFIG=$(cat $CONFIG_PATH 2>/dev/null)
+    CONFIG=${CONFIG:-'{}'}
+
+    echo $CONFIG | jq "del(.$PROPERTY)" > $CONFIG_PATH
+}
+clear_app_properties() {
+    APP=$1
+    
+    if [ ! -d $RINKHALS_HOME/apps ]; then
+        return
+    fi
+
+    CONFIG_PATH=$USER_APP_PATH/$APP.config
+    rm $CONFIG_PATH 2>/dev/null
 }

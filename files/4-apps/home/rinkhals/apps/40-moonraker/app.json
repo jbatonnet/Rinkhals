@@ -7,19 +7,19 @@
 
     "properties": {
         "mqtt_print_auto_leveling": {
-            "display": "Auto leveling when priting",
+            "display": "Auto leveling when starting prints",
             "type": "enum",
             "options": [ "False", "True" ],
             "default": "False"
         },
         "mqtt_print_vibration_compensation": {
-            "display": "Vibration compensation when priting",
+            "display": "Vibration compensation when starting prints",
             "type": "enum",
             "options": [ "False", "True" ],
             "default": "False"
         },
         "mqtt_print_flow_calibration": {
-            "display": "Flow calibration when priting",
+            "display": "Flow calibration when starting prints",
             "type": "enum",
             "options": [ "False", "True" ],
             "default": "False"
