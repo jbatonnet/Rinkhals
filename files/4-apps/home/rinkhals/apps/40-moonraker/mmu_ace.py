@@ -3,23 +3,16 @@
 # Copyright (C) 2021  Eric Callahan <arksine.code@gmail.com>
 #
 # This file may be distributed under the terms of the GNU GPLv3 license.
-import os
+
 import uuid
 import json
-import re
-import time
 import logging
-import subprocess
-import logging
-import traceback
-import shlex
 import ast
-import http.client
 import asyncio
 
 from ..confighelper import ConfigHelper
 from ..server import Server
-from .kobra import Kobra
+from .kobra import Kobra, shell
 
 from dataclasses import dataclass, asdict
 from enum import Enum
@@ -50,6 +43,8 @@ else:
 from ..utils import Sentinel
 from .http_client import HttpClient, HttpResponse
 from .klippy_apis import KlippyAPI
+from .klippy_connection import KlippyConnection
+from ..common import WebRequest, APITransport, RequestType
 
 @dataclass
 class ActiveFilamentStatus:
@@ -153,6 +148,7 @@ GATE_AVAILABLE = 1 # Available to load from either buffer or spool
 GATE_AVAILABLE_FROM_BUFFER = 2
 
 class MmuAceGate:
+    index: int
     status: int = GATE_EMPTY
     filament_name: str = "Unknown"
     material: str = "Unknown"
@@ -160,15 +156,20 @@ class MmuAceGate:
     temperature: int = -1
     spool_id: int = -1
     speed_override: int = -1
-    rfid: int = -1
+    rfid: int = 1 # 1 = no rfid 2 = rfid, if rfid = 2 not update possible
     source: int = -1
 
 class MmuAceUnit:
+    id: int
     name: str
+    status: str
+    temp: int
+    dryer: dict
     gates: List[MmuAceGate]
 
-    def __init__(self, _name: str):
-        self.name = _name
+    def __init__(self, id: int, name: str):
+        self.id = id
+        self.name = name
         self.gates = [
             MmuAceGate(),
             MmuAceGate(),
@@ -255,14 +256,14 @@ class MmuAce:
 
     def __init__(self):
         self.units = [
-            MmuAceUnit("ACE 1")
+            MmuAceUnit(0, "ACE 1")
         ]
 
         self.tools = []
 
 class PrinterController:
-    # async def send_event(self, name: str, args: dict | None = None) -> dict:
-    #     pass
+    async def send_request(self, method: str, params: Dict[str, Any], default: Any = Sentinel.MISSING) -> Any:
+        pass
 
     async def query_objects(self,
                             objects: Mapping[str, Optional[List[str]]],
@@ -283,7 +284,33 @@ class KlippyPrinterController(PrinterController):
     def __init__(self, _server):
         self.server = _server
         self.klippy_apis: KlippyAPI = self.server.lookup_component("klippy_apis")
+        self.klippy: KlippyConnection = self.server.lookup_component("klippy_connection")
 
+    async def _send_klippy_request(
+            self,
+            method: str,
+            params: Dict[str, Any],
+            default: Any = Sentinel.MISSING,
+            transport: Optional[APITransport] = None
+    ) -> Any:
+        logging.warning(f"Sending {method} with params: {json.dumps(params)}")
+        try:
+            req = WebRequest(method, params, transport=transport or self)
+            result = await self.klippy.request(req)
+            logging.warning(f"Result of {method}: {json.dumps(result)}")
+        except self.server.error:
+            logging.warning(f"Error sending {method} with params: {json.dumps(params)}")
+            if default is Sentinel.MISSING:
+                raise
+            result = default
+        return result
+
+    async def send_request(self, method: str,
+                           params: Dict[str, Any],
+                           default: Any = Sentinel.MISSING) -> Any:
+        logging.warning(f"Sending {method} with params: {json.dumps(params)}")
+        return await self._send_klippy_request(method, params, default)
+        # return await self.klippy_apis._send_klippy_request(method, params, default)
     async def query_objects(self,
                             objects: Mapping[str, Optional[List[str]]],
                             default: Union[Sentinel, _T] = Sentinel.MISSING
@@ -418,31 +445,51 @@ class MmuAceController:
 
         filament_hub = result["filament_hub"]
 
+        self._set_ace_status(filament_hub)
+
+    async def _handle_mmu_ace_status_update(self, status: Dict[str, Any], _: float):
+        if "filament_hub" in status:
+            filament_hub = status["filament_hub"]
+            logging.warning(f"mmu ace status update: {json.dumps(filament_hub)}")
+
+            self._set_ace_status(filament_hub)
+
+    def _set_ace_status(self, filament_hub):
         # set units
-        self.ace.units = []
-        self.ace.tools = []
-        self.ace.ttg_map = []
+        ace = self.ace
+        ace.units = []
+        ace.tools = []
+        ace.ttg_map = []
 
         for hub in filament_hub["filament_hubs"]:
-            hub_id = hub["id"] + 1
-            unit = MmuAceUnit(f"ACE {hub_id}")
+            hub_id = hub["id"]
+            unit = MmuAceUnit(hub_id, f"ACE {hub_id + 1}")
+
+            unit.status = hub["status"] if "status" in hub else None
+            unit.temp = hub["temp"] if "temp" in hub else None
+
+            if "dryer_status" in hub:
+                unit.dryer = hub["dryer_status"]
+
             unit.gates = []
             for i, slot in enumerate(hub["slots"]):
-                index: int = slot["index"]
-                status: str = slot["status"]
-                sku: str = slot["sku"]
-                type: str = slot["type"]
-                color: list[int] = slot["color"]
-                rfid: int = slot["rfid"]
-                source: int = slot["source"]
+                index: int = slot["index"] if "index" in slot else None
+                # preload ready shifting runout empty
+                status: str = slot["status"] if "status" in slot else None
+                sku: str = slot["sku"] if "sku" in slot else None
+                type: str = slot["type"] if "type" in slot else None
+                color: list[int] = slot["color"] if "color" in slot else None
+                rfid: int = slot["rfid"] if "rfid" in slot else None
+                source: int = slot["source"] if "source" in slot else None
 
                 gate = MmuAceGate()
+                gate.index = index
                 gate.material = type
                 gate.filament_name = type
                 gate.color = rgb_to_rgba(color)
                 gate.rfid = rfid
                 gate.source = source
-                gate.status = GATE_AVAILABLE if status == "ready" else GATE_EMPTY
+                gate.status = GATE_AVAILABLE if status == "ready" else GATE_EMPTY if status == "empty" or status == "runout" else GATE_UNKNOWN
 
                 unit.gates.append(gate)
 
@@ -453,52 +500,7 @@ class MmuAceController:
 
             self.ace.units.append(unit)
 
-    async def _handle_mmu_ace_status_update(self, status: Dict[str, Any], _: float):
-        logging.warning(f"mmu ace status update: {json.dumps(status)}")
-
-        # if "filament_hub" in status:
-        #     filament_hub = status["filament_hub"]
-        #     for hub in filament_hub["filament_hubs"]:
-        #         hub_id = hub["id"] + 1
-        # 
-        # filament_hub = status["filament_hub"]
-        # 
-        # # set units
-        # self.ace.units = []
-        # self.ace.tools = []
-        # self.ace.ttg_map = []
-        # 
-        # for hub in filament_hub["filament_hubs"]:
-        #     hub_id = hub["id"] + 1
-        #     unit = MmuAceUnit(f"ACE {hub_id}")
-        #     unit.gates = []
-        #     for i, slot in enumerate(hub["slots"]):
-        #         index: int = slot["index"]
-        #         status: str = slot["status"] 
-        #         sku: str = slot["sku"] 
-        #         type: str = slot["type"] 
-        #         color: list[int] = slot["color"] 
-        #         rfid: int = slot["rfid"]
-        #         source: int = slot["source"]
-        #         
-        #         gate = MmuAceGate()
-        #         gate.material = type
-        #         gate.filament_name = type
-        #         gate.color = rgb_to_rgba(color)
-        #         gate.rfid = rfid
-        #         gate.source = source
-        #         gate.status = GATE_AVAILABLE if status == "ready" else GATE_EMPTY
-        #         
-        #         unit.gates.append(gate)
-        # 
-        #         tool = MmuAceTool()
-        #         tool.name = f"T{i + 1}"
-        #         self.ace.tools.append(tool)
-        #         self.ace.ttg_map.append(i)
-        #         
-        #     self.ace.units.append(unit)
-        # 
-        # self._handle_status_update()
+        self._handle_status_update()
 
     def get_status(self) -> MmuAceStatus:
 
@@ -599,16 +601,16 @@ class MmuAceController:
         self.ace.ttg_map = ttg_map
         self._handle_status_update()
 
-    def update_gate(self,
-                    gate_index: int,
-                    status: int = GATE_EMPTY,
-                    filament_name: str = "Unknown",
-                    material: str = "Unknown",
-                    color: str = "Unknown",
-                    temperature: int = -1,
-                    spool_id: int = -1,
-                    speed_override: int = -1
-                    ):
+    async def update_gate(self,
+                          gate_index: int,
+                          status: int = GATE_EMPTY,
+                          filament_name: str = "Unknown",
+                          material: str = "Unknown",
+                          color: list[int] = None,
+                          temperature: int = -1,
+                          spool_id: int = -1,
+                          speed_override: int = -1
+                          ):
         gate: MmuAceGate | None = None
         unit: MmuAceUnit | None = None
         current_gate_index = gate_index
@@ -622,16 +624,46 @@ class MmuAceController:
 
         logging.warning(f"update gate {gate_index} actual values {json.dumps(gate.__dict__)}")
 
+        if color is None:
+            color = [0, 0, 0, 0]
+
         if gate is not None:
-            gate.status = status
-            gate.filament_name = filament_name
-            gate.material = material
-            gate.color = color
-            gate.temperature = temperature
-            gate.spool_id = spool_id
-            gate.speed_override = speed_override
-            self._handle_status_update()
-            logging.warning(f"updated gate {gate_index} with values {json.dumps(gate.__dict__)}")
+            if gate.rfid == 2:
+                logging.warning(f"update gate {gate_index} not allowed, rfid is set")
+                return
+            
+            logging.warning(f"updating gate {gate_index} with values {json.dumps(gate.__dict__)}")
+            # {"method":"filament_hub/set_filament_info","params":{"color":{"B":65,"G":209,"R":254},"id":0,"index":2,"type":"PLA"},"id":34}
+            # call gklib to update spool
+            params = {
+                "color": {"R": color[0], "G": color[1], "B": color[2]},
+                "id": unit.id, # ace id
+                "index": gate.index, # slot index
+                "type": material
+            }
+            
+            error = "unknown"
+            result = None
+            try:
+                result = await self.printer.send_request("filament_hub/set_filament_info", params)
+            except Exception as e:
+                logging.error(f"Error contacting klippy: {e}")
+                result = "error"
+                error = e
+
+            # gate.status = status
+            # gate.filament_name = filament_name
+            # gate.material = material
+            # gate.color = color
+            # gate.temperature = temperature
+            # gate.spool_id = spool_id
+            # gate.speed_override = speed_override
+            # self._handle_status_update()
+
+            if result == "ok":
+                logging.warning(f"updated gate {gate_index} with values {json.dumps(gate.__dict__)}")
+            else:
+                logging.warning(f"update gate {gate_index} failed: {result} {error}")
         else:
             logging.warning(f"update gate {gate_index} not found")
 
@@ -660,8 +692,9 @@ class MmuAcePatcher:
         # gcode handlers
         self.register_gcode_handler("MMU_GATE_MAP", self._on_gcode_mmu_gate_map)
         self.register_gcode_handler("MMU_TTG_MAP", self._on_gcode_mmu_ttg_map)
-        self.register_gcode_handler("MMU_TTG_MAP", self._on_gcode_mmu_ttg_map)
-        self.register_gcode_handler("MMU_SLICER_TOOL_MAP", self._on_gcode_mmu_ttg_map)
+        self.register_gcode_handler("MMU_ENDLESS_SPOOL", self._on_gcode_mmu_endless_spool) # todo
+        self.register_gcode_handler("MMU_SELECT", self._on_gcode_mmu_unknown) # todo
+        self.register_gcode_handler("MMU_SLICER_TOOL_MAP", self._on_gcode_mmu_unknown) # todo
 
         self.kobra.register_status_patcher(self.patch_status)
 
@@ -682,12 +715,24 @@ class MmuAcePatcher:
 
         return default
 
+    async def _on_gcode_mmu_unknown(self, args: dict[str, str | None], delegate):
+        pass
+
+    # Triggered on ToolToGate edit in ui
     async def _on_gcode_mmu_ttg_map(self, args: dict[str, str | None], delegate):
         logging.warning(f"handle mmu_ttg_map: {json.dumps(args)}")
         ttg_map_str = self._get_gcode_arg_str("MAP", args)
         ttg_map = [int(value) for value in ttg_map_str.split(",")]
         self.ace_controller.update_ttg_map(ttg_map)
 
+    # Triggered on ToolToGate edit in ui
+    async def _on_gcode_mmu_endless_spool(self, args: dict[str, str | None], delegate):
+        logging.warning(f"handle _on_gcode_mmu_endless_spool: {json.dumps(args)}")
+        groups_str = self._get_gcode_arg_str("GROUPS", args)
+        logging.warning(f"handle _on_gcode_mmu_endless_spool groups_str: {groups_str}")
+        # TODO
+
+    # Triggered on spool edit in ui
     async def _on_gcode_mmu_gate_map(self, args: dict[str, str | None], delegate):
         logging.warning(f"handle mmu_gate_map: {json.dumps(args)}")
         gate_map_str = self._get_gcode_arg_str("MAP", args)
@@ -700,12 +745,12 @@ class MmuAcePatcher:
 
             logging.warning(f"try update gate {key}: {json.dumps(value)}")
 
-            self.ace_controller.update_gate(
+            await self.ace_controller.update_gate(
                 gate_index = gate_index,
                 status = value["status"],
                 filament_name = value["name"],
                 material = value["material"],
-                color = value["color"],
+                color = hex_to_rgba(value["color"]),
                 temperature = value["temp"],
                 spool_id = value["spool_id"],
                 speed_override = value["speed_override"],
@@ -804,12 +849,3 @@ class MmuAcePatcher:
 
 def load_component(config):
     return MmuAcePatcher(config)
-
-# {
-#     "jsonrpc": "2.0",
-#     "method": "printer.gcode.script",
-#     "params": {
-#         "script": "MMU_GATE_MAP MAP=\"{0: {'status':0,'spool_id':0,'material':'PLA','color':'FF0000FF','name':'A','temp':0,'speed_override':0},1: {'status':0,'spool_id':1,'material':'PETG','color':'008000FF','name':'B','temp':0,'speed_override':0},2: {'status':0,'spool_id':2,'material':'ABS','color':'0000FFFF','name':'C','temp':0,'speed_override':0},3: {'status':1,'spool_id':-1,'material':'TPUu','color':'6A1B9ABD','name':'D testname','temp':'200','speed_override':50}}\" QUIET=1"
-#     },
-#     "id": 29
-# }
