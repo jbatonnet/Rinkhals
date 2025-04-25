@@ -46,7 +46,7 @@ stop() {
     cd /userdata/app/gk
 
     LD_LIBRARY_PATH=/userdata/app/gk:$LD_LIBRARY_PATH \
-        ./gkcam &> $RINKHALS_ROOT/logs/gkcam.log &
+        ./gkcam >> $RINKHALS_ROOT/logs/gkcam.log 2>&1 &
 }
 
 case "$1" in
