@@ -398,6 +398,24 @@ class Kobra:
         logging.debug(f'  Before: {KlippyRequest.set_result}')
         setattr(KlippyRequest, 'set_result', wrap_set_result(KlippyRequest.set_result))
         logging.debug(f'  After: {KlippyRequest.set_result}')
+        
+        def wrap_request(original_request):
+            async def request(me, web_request: WebRequest) -> Any:
+                rpc_method = web_request.get_endpoint()
+                logging.warning(f'Wrap request method: {rpc_method}')
+                result = await original_request(me, web_request)
+                logging.warning(f'Wrap request method {rpc_method} result type: {type(result)}')
+                if result and isinstance(result, dict):
+                    logging.warning(f'Wrap request method {rpc_method} result: {json.dumps(result)}')
+                if result and isinstance(result, dict) and 'status' in result:
+                    result['status'] = self.patch_status(result['status'])
+                    logging.warning(f'Wrap request method {rpc_method} result status: {json.dumps(result)}')
+                return result
+            return request
+
+        logging.debug(f'  Before: {KlippyConnection.request}')
+        setattr(KlippyConnection, 'request', wrap_request(KlippyConnection.request))
+        logging.debug(f'  After: {KlippyConnection.request}')
 
     def patch_network_interfaces(self):
         from .machine import Machine
