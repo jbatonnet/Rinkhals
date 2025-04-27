@@ -42,7 +42,7 @@
 #
 
 ###############################################################
-# buildroot builds the root filesystem and core packages
+# buildroot prepares the buildroot environment
 FROM debian:12.10 AS buildroot
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -63,7 +63,7 @@ RUN locale-gen en_US.utf8
 ADD https://gitlab.com/buildroot.org/buildroot.git#2023.02.6 /buildroot
 WORKDIR /buildroot
 
-# Patch buildroot to enable the gcc package (and change a few others)
+# Apply global patches to Buildroot environment
 COPY ./build/1-buildroot/*.patch /buildroot/
 RUN git apply ./*.patch
 
@@ -91,7 +91,7 @@ RUN --mount=type=cache,target=/buildroot/dl \
 EOT
 
 ###############################################################
-# buildroot-rebuild rebuilds selected buildroot packages
+# buildroot-build builds the root filesystem and core packages
 FROM buildroot-build AS buildroot-rebuild
 ARG rebuild=""
 ARG clean_buildroot
