@@ -182,6 +182,15 @@ RUN --mount=type=cache,sharing=locked,target=/root/.cache/pip \
     /build/4-apps/40-moonraker/get-packages.sh
 
 ###############################################################
+# app-remote-display prepares Remote Display app files
+FROM build-base AS app-remote-display
+COPY ./build/4-apps/50-remote-display/* /build/
+COPY ./files/4-apps/home/rinkhals/apps/50-remote-display/index.vnc /files/4-apps/home/rinkhals/apps/50-remote-display/index.vnc
+COPY ./files/4-apps/home/rinkhals/apps/50-remote-display/app.json /files/4-apps/home/rinkhals/apps/50-remote-display/app.json
+RUN chmod +x /build/get-novnc.sh && \
+    /build/get-novnc.sh
+
+###############################################################
 # prepare-bundle collects all files and prepares a bundle
 FROM build-base AS prepare-bundle
 
@@ -191,6 +200,7 @@ COPY --from=app-mainsail /files/4-apps/ /bundle/rinkhals/
 COPY --from=app-fluidd /files/4-apps/ /bundle/rinkhals/
 COPY --from=app-moonraker /files/4-apps/ /bundle/rinkhals/
 COPY --from=app-moonraker-armv7 /files/4-apps/ /bundle/rinkhals/
+COPY --from=app-remote-display /files/4-apps/ /bundle/rinkhals/
 COPY ./files/3-rinkhals /bundle/rinkhals/
 COPY ./files/4-apps /bundle/rinkhals/
 COPY ./files/*.* /bundle/
