@@ -17,8 +17,22 @@ start() {
 
     VNC_PORT=5900
     WEB_PORT=5800
-    #TODO Add touch calibration and rotation for KS1
-    drm-vncserver -n Rinkhals -t /dev/input/event0 -c 25,460,235,25 -r 270 -F 5 -w $APP_ROOT/novnc >> $RINKHALS_ROOT/logs/app-drm-vncserver.log 2>&1 &
+
+    if [ $KOBRA_MODEL_CODE == "KS1" ]; then
+        ROTATION=180
+        MIN_X=0
+        MAX_X=800
+        MIN_Y=480
+        MAX_Y=0
+    else
+        ROTATION=270
+        MIN_X=25
+        MAX_X=460
+        MIN_Y=235
+        MAX_Y=25
+    fi
+
+    drm-vncserver -n Rinkhals -t /dev/input/event0 -c $MIN_X,$MAX_X,$MIN_Y,$MAX_Y -r $ROTATION -F 5 -w $APP_ROOT/novnc >> $RINKHALS_ROOT/logs/app-drm-vncserver.log 2>&1 &
     wait_for_port $VNC_PORT
     wait_for_port $WEB_PORT
 }
