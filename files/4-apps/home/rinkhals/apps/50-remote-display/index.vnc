@@ -1,0 +1,27 @@
+<html>
+    <head>
+        <title>
+        $DESKTOP Remote Display
+        </title>
+        <script>
+            function start_novnc(do_encrypt){
+                var host = document.location.hostname;
+                // If there are at least two colons in there, it is likely an IPv6 address. Check for square brackets and add them if missing.
+                if(host.search(/^.*:.*:.*$/) != -1) {
+                    if(host.charAt(0) != "[")
+                        host = "[" + host;
+                    if(host.charAt(host.length-1) != "]")
+                        host = host + "]";
+                }
+                window.location.href = "/vnc.html?autoconnect=true&host=" + host + "&port=$PORT&encrypt=" + (do_encrypt ? "1" : "0");
+            }
+
+            document.addEventListener("DOMContentLoaded", function() {
+                start_novnc(false);
+            });
+        </script>
+    </head>
+    <body style="background: rgb(40, 40, 40)">
+        <!-- Redirecting on load -->
+    </body>
+</html>
