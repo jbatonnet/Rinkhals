@@ -2,7 +2,7 @@
 # Main Dockerfile for building Rinkhals
 #
 # This multi-stage Dockerfile includes all steps to go from a clean repository to an installable SWU package.
-# Note: Buildkit is required, but should already be enabled in most Docker installations.
+# Note: Buildkit and buildx are required, but should already be enabled by default in most nonlegacy Docker installations.
 #
 # Enable QEMU for ARMv7 stages (needed once per session):
 # - docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
@@ -29,7 +29,8 @@
 #
 # Deploying a development build to a printer:
 # - docker build --output type=local,dest=./build/dist .
-# - docker run --rm -it -e KOBRA_IP=x.x.x.x --mount type=bind,ro,source=.\build,target=/build --entrypoint=/bin/sh rclone/rclone:1.69.1 /build/deploy-dev.sh
+# - docker run --rm -it -e KOBRA_IP=x.x.x.x --mount type=bind,source=.\build,target=/build --entrypoint=/bin/sh rclone/rclone:1.69.1 /build/deploy-dev.sh
+# - Note: On Linux/macOS, use `--mount type=bind,source=./build,target=/build` instead of `--mount type=bind,source=.\build,target=/build`
 #
 # Seeding cache for Github Actions:
 # - docker login ghcr.io <etc...>
@@ -85,7 +86,6 @@ RUN --mount=type=cache,target=/buildroot/dl \
     chmod +x /buildroot/prepare-final.sh
     /buildroot/prepare-final.sh
     if [ ${clean_buildroot} -eq 1 ]; then
-        rm -rf /buildroot/dl
         make clean
     fi
 EOT
