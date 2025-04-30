@@ -1,5 +1,5 @@
 # From a Windows machine:
-#   docker run --rm -it -v .\files:/files ghcr.io/jbatonnet/rinkhals/build python3 /files/3-rinkhals/opt/rinkhals/scripts/create-patches.py
+#   docker run --rm -it -v .\files:/files ghcr.io/jbatonnet/rinkhals/build python3 /files/3-rinkhals/opt/rinkhals/patches/create-patches.py
 
 import os
 import json
@@ -107,14 +107,14 @@ def patch_K3SysUi(binaryPath, modelCode, version):
     # bl  QStackedWidget::setCurrentIndex
     # b   0xfaf4c                          < patchReturnAddress
 
-    elif modelCode == 'K3' and version == '2.3.8.9':
-        buttonCallback = k3sysui.symbols['_ZZN10MainWindow19AcSettingPageUiInitEvENKUlvE_clEv']
-        patchJumpAddress = 0xfaf14
-        patchReturnAddress = 0xfaf44
     elif modelCode == 'K3' and version == '2.3.9.3':
         buttonCallback = k3sysui.symbols['_ZZN10MainWindow19AcSettingPageUiInitEvENKUlvE_clEv']
         patchJumpAddress = 0xfd3bc
         patchReturnAddress = 0xfd3ec
+    elif modelCode == 'K3' and version == '2.4.0':
+        buttonCallback = k3sysui.symbols['_ZZN10MainWindow19AcSettingPageUiInitEvENKUlvE_clEv']
+        patchJumpAddress = 0xfd278
+        patchReturnAddress = 0xfd2a8
 
     # KS1 - Settings > General > Service Support (4th button)
     
