@@ -22,17 +22,21 @@ start() {
         ROTATION=180
         MIN_X=0
         MAX_X=800
-        MIN_Y=480
-        MAX_Y=0
+        MIN_Y=0
+        MAX_Y=480
+        # Average CPU is 15-20% with 3 FPS
+        FPS=3
     else
         ROTATION=270
         MIN_X=25
         MAX_X=460
         MIN_Y=235
         MAX_Y=25
+        # Average CPU is 10% with 5 FPS
+        FPS=5
     fi
 
-    drm-vncserver -n Rinkhals -t /dev/input/event0 -c $MIN_X,$MAX_X,$MIN_Y,$MAX_Y -r $ROTATION -F 5 -w $APP_ROOT/novnc >> $RINKHALS_ROOT/logs/app-drm-vncserver.log 2>&1 &
+    drm-vncserver -n Rinkhals -t /dev/input/event0 -c $MIN_X,$MAX_X,$MIN_Y,$MAX_Y -r $ROTATION -F $FPS -w $APP_ROOT/novnc >> $RINKHALS_ROOT/logs/app-drm-vncserver.log 2>&1 &
     wait_for_port $VNC_PORT
     wait_for_port $WEB_PORT
 }
