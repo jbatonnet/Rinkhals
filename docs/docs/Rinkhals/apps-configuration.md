@@ -4,7 +4,7 @@ title: Apps configuration
 
 !!! note "Temporary page"
 
-    Things will be exposed in the UI soon
+    These properties will be exposed in the UI soon 
 
 To configure apps, use those commands in CLI (SSH):
 
