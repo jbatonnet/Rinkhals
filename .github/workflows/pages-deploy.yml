@@ -16,6 +16,10 @@ jobs:
         run: pip install -r ./docs/requirements.txt
       - name: Build
         run: cd docs; mkdocs build
-      # - name: Deploy
-      #   uses: cloudflare/wrangler-action@v3
+      - name: Deploy
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          command: |
+            pages deploy ./docs/site --project-name=rinkhals
   
