@@ -1,17 +1,37 @@
-# Welcome to MkDocs
+---
+title: Home
+weight: -1
+---
 
-For full documentation visit [mkdocs.org](https://www.mkdocs.org).
+## 🔍 Overview
+Rinkhals is an open-source project aimed at enhancing the functionality of 3D printers, with a specific focus on Kobra printers.
 
-## Commands
+### 📚 Documentation Structure
 
-* `mkdocs new [dir-name]` - Create a new project.
-* `mkdocs serve` - Start the live-reloading docs server.
-* `mkdocs build` - Build the documentation site.
-* `mkdocs -h` - Print help message and exit.
+- **General Information**: Basic concepts and overview
+- **Installation**: Firmware updates and setup procedures
+- **Configuration**:
+    - Printer setup and calibration
+    - Apps configuration and monitoring
+- **Technical Details**:
+    - System architecture and working principles
+    - MQTT communication
+    - IPC commands
 
-## Project layout
+### 🛠️ Key Features
+Rinkhals provides various capabilities for Kobra printer management
 
-    mkdocs.yml    # The configuration file.
-    docs/
-        index.md  # The documentation homepage.
-        ...       # Other markdown pages, images and other files.
+- Printer monitoring and control
+- Remote management capabilities
+- Integration with external applications
+- SimplyPrint support
+
+### 🔗 Quick Links
+Project Repository: [GitHub - Rinkhals](https://github.com/jbatonnet/Rinkhals)
+
+### 👥 Contributing
+Rinkhals is an open-source project welcoming contributions. See the "Contribute to development" section for more details on how to get involved.
+
+!!! note
+
+    📝 This documentation is continuously updated. If you find any issues or have suggestions for improvement, please refer to the contribution guidelines.

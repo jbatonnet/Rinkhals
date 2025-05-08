@@ -30,6 +30,7 @@ theme:
 
 plugins:
   - search
+  - mkdocs-nav-weight
 
 markdown_extensions:
   - attr_list

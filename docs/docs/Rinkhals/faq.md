@@ -1,5 +1,6 @@
 ---
 title: FAQ
+weight: -1
 ---
 
 ## My printer is stuck with error 11407
@@ -15,7 +16,7 @@ Filament mapping is stored in the gcode and depends on your slicer configuration
 
 In Orca, you can add 4 filaments and they will be mapped with the 4 slots of the ACE Pro from left to right. You can then either export gcode or print directly.
 
-![Orca Slicer Filament settings panel with 4 filaments](/assets/orca-filament.webp)
+![Orca Slicer Filament settings panel with 4 filaments](../assets/orca-filament.webp)
 
 Later, if you need to print with only one filament, you’ll need to remove the other and keep only one before exporting gcode or printing.
 

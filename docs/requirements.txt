@@ -1,2 +1,3 @@
 # TODO: Specific versions should be specified
 mkdocs-material
+mkdocs-nav-weight
