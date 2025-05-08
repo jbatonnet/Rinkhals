@@ -1,6 +1,6 @@
 site_name: Rinkhals Documentation
 # Placeholder URL
-site_url: http://127.0.0.1:8000/
+site_url: https://rinkhals.pages.dev
 theme:
   name: material
 
