@@ -1,0 +1,20 @@
+﻿name: Pages Deploy
+
+on:
+  push:
+    paths:
+      - docs/**
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    name: Deploy
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install requirements
+        run: pip install -r ./docs/requirements.txt
+      - name: Build
+        run: cd docs; mkdocs build
+      # - name: Deploy
+      #   uses: cloudflare/wrangler-action@v3
+  
