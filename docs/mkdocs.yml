@@ -3,8 +3,8 @@ site_name: Rinkhals Documentation
 site_url: http://127.0.0.1:8000/
 theme:
   name: material
-  palette:
 
+  palette:
     # Palette toggle for automatic mode
     - media: "(prefers-color-scheme)"
       toggle:
@@ -24,6 +24,22 @@ theme:
       toggle:
         icon: material/brightness-4
         name: Switch to system preference
+  
+  features:
+    - navigation.tabs
 
 plugins:
   - search
+
+markdown_extensions:
+  - attr_list
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - footnotes
+  - md_in_html
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
