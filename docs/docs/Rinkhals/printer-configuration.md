@@ -66,7 +66,7 @@ Now here are some additional tools I built in Rinkhals to help those situations:
 So with all that you're left with some solutions:
 
 <div class="annotate" markdown>
-- When Rinkhals is disabled, it still starts ADB as a backup access (1). You could use it to connect to PRINTER_IP:5555, get a shell and modify your printer.custom.cfg and/or printer_mutable.cfg
+- When Rinkhals is disabled, it still starts ADB as a backup access(1). You could use it to connect to PRINTER_IP:5555, get a shell and modify your printer.custom.cfg and/or printer_mutable.cfg
 - You can use the SSH SWU tool at all times to get SSH access and change your config
 - If you want to iterate over printer config changes, you can have a USB drive with 2 files at the root:
     - `printer.custom.cfg`: it will replace the one on your printer during startup, this way you can easily modify it
