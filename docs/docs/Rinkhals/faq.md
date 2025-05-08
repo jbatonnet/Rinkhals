@@ -1,6 +1,6 @@
 ---
 title: FAQ
-weight: -1
+weight: -2
 ---
 
 ## My printer is stuck with error 11407

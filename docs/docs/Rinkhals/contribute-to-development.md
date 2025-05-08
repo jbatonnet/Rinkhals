@@ -1,6 +1,6 @@
 ---
 title: Contribute to development
-weight: -1
+weight: 1
 ---
 
 Here are some aggregated answer I gave on Discord. If you want to now more, join the server and ask me!
