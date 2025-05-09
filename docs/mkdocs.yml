@@ -1,6 +1,6 @@
 site_name: Rinkhals Documentation
 # Placeholder URL
-site_url: https://rinkhals.pages.dev
+site_url: https://jbatonnet.github.io/Rinkhals/
 theme:
   name: material
 
@@ -27,6 +27,7 @@ theme:
   
   features:
     - navigation.tabs
+    - navigation.indexes
     - content.code.copy
     - content.code.annotate
 
@@ -41,6 +42,8 @@ markdown_extensions:
   - pymdownx.superfences
   - footnotes
   - md_in_html
+  - pymdownx.tabbed:
+      alternate_style: true
   - pymdownx.highlight:
       anchor_linenums: true
       line_spans: __span
