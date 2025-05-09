@@ -38,8 +38,9 @@ Here is a step by step guide on how to do it with a Kobra 3 mainboard without th
     - ![Back side of a Kobra 3 Max mainboard](../../assets/mainboard-connection/k3m-mainboard-back.webp)
     Back side of a Kobra 3 Max mainboard
 
-    </div>
+    [Kobra 3 Max investigation](kobra-3-max-investigation.md)
 
+    </div>
 
 ??? info "Kobra S1 Mainboard"
 
