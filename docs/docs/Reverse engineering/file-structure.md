@@ -66,7 +66,7 @@ graph LR
     B --> B12["Checks if gklib has crashed or is stuck"];
     B --> B13["List apps, check if they are enabled and start them in order"];
     B --> B14["Removes /useremain/rinkhals/.disable-rinkhals"];
-    A --> C["/useremain/rinkhals/<VERSION>/stop.sh : Called in case of startup failure"];
+    A --> C["/useremain/rinkhals/[VERSION]/stop.sh : Called in case of startup failure"];
     C --> C1["Stops apps"];
     C --> C2["Removes system overlay"];
     C --> C3["Calls /userdata/app/gk/start.sh"];
