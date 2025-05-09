@@ -49,25 +49,24 @@ graph LR
 ```
 
 ## Rinkhals startup sequence
-```mermaid
-graph LR
-    A["/useremain/rinkhals/start-rinkhals.sh"] --> B["/useremain/rinkhals/[VERSION]/start.sh : Rinkhals startup routine"];
-    B --> B1["Sources /useremain/rinkhals/[VERSION]/tools.sh"];
-    B --> B2["Check for compatible printer and firmware"];
-    B --> B3["Creates /useremain/rinkhals/.disable-rinkhals"];
-    B --> B4["Kills gklib, gkapi, gkcam and K3SysUi"];
-    B --> B5["Makes sure permissions are correct"];
-    B --> B6["Creates the system overlay for /lib, /usr, /bin, /sbin, /opt and /etc"];
-    B --> B7["Syncs time with /useremain/rinkhals/[VERSION]/opt/rinkhals/scripts/ntpclient.sh"];
-    B --> B8["Mount paths for gcode / config compatibility"];
-    B --> B9["Patch Anycubic binaries in place"];
-    B --> B10["Restarts gklib, gkapi, gkcam and K3SysUi"];
-    B --> B11["Restore original binaries after startup so stock firmware stays clean"];
-    B --> B12["Checks if gklib has crashed or is stuck"];
-    B --> B13["List apps, check if they are enabled and start them in order"];
-    B --> B14["Removes /useremain/rinkhals/.disable-rinkhals"];
-    A --> C["/useremain/rinkhals/[VERSION]/stop.sh : Called in case of startup failure"];
-    C --> C1["Stops apps"];
-    C --> C2["Removes system overlay"];
-    C --> C3["Calls /userdata/app/gk/start.sh"];
-```
+
+* `/useremain/rinkhals/start-rinkhals.sh`
+    * `/useremain/rinkhals/[VERSION]/start.sh` : Rinkhals startup routine
+        * Sources `/useremain/rinkhals/[VERSION]/tools.sh`
+        * Check for compatible printer and firmware
+        * Creates `/useremain/rinkhals/.disable-rinkhals`
+        * Kills gklib, gkapi, gkcam and K3SysUi
+        * Makes sure permissions are correct
+        * Creates the system overlay for /lib, /usr, /bin, /sbin, /opt and /etc
+        * Syncs time with `/useremain/rinkhals/[VERSION]/opt/rinkhals/scripts/ntpclient.sh`
+        * Mount paths for gcode / config compatibility
+        * Patch Anycubic binaries in place
+        * Restarts gklib, gkapi, gkcam and K3SysUi
+        * Restore original binaries after startup so stock firmware stays clean
+        * Checks if gklib has crashed or is stuck
+        * List apps, check if they are enabled and start them in order
+        * Removes `/useremain/rinkhals/.disable-rinkhals`
+    * `/useremain/rinkhals/<VERSION>/stop.sh` : Called in case of startup failure
+        * Stops apps
+        * Removes system overlay
+        * Calls `/userdata/app/gk/start.sh`
