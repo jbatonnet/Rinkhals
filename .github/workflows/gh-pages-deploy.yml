@@ -27,12 +27,6 @@ jobs:
           python-version: 3.x
           cache: 'pip'
       - run: echo "cache_id=$(date --utc '+%V')" >> $GITHUB_ENV
-      - uses: actions/cache@v4
-        with:
-          key: mkdocs-material-${{ env.cache_id }}
-          path: .cache
-          restore-keys: |
-            mkdocs-material-
       - run: pip install -r ./docs/requirements.txt
       - name: MkDocs Build
         working-directory: ./docs
