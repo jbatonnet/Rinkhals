@@ -5,11 +5,12 @@ weight: -2
 
 ## My printer is stuck with error 11407
 GoKlipper (1) is not starting properly, it's most likely due to a printer configuration issue.
-
-Please check the information in `I got 11407 or my printer doesn't boot anymore` (PLACEHOLDER LINK )
 { .annotate }
 
 1. GoKlipper is Anycubic's reimplementation of Klipper
+
+Please check the information in [I got 11407 or my printer doesn't boot anymore](printer-configuration.md#i-got-11407-or-my-printer-doesnt-boot-anymore)
+
 
 ## How can I print multicolor / with the ACE from Orca Slicer?
 Filament mapping is stored in the gcode and depends on your slicer configuration.
