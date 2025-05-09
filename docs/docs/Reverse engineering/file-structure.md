@@ -30,23 +30,22 @@ In `/lib/udev/rules.d`:
 - 61-udisk-auto-mount.rules : Rule to autostart /userdata/channel.sh on USB drive mount
 
 ## Kobra startup sequence
-```mermaid
-graph LR
-    A["/etc/init.d/rcS : Rockchip init.d startup script"] --> B["/etc/init.d/S20linkmount : Symlinks in /dev/block/by-name + Apply A/B to /oem, /ac_lib and /ac_app + Mount /userdata and /useremain"];
-    A --> C["/etc/init.d/S90_app_run : Main startup for the printer"];
-    C --> D["/userdata/app/kenv/run.sh"];
-    D --> E["/userdata/app/gk/start.sh : Kill wpa_supplicant, adbs and start Anycubic binaries"];
-    E --> F["/userdata/app/gk/gklib : GoKlipper, Anycubic reimplementation of Klipper in Go ([https://github.com/ANYCUBIC-3D/Kobra3/tree/main/klipper-go](https://github.com/ANYCUBIC-3D/Kobra3/tree/main/klipper-go))"];
-    E --> G["/userdata/app/gk/gkapi : Anycubic API service, cloud and local printing services + Mochi MQTT server when lan mode is enabled"];
-    E --> H["/userdata/app/gk/gkcam : Anycubic camera process to stream video to Anycubic clients"];
-    E --> I["/userdata/app/gk/K3SysUi : Anycubic screen / touch UI binary + starts wpa_supplicant"];
-    C --> J["/useremain/rinkhals/start-rinkhals.sh : Rinkhals entrypoint, checking for selected version"];
-    J --> K["/useremain/rinkhals/[VERSION]/start.sh"];
-    J --> L["/useremain/rinkhals/[VERSION]/tools.sh"];
-    A --> M["/etc/init.d/S95dbus : Start dbus"];
-    A --> N["/etc/init.d/S99_bootcontrol"];
-    N --> O["/usr/bin/rk_ota : Makes sure system has booted properly"];
-```
+
+* `/etc/init.d/rcS` : Rockchip init.d startup script
+    * `/etc/init.d/S20linkmount` : Symlinks in `/dev/block/by-name` + Apply A/B to `/oem`, `/ac_lib` and `/ac_app` + Mount `/userdata` and `/useremain`
+    * `/etc/init.d/S90_app_run` : Main startup for the printer
+        * `/userdata/app/kenv/run.sh`
+            * `/userdata/app/gk/start.sh` : Kill wpa_supplicant, adbs and start Anycubic binaries
+                * `/userdata/app/gk/gklib` : GoKlipper, Anycubic reimplementation of Klipper in Go ([https://github.com/ANYCUBIC-3D/Kobra3/tree/main/klipper-go](https://github.com/ANYCUBIC-3D/Kobra3/tree/main/klipper-go))
+                * `/userdata/app/gk/gkapi` : Anycubic API service, cloud and local printing services + Mochi MQTT server when lan mode is enabled
+                * `/userdata/app/gk/gkcam` : Anycubic camera process to stream video to Anycubic clients
+                * `/userdata/app/gk/K3SysUi` : Anycubic screen / touch UI binary + starts wpa_supplicant
+                * `/useremain/rinkhals/start-rinkhals.sh` : Rinkhals entrypoint, checking for selected version
+                    * `/useremain/rinkhals/[VERSION]/start.sh`
+                    * `/useremain/rinkhals/[VERSION]/tools.sh`
+    * `/etc/init.d/S95dbus` : Start dbus
+    * `/etc/init.d/S99_bootcontrol`
+        * `/usr/bin/rk_ota` : Makes sure system has booted properly
 
 ## Rinkhals startup sequence
 
