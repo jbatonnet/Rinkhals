@@ -5,10 +5,27 @@ import re
 import time
 import logging
 import subprocess
+import shlex
+import ast
 import paho.mqtt.client as paho
 
 from ..utils import Sentinel
 from .power import PowerDevice
+from ..common import WebRequest
+
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Union,
+    Optional,
+    Dict,
+    List,
+    TypeVar,
+    Mapping,
+    Callable,
+    Coroutine
+)
+FlexCallback = Callable[..., Optional[Coroutine]]
 
 
 def shell(command):
@@ -36,6 +53,11 @@ class Kobra:
     _remote_mode_next_check = 0
     _remote_mode = None
     _total_layer = 0
+
+    # GCode handlers
+    gcode_handlers: dict[str, FlexCallback] = {}
+    status_patchers: List[Callable[[dict], dict]] = []
+    print_data_patchers: List[Callable[[dict], dict]] = []
 
     def __init__(self, config):
         self.server = config.get_server()
@@ -70,6 +92,7 @@ class Kobra:
         logging.info('Starting Kobra patching...')
 
         self.patch_status_updates()
+        self.patch_gcode_handler()
         self.patch_network_interfaces()
         self.patch_spoolman()
         self.patch_simplyprint()
@@ -172,22 +195,50 @@ class Kobra:
         vibration_compensation = self.get_app_property('40-moonraker', 'mqtt_print_vibration_compensation').lower() == 'true'
         flow_calibration = self.get_app_property('40-moonraker', 'mqtt_print_flow_calibration').lower() == 'true'
 
-        payload = f"""{{
-            "type": "print",
-            "action": "start",
-            "msgid": "{uuid.uuid4()}",
-            "timestamp": {round(time.time() * 1000)},
-            "data": {{
-                "taskid": "-1",
-                "filename": "{file}",
-                "filetype": 1,
-                "task_settings": {{
-                    "auto_leveling": {'1' if auto_leveling else '0'},
-                    "vibration_compensation": {'1' if vibration_compensation else '0'},
-                    "flow_calibration": {'1' if flow_calibration else '0'}
-                }}
-            }}
-        }}"""
+        print_request = {
+            'type': 'print',
+            'action': 'start',
+            'msgid': str(uuid.uuid4()),
+            'timestamp': int(time.time() * 1000),
+            'data': {
+                'taskid': '-1',
+                'filename': file,
+                'filetype': 1,
+                'task_settings': {
+                    'auto_leveling': 1 if auto_leveling else 0,
+                    'vibration_compensation': 1 if vibration_compensation else 0,
+                    'flow_calibration': 1 if flow_calibration else 0
+                }
+            }
+        }
+        
+        print_data = print_request["data"]
+
+        for patcher in self.print_data_patchers:
+            print_data = patcher(print_data)
+
+        print_request["data"] = print_data
+
+        logging.info(f'[Kobra] print data : {json.dumps(print_data)}')
+
+        payload = json.dumps(print_request)
+        
+        # payload = f"""{{
+        #     "type": "print",
+        #     "action": "start",
+        #     "msgid": "{uuid.uuid4()}",
+        #     "timestamp": {round(time.time() * 1000)},
+        #     "data": {{
+        #         "taskid": "-1",
+        #         "filename": "{file}",
+        #         "filetype": 1,
+        #         "task_settings": {{
+        #             "auto_leveling": {'1' if auto_leveling else '0'},
+        #             "vibration_compensation": {'1' if vibration_compensation else '0'},
+        #             "flow_calibration": {'1' if flow_calibration else '0'}
+        #         }}
+        #     }}
+        # }}"""
 
         self.mqtt_print_report = False
         self.mqtt_print_error = None
@@ -284,8 +335,16 @@ class Kobra:
                     # Remove path prefix from file path
                     status['virtual_sdcard']['file_path'] = status['virtual_sdcard']['file_path'].replace('/useremain/app/gk/gcodes/', '')
 
+        for patcher in self.status_patchers:
+            status = patcher(status)
+
         return status
 
+    def register_status_patcher(self, patcher: Callable[[dict], dict]):
+        self.status_patchers.append(patcher)
+
+    def register_print_data_patcher(self, patcher: Callable[[dict], dict]):
+        self.print_data_patchers.append(patcher)
 
     def patch_status_updates(self):
         from .klippy_apis import KlippyAPI
@@ -339,6 +398,24 @@ class Kobra:
         logging.debug(f'  Before: {KlippyRequest.set_result}')
         setattr(KlippyRequest, 'set_result', wrap_set_result(KlippyRequest.set_result))
         logging.debug(f'  After: {KlippyRequest.set_result}')
+        
+        def wrap_request(original_request):
+            async def request(me, web_request: WebRequest) -> Any:
+                rpc_method = web_request.get_endpoint()
+                logging.warning(f'Wrap request method: {rpc_method}')
+                result = await original_request(me, web_request)
+                logging.warning(f'Wrap request method {rpc_method} result type: {type(result)}')
+                if result and isinstance(result, dict):
+                    logging.warning(f'Wrap request method {rpc_method} result: {json.dumps(result)}')
+                if result and isinstance(result, dict) and 'status' in result:
+                    result['status'] = self.patch_status(result['status'])
+                    logging.warning(f'Wrap request method {rpc_method} result status: {json.dumps(result)}')
+                return result
+            return request
+
+        logging.debug(f'  Before: {KlippyConnection.request}')
+        setattr(KlippyConnection, 'request', wrap_request(KlippyConnection.request))
+        logging.debug(f'  After: {KlippyConnection.request}')
 
     def patch_network_interfaces(self):
         from .machine import Machine
@@ -388,26 +465,105 @@ class Kobra:
         setattr(Server, 'get_klippy_info', wrap_get_klippy_info(Server.get_klippy_info))
         logging.debug(f'  After: {Server.get_klippy_info}')
 
-    def patch_mqtt_print(self):
-        from .klippy_apis import KlippyAPI
+    def register_gcode_handler(self, cmd, callback: FlexCallback):
+        logging.info(f'> Registering gcode handler for {cmd}...')
+        self.gcode_handlers[cmd.upper()] = callback
 
-        def wrap_run_gcode(original_run_gcode):
-            async def run_gcode(me, script, default = Sentinel.MISSING):
-                if self.is_goklipper_running() and script.startswith('SDCARD_PRINT_FILE'):
-                    self._total_layer = 0
-                    filename = re.search("FILENAME=\"([^\"]+)\"$", script)
-                    filename = filename[1] if filename else None
-                    if filename and self.is_using_mqtt():
-                        self.mqtt_print_file(filename)
-                        return None
-                return await original_run_gcode(me, script, default)
+    def patch_gcode_handler(self):
+        from .klippy_apis import KlippyAPI
+        from .klippy_connection import KlippyConnection
+
+        async def handle_gcode(me, script, delegate_run_gcode: Callable[[], Coroutine]):
+            parts = [s.strip() for s in shlex.split(script.strip()) if s.strip()]
+            logging.warning(f"hook on gcode received: {json.dumps(parts)}")
+            cmd = parts[0]
+            
+            logging.warning(f"hook on gcode cmd: {cmd}")
+            handlers = self.gcode_handlers.keys()
+            # join handlers
+            handlers = ', '.join(handlers)
+            logging.warning(f"hook on gcode handlers: {handlers}")
+            
+            if cmd in self.gcode_handlers:
+                logging.warning(f"hook on gcode cmd found: {cmd}")
+                args = {}
+                for part in parts[1:]:
+                    if '=' in part:
+                        key, value = part.split('=', 1)
+                        args[key] = value
+                    else:
+                        args[part] = None
+
+                logging.warning(f"hook on gcode args: {json.dumps(args)}")
+                result = await self.gcode_handlers[cmd](args, delegate_run_gcode)
+                result_str = "None" if result is None else "Any"
+                logging.warning(f"hook on gcode result: {result_str}")
+
+                if result is None:
+                    return None
+
+                return await result
+            else:
+                logging.warning(f"hook on gcode cmd not found: {cmd}")
+                return await delegate_run_gcode()
+
+        def wrap_request(original_request: KlippyConnection.request):
+            async def request(me: KlippyConnection, web_request: WebRequest):
+                logging.warning(f"hook on request")
+
+                rpc_method = web_request.get_endpoint()
+                if rpc_method == "gcode/script":
+
+                    script = web_request.get_str('script', "")
+                    if script:
+                        async def delegate_run_gcode():
+                            return await original_request(me, web_request)
+
+                        return await handle_gcode(me, script, delegate_run_gcode)
+
+                return await original_request(me, web_request)
+
+            return request
+
+        def wrap_run_gcode(original_run_gcode: KlippyAPI.run_gcode):
+            async def run_gcode(me: KlippyAPI, script: str, default: Any = Sentinel.MISSING):
+                logging.warning(f"hook on run gcode: {script}")
+
+                async def delegate_run_gcode():
+                    return await original_run_gcode(me, script, default)
+
+                return await handle_gcode(me, script, delegate_run_gcode)
+
             return run_gcode
 
-        logging.info('> Send prints to MQTT...')
+        logging.info('> Adding gcode handler...')
+
+        logging.debug(f'  Before: {KlippyConnection.request}')
+        setattr(KlippyConnection, 'request', wrap_request(KlippyConnection.request))
+        logging.debug(f'  After: {KlippyConnection.request}')
 
         logging.debug(f'  Before: {KlippyAPI.run_gcode}')
         setattr(KlippyAPI, 'run_gcode', wrap_run_gcode(KlippyAPI.run_gcode))
         logging.debug(f'  After: {KlippyAPI.run_gcode}')
+
+    def patch_mqtt_print(self):
+        async def handle_gcode_print_file(args: dict, delegate_run_gcode):
+            logging.info(f'[Kobra] Print file: {args}')
+            if self.is_goklipper_running():
+                self._total_layer = 0
+                filename = args["FILENAME"] if "FILENAME" in args else None
+                logging.info(f'[Kobra] Print file: {filename}')
+                
+                if filename and self.is_using_mqtt():
+                    logging.info(f'[Kobra] MQTT print file: {filename}')
+                    self.mqtt_print_file(filename)
+                    return None
+            
+            logging.info(f'[Kobra] Not MQTT print file: {filename}')
+            return await delegate_run_gcode()
+
+        logging.info('> Send prints to MQTT...')
+        self.register_gcode_handler('SDCARD_PRINT_FILE', handle_gcode_print_file)
 
     def patch_bed_mesh(self):
         from .klippy_connection import KlippyConnection

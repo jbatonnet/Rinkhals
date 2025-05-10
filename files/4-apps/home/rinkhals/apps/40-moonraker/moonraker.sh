@@ -6,6 +6,7 @@ python -m venv --without-pip .
 
 # Copy Kobra component
 cp -rf kobra.py moonraker/moonraker/components/kobra.py
+cp -rf mmu_ace.py moonraker/moonraker/components/mmu_ace.py
 
 # Generate configuration
 [ -f /userdata/app/gk/printer_data/config/moonraker.custom.conf ] || cp moonraker.custom.conf /userdata/app/gk/printer_data/config/moonraker.custom.conf
