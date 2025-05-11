@@ -199,7 +199,9 @@ class RinkhalsUiApp(BaseApp):
         # Leave an empty 24px gap at the top of K2P / K3 screen
         if self.printer_info.model_code == 'K2P' or self.printer_info.model_code == 'K3':
             layer_bottom = lv.display_get_default().get_layer_bottom()
-            layer_bottom.set_style_bg_opa(lv.OPA.TRANSP, lv.STATE.DEFAULT)
+            #layer_bottom.set_style_bg_opa(lv.OPA.TRANSP, lv.STATE.DEFAULT)
+            layer_bottom.set_style_bg_opa(lv.OPA.COVER, lv.STATE.DEFAULT)
+            layer_bottom.set_style_bg_color(lv.color_black(), lv.STATE.DEFAULT)
 
             original_root = self.root_screen
             original_root.set_style_bg_opa(lv.OPA.TRANSP, lv.STATE.DEFAULT)
