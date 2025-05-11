@@ -198,7 +198,7 @@ class ScreenInfo:
             info.height = temp
 
         if printer_info.model_code == 'KS1':
-            info.touch_calibration = [800, 480, 0, 0]
+            info.touch_calibration = [0, 0, 800, 480]
             info.dpi = 180
         else:
             info.touch_calibration = [25, 235, 460, 25]
