@@ -3,7 +3,7 @@
 
     "name": "Fluidd",
     "description": "Free and open-source Klipper web interface for managing your 3d printer. Uses port 4408.",
-    "version": "1.33.0",
+    "version": "1.34.1",
 
     "requirements":
     {

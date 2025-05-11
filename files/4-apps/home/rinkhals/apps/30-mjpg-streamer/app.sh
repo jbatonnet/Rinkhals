@@ -5,7 +5,7 @@ APP_ROOT=$(dirname $(realpath $0))
 status() {
     PIDS=$(get_by_name mjpg_streamer)
 
-    if [ "$PIDS" == "" ]; then
+    if [ "$PIDS" = "" ]; then
         report_status $APP_STATUS_STOPPED
     else
         report_status $APP_STATUS_STARTED "$PIDS"
@@ -23,10 +23,17 @@ start() {
     kill_by_name gkcam
     sleep 1
 
+    RESOLUTION=$(get_app_property 30-mjpg-streamer resolution)
+    if [ "$RESOLUTION" != "" ]; then
+        RESOLUTION="-r $RESOLUTION"
+    else
+        RESOLUTION=""
+    fi
+
     PORT=8080
     for CAMERA in $CAMERAS; do
         #log "Starting mjpg-streamer for $CAMERA on port $PORT"
-        mjpg_streamer -i "/usr/lib/mjpg-streamer/input_uvc.so -d $CAMERA -n" -o "/usr/lib/mjpg-streamer/output_http.so -p $PORT -w /usr/share/mjpg-streamer/www" >> $RINKHALS_ROOT/logs/app-mjpg-streamer.log 2>&1 &
+        mjpg_streamer -i "/usr/lib/mjpg-streamer/input_uvc.so -d $CAMERA $RESOLUTION -n" -o "/usr/lib/mjpg-streamer/output_http.so -p $PORT -w /usr/share/mjpg-streamer/www" >> $RINKHALS_ROOT/logs/app-mjpg-streamer.log 2>&1 &
         wait_for_port $PORT
         PORT=$(($PORT + 1))
     done
@@ -39,7 +46,7 @@ stop() {
     cd /userdata/app/gk
 
     LD_LIBRARY_PATH=/userdata/app/gk:$LD_LIBRARY_PATH \
-        ./gkcam &> $RINKHALS_ROOT/logs/gkcam.log &
+        ./gkcam >> $RINKHALS_ROOT/logs/gkcam.log 2>&1 &
 }
 
 case "$1" in

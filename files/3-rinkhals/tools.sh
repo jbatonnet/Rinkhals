@@ -51,12 +51,12 @@ is_verified_firmware() {
             return
         fi
     elif [ "$KOBRA_MODEL_CODE" = "K3" ]; then
-        if [ "$KOBRA_VERSION" = "2.3.5.3" ] || [ "$KOBRA_VERSION" = "2.3.8" ]; then
+        if [ "$KOBRA_VERSION" = "2.3.9.3" ] || [ "$KOBRA_VERSION" = "2.4.0" ]; then
             echo 1
             return
         fi
     elif [ "$KOBRA_MODEL_CODE" = "KS1" ]; then
-        if [ "$KOBRA_VERSION" = "2.4.8.3" ] || [ "$KOBRA_VERSION" = "2.5.0.2" ] || [ "$KOBRA_VERSION" = "2.5.0.6" ]; then
+        if [ "$KOBRA_VERSION" = "2.5.1.6" ] || [ "$KOBRA_VERSION" = "2.5.2.3" ]; then
             echo 1
             return
         fi
@@ -67,6 +67,7 @@ is_verified_firmware() {
 
 install_swu() {
     SWU_FILE=$1
+    shift
 
     echo "> Extracting $SWU_FILE ..."
 
@@ -76,12 +77,16 @@ install_swu() {
     cd /useremain/update_swu
 
     unzip -P U2FsdGVkX19deTfqpXHZnB5GeyQ/dtlbHjkUnwgCi+w= $SWU_FILE -d /useremain
-    tar -xzf /useremain/update_swu/setup.tar.gz -C /useremain/update_swu
+    if [ -f /useremain/update_swu/setup.tar.gz ]; then
+        tar -xzf /useremain/update_swu/setup.tar.gz -C /useremain/update_swu
+    elif [ -f /useremain/update_swu/setup.tar ]; then
+        tar -xf /useremain/update_swu/setup.tar -C /useremain/update_swu
+    fi
 
     echo "> Running update.sh ..."
 
     chmod +x update.sh
-    ./update.sh
+    ./update.sh $@
 }
 
 get_command_line() {
@@ -390,16 +395,16 @@ stop_app() {
     $APP_ROOT/app.sh stop
 }
 
-list_app_properties() {
-    APP=$1
-    APP_ROOT=$(get_app_root $APP)
+# list_app_properties() {
+#     APP=$1
+#     APP_ROOT=$(get_app_root $APP)
 
-    if [ ! -f $APP_ROOT/app.json ]; then
-        return
-    fi
+#     if [ ! -f $APP_ROOT/app.json ]; then
+#         return
+#     fi
 
-    cat $APP_ROOT/app.json | sed 's/\/\/.*//' | jq -r '.properties | keys[]'
-}
+#     cat $APP_ROOT/app.json | sed 's/\/\/.*//' | jq -r '.properties | keys[]'
+# }
 get_app_property() {
     APP=$1
     PROPERTY=$2
@@ -421,6 +426,10 @@ set_app_property() {
     APP=$1
     PROPERTY=$2
     VALUE=$3
+    
+    if [ ! -d $RINKHALS_HOME/apps ]; then
+        mkdir -p $RINKHALS_HOME/apps
+    fi
 
     CONFIG_PATH=$USER_APP_PATH/$APP.config
     CONFIG=$(cat $CONFIG_PATH 2>/dev/null)
@@ -440,4 +449,28 @@ set_temporary_app_property() {
     CONFIG=${CONFIG:-'{}'}
 
     echo $CONFIG | jq ".$PROPERTY = \"$VALUE\"" > $TEMPORARY_CONFIG_PATH
+}
+remove_app_property() {
+    APP=$1
+    PROPERTY=$2
+    
+    if [ ! -d $RINKHALS_HOME/apps ]; then
+        return
+    fi
+
+    CONFIG_PATH=$USER_APP_PATH/$APP.config
+    CONFIG=$(cat $CONFIG_PATH 2>/dev/null)
+    CONFIG=${CONFIG:-'{}'}
+
+    echo $CONFIG | jq "del(.$PROPERTY)" > $CONFIG_PATH
+}
+clear_app_properties() {
+    APP=$1
+    
+    if [ ! -d $RINKHALS_HOME/apps ]; then
+        return
+    fi
+
+    CONFIG_PATH=$USER_APP_PATH/$APP.config
+    rm $CONFIG_PATH 2>/dev/null
 }

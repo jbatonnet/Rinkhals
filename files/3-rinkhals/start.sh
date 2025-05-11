@@ -268,6 +268,12 @@ sleep 2
 
 ./gkapi >> $RINKHALS_ROOT/logs/gkapi.log 2>&1 &
 ./K3SysUi >> $RINKHALS_ROOT/logs/K3SysUi.log 2>&1 &
+
+# On the kobra 2 pro this sleep causes that filement extrude does not work and auto leveling crashes. (https://github.com/jbatonnet/Rinkhals/issues/155)
+if [ "$KOBRA_MODEL_CODE" != "K2P" ]; then
+ sleep 2
+fi
+
 ./gkcam >> $RINKHALS_ROOT/logs/gkcam.log 2>&1 &
 
 for TARGET in $TARGETS; do

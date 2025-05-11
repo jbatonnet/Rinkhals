@@ -8,7 +8,8 @@ prepare_tgz() {
     rm -rf $SWU_DIR/update_swu/*
 
     cd $UPDATE_DIRECTORY
-    tar -czf $SWU_DIR/update_swu/setup.tar.gz --exclude='setup.tar.gz' .
+    tar -cf $SWU_DIR/update_swu/setup.tar --exclude='setup.tar' .
+    gzip $SWU_DIR/update_swu/setup.tar
 }
 compress_swu() {
     KOBRA_MODEL_CODE=$1
