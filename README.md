@@ -36,16 +36,16 @@ Since people have been asking, I accept donations but please remember that I wor
 ## How to install Rinkhals
 
 > [!WARNING]
-> **Make sure you're confident tweaking your printer and you understand what you're doing. I'm not responsible if you brick your printer (even if there's some [documentation](https://github.com/jbatonnet/Rinkhals/wiki/Boot-issues) about that)**
+> **Make sure you're confident tweaking your printer and you understand what you're doing. I'm not responsible if you brick your printer (even if there's some [documentation](https://jbatonnet.github.io/Rinkhals/Kobra%20Printers/recover-boot-issues/) about that)**
 
 > [!CAUTION]
-> Many users want to change their Klipper printer configuration (the printer.cfg file). I strongly advise not modifying the stock printer configuration. Rinkhals offers additional protection you don't have while modifying directly your printer configuration. **I won't offer any support** and **your printer might not work properly or not boot anymore**. Check the Wiki for more information: [Printer configuration](https://github.com/jbatonnet/Rinkhals/wiki/Rinkhals-%E2%80%90-Printer-configuration)
+> Many users want to change their Klipper printer configuration (the printer.cfg file). I strongly advise not modifying the stock printer configuration. Rinkhals offers additional protection you don't have while modifying directly your printer configuration. **I won't offer any support** and **your printer might not work properly or not boot anymore**. Check the documentation for more information: [Printer configuration](https://jbatonnet.github.io/Rinkhals/Rinkhals/printer-configuration/)
 
 Rinkhals uses an overlay system to keep its modifications isolated from the stock firmware. This way it's easier to revert back to stock if needed, or use multiple versions in parrallel.
 
 Download the release you want from the [Releases](https://github.com/jbatonnet/Rinkhals/releases) page, rename it as **update.swu** in a directory named **aGVscF9zb3Nf** on a FAT32 USB drive.
 
-For more information about installation, firmware updates and details about specific situations, go to https://github.com/jbatonnet/Rinkhals/wiki/Rinkhals-%E2%80%90-Installation-and-firmware-updates
+For more information about installation, firmware updates and details about specific situations, go to https://jbatonnet.github.io/Rinkhals/Rinkhals/installation-and-firmware-updates/
 
 ## Touch UI
 
@@ -84,9 +84,9 @@ Instructions on how to install or develop apps are on the other repo as well.
 
 ## Documentation / Known issues
 
-The [wiki](https://github.com/jbatonnet/Rinkhals/wiki) is a collection of documentation, reverse engineering and notes about the printer and development, don't forget to [check it out](https://github.com/jbatonnet/Rinkhals/wiki)!
+The [documentation](https://jbatonnet.github.io/Rinkhals) is a collection of documentation, reverse engineering and notes about the printer and development, don't forget to [check it out](https://jbatonnet.github.io/Rinkhals)!
 
-If your printer shows a 11407 error, check the wiki there: [See the wiki about error 11407](https://github.com/jbatonnet/Rinkhals/wiki/Firmware#my-printer-shows-a-11407-error)
+If your printer shows a 11407 error, check the documentation there: [Read about error 11407](https://jbatonnet.github.io/Rinkhals/Rinkhals/faq/#my-printer-is-stuck-with-error-11407)
 
 ## SWU tools
 
@@ -114,7 +114,7 @@ Here are the tools available:
 > Run `git config core.autocrlf false` **BEFORE** cloning the repo
 
 You will need either a Linux machine or a Windows machine with Docker.
-Read the documentation in the Wiki and join us on Discord to discuss development!
+Read the documentation and join us on Discord to discuss development!
 
 
 ## Thanks
