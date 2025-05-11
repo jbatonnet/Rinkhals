@@ -191,6 +191,19 @@ RUN chmod +x /build/get-novnc.sh && \
     /build/get-novnc.sh
 
 ###############################################################
+# tool-installer prepares Installer tool files
+FROM build-base AS tool-installer
+COPY ./build/swu-tools/installer/ /build/swu-tools/installer/
+COPY ./build/*.* /build/
+COPY --from=buildroot-rebuild /files/1-buildroot/ /files/1-buildroot/
+COPY --from=build-python-armv7 /files/2-python/ /files/2-python/
+COPY ./files/3-rinkhals/ /files/3-rinkhals/
+COPY ./files/*.* /files/
+RUN chmod +x /build/swu-tools/installer/build-swu.sh
+RUN KOBRA_MODEL_CODE=K3 /build/swu-tools/installer/build-swu.sh /swu/installer-k2p-k3.swu
+RUN KOBRA_MODEL_CODE=KS1 /build/swu-tools/installer/build-swu.sh /swu/installer-ks1.swu
+
+###############################################################
 # prepare-bundle collects all files and prepares a bundle
 FROM build-base AS prepare-bundle
 
@@ -267,4 +280,5 @@ EOT
 ###############################################################
 # swu-export creates the firmware updates export image
 FROM scratch AS swu-export
+COPY --from=tool-installer /swu/ /
 COPY --from=build-swu /swu/ /

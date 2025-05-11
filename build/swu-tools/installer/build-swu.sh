@@ -49,7 +49,7 @@ cp -r /files/3-rinkhals/opt/rinkhals/tools /tmp/update_swu/
 cp /files/3-rinkhals/opt/rinkhals/scripts/check-updates.py /tmp/update_swu/check_updates.py
 cp /files/start.sh.patch /tmp/update_swu/start.sh.patch
 cp /files/3-rinkhals/opt/rinkhals/ui/*.* /tmp/update_swu/
-cp /build/swu-tools/installer/update.sh /tmp/update_swu/update.sh
+cp $BUILD_ROOT/update.sh /tmp/update_swu/update.sh
 
 # Clean Python
 rm -rf /tmp/update_swu/lib/python3.11/config-3.11-arm-linux-gnueabihf
@@ -63,7 +63,7 @@ rm -rf /tmp/update_swu/lvgl/*.dll
 # cd /tmp/update_swu/lib/python3.11
 # zip -r /tmp/update_swu/python.zip .
 # rm -rf /tmp/update_swu/lib
-# cp /build/swu-tools/installer/python._pth /tmp/update_swu/python._pth
+# cp BUILD_ROOT/python._pth /tmp/update_swu/python._pth
 # cp -r /files/1-buildroot/usr/lib/python3.11/lib-dynload/zlib.cpython-311-arm-linux-gnueabihf.so /tmp/update_swu/zlib.cpython-311-arm-linux-gnueabihf.so
 
 # Python libraries

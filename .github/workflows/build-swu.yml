@@ -40,7 +40,7 @@ jobs:
         name: update-k2p-k3
         compression-level: 0
         path: |
-          build/dist/update-k2p-k3.swu
+          build/dist/*-k2p-k3.swu
 
     - name: Upload artifact for KS1
       uses: actions/upload-artifact@v4
@@ -48,4 +48,4 @@ jobs:
         name: update-ks1
         compression-level: 0
         path: |
-          build/dist/update-ks1.swu
+          build/dist/*-ks1.swu
