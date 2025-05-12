@@ -27,8 +27,14 @@ rm $TMP_PATH/*.zip 2> /dev/null
 
 cd $TMP_PATH
 DATE=$(date '+%Y%m%d-%H%M%S')
-zip -r config-backup-${DATE}.zip .
+BACKUP_NAME=config-backup-${DATE}.zip
+zip -r $BACKUP_NAME .
 
+cp $BACKUP_NAME /useremain/home/rinkhals/printer_data/config/
+if [ -e /mnt/udisk ]; then
+    mkdir -p /mnt/udisk/aGVscF9zb3Nf
+    cp $BACKUP_NAME /mnt/udisk/aGVscF9zb3Nf/
+fi
 
 # Restore default config
 RINKHALS_HOME=/useremain/home/rinkhals

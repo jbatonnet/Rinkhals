@@ -48,6 +48,7 @@ chmod +x $TMP_TOOL_PATH/ld-uClibc
 chmod +x $TMP_TOOL_PATH/python
 chmod +x $TMP_TOOL_PATH/dropbear
 chmod +x $TMP_TOOL_PATH/sftp-server
+chmod +x $TMP_TOOL_PATH/tools/*.sh
 
 # Start SSH async
 nohup $0 ssh > /dev/null &
