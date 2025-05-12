@@ -3,6 +3,11 @@
 UPDATE_PATH="/useremain/update_swu"
 TMP_TOOL_PATH="/tmp/rin"
 
+if [ -f /useremain/rinkhals/.reboot-marker ]; then
+    rm /useremain/rinkhals/.reboot-marker
+    exit 0
+fi
+
 if [ "$1" == "ssh" ]; then
     # Kill anything on port 2222
     INODE=$(cat /proc/net/tcp | grep 00000000:08AE | awk '/.*:.*:.*/{print $10;}')

@@ -1285,6 +1285,17 @@ class RinkhalsInstallApp(BaseApp):
 
                 if not USING_SIMULATOR:
                     logging.info('Starting Rinkhals update...')
+
+                    # Patch the update script
+                    with open('/useremain/update_swu/update.sh', 'r+') as f:
+                        update_script = f.read()
+                        update_script = update_script.replace('rm -f $USB_PATH/update.swu', '')
+                        #update_script = update_script.replace('reboot', 'echo')
+
+                        f.truncate(0)
+                        f.seek(0)
+                        f.write(update_script)
+
                     system('/useremain/update_swu/update.sh &')
                 else:
                     time.sleep(1)
@@ -1485,6 +1496,9 @@ class RinkhalsInstallApp(BaseApp):
                                     system(f'cat {SCRIPT_PATH}/start.sh.patch >> /userdata/app/gk/start.sh')
                         if os.path.exists('/userdata/app/gk/restart_k3c.sh'):
                             system(f'cat {SCRIPT_PATH}/start.sh.patch >> /userdata/app/gk/restart_k3c.sh')
+
+                    os.makedirs('/useremain/rinkhals', exist_ok=True)
+                    open('/useremain/rinkhals/.reboot-marker', 'w').close()
 
                     system('reboot')
                 else:

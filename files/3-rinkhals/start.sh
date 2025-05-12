@@ -63,6 +63,7 @@ log " --------------------------------------------------"
 echo
 
 touch /useremain/rinkhals/.disable-rinkhals
+rm /useremain/rinkhals/.reboot-marker 2> /dev/null
 
 VERIFIED_FIRMWARE=$(is_verified_firmware)
 if [ "$VERIFIED_FIRMWARE" != "1" ] && [ ! -f /mnt/udisk/.enable-rinkhals ] && [ ! -f /useremain/rinkhals/.enable-rinkhals ]; then
