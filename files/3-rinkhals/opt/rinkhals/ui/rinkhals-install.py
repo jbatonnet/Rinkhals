@@ -51,7 +51,7 @@ class Tool:
 tools = [
     tool_debug_bundle := Tool('Generate a Debug Bundle', '', 'debug-bundle.sh', 'This tool will generate a debug bundle on the attached USB drive.\nIt will take 10 to 15 seconds. Do you want to proceed?', 'Yes'),
     tool_reset_config := Tool('Reset Rinkhals configuration', '', 'config-reset.sh', 'This tool will reset all Rinkhals configuration. Your printer will be like the first time you installed Rinkhals.\nYour printer will then reboot. Do you want to proceed?', 'Yes', lvr.COLOR_DANGER),
-    tool_backup_partitions := Tool('Backup partitions', '', 'backup-partition.sh', 'This tool will backup your printer /userdata and /useremain partition on the attached USB drive.\nIt will take up to a minute. Do you want to proceed?', 'Yes'),
+    tool_backup_partitions := Tool('Backup partitions', '', 'backup-partitions.sh', 'This tool will backup your printer /userdata and /useremain partition on the attached USB drive.\nIt will take up to a minute. Do you want to proceed?', 'Yes'),
     tool_clean_rinkhals := Tool('Clean old Rinkhals', '', 'clean-rinkhals.sh', 'This tool will remove old installed Rinkhals versions. 2 versions and the current one will be kept. Do you want to proceed?', 'Yes'),
     tool_uninstall_rinkhals := Tool('Uninstall Rinkhals', '', 'rinkhals-uninstall.sh', 'This tool will completely uninstall Rinkhals from your printer. Do you want to proceed?', 'Yes', lvr.COLOR_DANGER),
     #tool_factory_reset := Tool('Factory reset', '', 'factory-reset.sh', 'The tool will factory reset your printer', 'Yes', lvr.COLOR_DANGER),
@@ -990,6 +990,22 @@ class RinkhalsInstallApp(BaseApp):
             self.screen_diagnostics.panel_diagnostics.clean()
             lv.unlock()
 
+            if not self.diagnostics_cache:
+                lv.lock()
+                panel_text = lvr.panel(self.screen_diagnostics.panel_diagnostics)
+                panel_text.set_size(lv.pct(100), lv.dpx(150))
+
+                label_text = lvr.label(panel_text)
+                label_text.set_text('No issues have been found on your printer')
+                label_text.set_style_text_color(lvr.COLOR_DISABLED, lv.STATE.DEFAULT)
+                label_text.set_width(lv.pct(80))
+                label_text.set_align(lv.ALIGN.CENTER)
+                label_text.set_style_text_align(lv.TEXT_ALIGN.CENTER, lv.STATE.DEFAULT)
+                label_text.set_long_mode(lv.LABEL_LONG_MODE.WRAP)
+                lv.unlock()
+
+                return
+
             for d in self.diagnostics_cache:
                 lv.lock()
 
@@ -1048,10 +1064,13 @@ class RinkhalsInstallApp(BaseApp):
             lv.unlock()
 
             try:
+                logging.info(f'Starting tool {tool.name}...')
                 tool_path = os.path.join(TOOLS_PATH, tool.command)
                 result = shell(tool_path)
+                logging.info(f'Tool exited with code {result}')
             except:
-                time.sleep(2)
+                if USING_SIMULATOR:
+                    time.sleep(2)
                 pass
 
             lv.lock()
