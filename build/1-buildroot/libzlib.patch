@@ -1,0 +1,38 @@
+Update zlib because old version is not available at normal download location anymore.
+
+diff --git a/package/libzlib/libzlib.hash b/package/libzlib/libzlib.hash
+index 23bfda84749f..cbd93138704e 100644
+--- a/package/libzlib/libzlib.hash
++++ b/package/libzlib/libzlib.hash
+@@ -1,4 +1,4 @@
+ # From http://www.zlib.net/
+-sha256  d14c38e313afc35a9a8760dadf26042f51ea0f5d154b0630a31da0540107fb98  zlib-1.2.13.tar.xz
++sha256  38ef96b8dfe510d42707d9c781877914792541133e1870841463bfa73f883e32  zlib-1.3.1.tar.xz
+ # License files, locally calculated
+ sha256  845efc77857d485d91fb3e0b884aaa929368c717ae8186b66fe1ed2495753243  LICENSE
+diff --git a/package/libzlib/libzlib.mk b/package/libzlib/libzlib.mk
+index e0a4e454e1ca..bc5092d9a935 100644
+--- a/package/libzlib/libzlib.mk
++++ b/package/libzlib/libzlib.mk
+@@ -4,7 +4,7 @@
+ #
+ ################################################################################
+
+-LIBZLIB_VERSION = 1.2.13
++LIBZLIB_VERSION = 1.3.1
+ LIBZLIB_SOURCE = zlib-$(LIBZLIB_VERSION).tar.xz
+ LIBZLIB_SITE = http://www.zlib.net
+ LIBZLIB_LICENSE = Zlib
+diff --git a/package/libzlib/libzlib.mk b/package/libzlib/libzlib.mk
+index da452af8e9ec..e0a4e454e1ca 100644
+--- a/package/libzlib/libzlib.mk
++++ b/package/libzlib/libzlib.mk
+@@ -6,7 +6,7 @@
+
+ LIBZLIB_VERSION = 1.3.1
+ LIBZLIB_SOURCE = zlib-$(LIBZLIB_VERSION).tar.xz
+-LIBZLIB_SITE = http://www.zlib.net
++LIBZLIB_SITE = https://www.zlib.net
+ LIBZLIB_LICENSE = Zlib
+ LIBZLIB_LICENSE_FILES = LICENSE
+ LIBZLIB_INSTALL_STAGING = YES

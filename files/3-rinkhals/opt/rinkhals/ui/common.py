@@ -299,7 +299,8 @@ class Rinkhals:
                         # Try to find asset matching current model code
                         asset_url = None
                         for asset in assets:
-                            if printer_info.model_code.lower() in asset.get('name', '').lower():
+                            asset_name = asset.get('name', '').lower()
+                            if 'update' in asset_name and printer_info.model_code.lower() in asset_name:
                                 asset_url = asset.get('browser_download_url', '')
                                 break
                         if not asset_url:

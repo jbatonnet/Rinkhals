@@ -1,18 +1,16 @@
 #!/bin/sh
 
-# Run from Docker:
-#   docker run --rm -it -v .\build:/build -v .\files:/files ghcr.io/jbatonnet/rinkhals/build /build/4-apps/40-moonraker/get-moonraker.sh
+# Used by main Dockerfile
+
+set -e
 
 mkdir /work
 cd /work
 
-
 MOONRAKER_COMMIT=ebaa6645b2bcaa593d99e863530c52a84c69b470
 MOONRAKER_DIRECTORY=/files/4-apps/home/rinkhals/apps/40-moonraker
 
-
 echo "Downloading Moonraker..."
-
 wget -O moonraker.zip https://github.com/Arksine/moonraker/archive/${MOONRAKER_COMMIT}.zip
 unzip -d moonraker moonraker.zip
 

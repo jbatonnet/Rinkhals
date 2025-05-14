@@ -1,38 +1,41 @@
 #!/bin/sh
 
 # Copy all files
-mkdir -p ./output/final
-rm -rf ./output/final/*
-cp -pr ./output/target/* ./output/final/
+mkdir -p /files/1-buildroot
+rm -rf /files/1-buildroot/*
+cp -pr ./output/target/* /files/1-buildroot/
 
 # Clean unused files
-rm -rf ./output/final/dev
-rm -rf ./output/final/lib32
-rm -rf ./output/final/media
-rm -rf ./output/final/mnt
-rm -rf ./output/final/opt
-rm -rf ./output/final/proc
-rm -rf ./output/final/root
-rm -rf ./output/final/run
-rm -rf ./output/final/sys
-rm -rf ./output/final/share
-rm -rf ./output/final/tmp
-rm -rf ./output/final/usr/lib32
-rm -rf ./output/final/var
-rm ./output/final/THIS_IS_NOT_YOUR_ROOT_FILESYSTEM
+rm -rf /files/1-buildroot/dev
+rm -rf /files/1-buildroot/lib32
+rm -rf /files/1-buildroot/media
+rm -rf /files/1-buildroot/mnt
+rm -rf /files/1-buildroot/opt
+rm -rf /files/1-buildroot/proc
+rm -rf /files/1-buildroot/root
+rm -rf /files/1-buildroot/run
+rm -rf /files/1-buildroot/sys
+rm -rf /files/1-buildroot/share
+rm -rf /files/1-buildroot/tmp
+rm -rf /files/1-buildroot/usr/lib32
+rm -rf /files/1-buildroot/var
+rm /files/1-buildroot/THIS_IS_NOT_YOUR_ROOT_FILESYSTEM
 
 # Clean /etc except for ssl
-for dir in ./output/final/etc/*; do
-    [ "$dir" = "./output/final/etc/ssl" ] && continue
+for dir in /files/1-buildroot/etc/*; do
+    [ "$dir" = "/files/1-buildroot/etc/ssl" ] && continue
     rm -rf "$dir"
 done
 
+# Create certificate bundle
+cat /files/1-buildroot/etc/ssl/certs/*.pem > /files/1-buildroot/etc/ssl/cert.pem
+
 # Clean GCC copies
-rm -rf ./output/final/usr/bin/arm-buildroot-linux-uclibcgnueabihf-*
+rm -rf /files/1-buildroot/usr/bin/arm-buildroot-linux-uclibcgnueabihf-*
 
 # Clean python packages
-rm -rf ./output/final/usr/lib/python3.11/site-packages/*
-rm -rf ./output/final/usr/lib/python3.*/site-packages/*
+rm -rf /files/1-buildroot/usr/lib/python3.11/site-packages/*
+rm -rf /files/1-buildroot/usr/lib/python3.*/site-packages/*
 
 # Clean python .pyc files
-find ./output/final/usr/lib/python3.* -name '*.pyc' -type f -delete
+find /files/1-buildroot/usr/lib/python3.* -name '*.pyc' -type f -delete

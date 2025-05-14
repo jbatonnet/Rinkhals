@@ -1,0 +1,39 @@
+diff --git a/lib/micropython-lib/unix-ffi/machine/machine/timer.py b/lib/micropython-lib/unix-ffi/machine/machine/timer.py
+index 3f37114..e0921f3 100644
+--- a/lib/micropython-lib/unix-ffi/machine/machine/timer.py
++++ b/lib/micropython-lib/unix-ffi/machine/machine/timer.py
+@@ -5,7 +5,7 @@ import os
+ from signal import *
+
+ libc = ffilib.libc()
+-librt = ffilib.open("librt")
++librt = libc
+
+ CLOCK_REALTIME = 0
+ CLOCK_MONOTONIC = 1
+diff --git a/user_modules/lv_binding_micropython/driver/linux/lv_timer.py b/user_modules/lv_binding_micropython/driver/linux/lv_timer.py
+index 83040ae..a96a891 100644
+--- a/user_modules/lv_binding_micropython/driver/linux/lv_timer.py
++++ b/user_modules/lv_binding_micropython/driver/linux/lv_timer.py
+@@ -8,6 +8,7 @@
+
+
+ import ffi
++import ffilib
+ import uctypes
+ import array
+ import os
+@@ -15,11 +16,8 @@ import sys
+
+ # FFI libraries
+
+-libc = ffi.open("libc.so.6")
+-try:
+-    librt = ffi.open("librt.so")
+-except OSError as e:
+-    librt = libc
++libc = ffilib.libc()
++librt = libc
+
+
+ # C constants

@@ -40,3 +40,6 @@ fi
 
 # Beep to notify completion
 beep 500
+
+sync 2> /dev/null
+reboot

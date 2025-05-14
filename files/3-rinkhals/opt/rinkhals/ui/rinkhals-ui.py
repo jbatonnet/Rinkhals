@@ -199,7 +199,9 @@ class RinkhalsUiApp(BaseApp):
         # Leave an empty 24px gap at the top of K2P / K3 screen
         if self.printer_info.model_code == 'K2P' or self.printer_info.model_code == 'K3':
             layer_bottom = lv.display_get_default().get_layer_bottom()
-            layer_bottom.set_style_bg_opa(lv.OPA.TRANSP, lv.STATE.DEFAULT)
+            #layer_bottom.set_style_bg_opa(lv.OPA.TRANSP, lv.STATE.DEFAULT)
+            layer_bottom.set_style_bg_opa(lv.OPA.COVER, lv.STATE.DEFAULT)
+            layer_bottom.set_style_bg_color(lv.color_black(), lv.STATE.DEFAULT)
 
             original_root = self.root_screen
             original_root.set_style_bg_opa(lv.OPA.TRANSP, lv.STATE.DEFAULT)
@@ -270,6 +272,11 @@ class RinkhalsUiApp(BaseApp):
             button_settings.set_text('Advanced settings')
             button_settings.set_style_text_color(lvr.COLOR_DANGER, lv.STATE.DEFAULT)
             button_settings.add_event_cb(lambda e: self.show_screen(self.screen_advanced), lv.EVENT_CODE.CLICKED, None)
+
+        fireworks_shown = get_app_property('rinkhals_ui', 'fireworks_shown')
+        if not fireworks_shown or fireworks_shown.lower() != 'true':
+            set_app_property('rinkhals_ui', 'fireworks_shown', 'True')
+            self.show_fireworks()
 
         self.show_screen(self.screen_main)
         run_async(self.layout_async)
@@ -1079,6 +1086,139 @@ class RinkhalsUiApp(BaseApp):
 
         self.root_modal.add_event_cb(lambda e: self.hide_modal(), lv.EVENT_CODE.CLICKED, None)
         self.show_modal(self.modal_selection)
+    def show_fireworks(self):
+        import random
+
+        layer_top = lv.display_get_default().get_layer_top()
+        layer_top.remove_flag(lv.OBJ_FLAG.SCROLLABLE)
+
+        panel_fireworks = lvr.panel(layer_top)
+        panel_fireworks.remove_flag(lv.OBJ_FLAG.SCROLLABLE)
+
+        self.fireworks_hidden = False
+
+        rocket_margin = lv.dpx(30)
+
+        class Rocket:
+            object = None
+            color = None
+            animation = None
+            target = None
+            stars = None
+        class Star:
+            animation = None
+            object = None
+            position = None
+            velocity = None
+
+        def make_star(rocket):
+            star = Star()
+
+            star.object = lv.obj(panel_fireworks)
+            star.object.set_size(lv.dpx(8), lv.dpx(8))
+            star.object.set_style_radius(lv.dpx(3), lv.STATE.DEFAULT)
+            star.object.set_style_bg_color(rocket.color, lv.STATE.DEFAULT)
+            star.object.set_style_border_opa(lv.OPA.TRANSP, lv.STATE.DEFAULT)
+            star.object.set_pos(int(rocket.target[0]), int(rocket.target[1]))
+
+            star.position = [rocket.target[0], rocket.target[1]]
+            star.velocity = [(random.random() - 0.5) * 3, random.random() * 3]
+            
+            def star_animation_cb(o, value, star=star):
+                star.velocity[1] -= 0.05
+                star.position[0] = star.position[0] + star.velocity[0]
+                star.position[1] = star.position[1] - star.velocity[1]
+                star.object.set_pos(int(star.position[0]), int(star.position[1]))
+                star.object.set_style_bg_opa(255 - value * 2, lv.STATE.DEFAULT)
+
+            def star_completed_cb(e, star=star):
+                star.animation.delete(None)
+                star.object.delete()
+            
+            star.animation = lv.anim()
+            star.animation.set_exec_cb(star_animation_cb)
+            star.animation.set_completed_cb(star_completed_cb)
+            star.animation.set_duration(1500)
+            star.animation.set_values(0, 100)
+            star.animation.start()
+        def make_rocket():
+            rocket = Rocket()
+
+            rocket.color = lv.color_make(random.randint(64, 255), random.randint(64, 255), random.randint(64, 255))
+            rocket.target = [random.randint(rocket_margin, self.screen_info.width - rocket_margin), random.randint(rocket_margin, self.screen_info.height / 2)]
+
+            rocket.object = lv.obj(panel_fireworks)
+            rocket.object.set_size(lv.dpx(6), lv.dpx(6))
+            rocket.object.set_style_radius(lv.dpx(3), lv.STATE.DEFAULT)
+            rocket.object.set_style_bg_color(rocket.color, lv.STATE.DEFAULT)
+            rocket.object.set_style_border_opa(lv.OPA.TRANSP, lv.STATE.DEFAULT)
+
+            def rocket_animation_cb(o, value, rocket=rocket):
+                x = self.screen_info.width / 2 + (rocket.target[0] - self.screen_info.width / 2) * value / 100
+                y = self.screen_info.height - (self.screen_info.height - rocket.target[1]) * value / 100
+                rocket.object.set_pos(int(x), int(y))
+
+            def rocket_completed_cb(e, rocket=rocket):
+                if self.fireworks_hidden:
+                    return
+                rocket.stars = [ make_star(rocket) for i in range(8) ]
+                rocket.target = [random.randint(rocket_margin, self.screen_info.width - rocket_margin), random.randint(rocket_margin, self.screen_info.height / 2)]
+                rocket.color = lv.color_make(random.randint(64, 255), random.randint(64, 255), random.randint(64, 255))
+                rocket.object.set_style_bg_color(rocket.color, lv.STATE.DEFAULT)
+                rocket.animation.start()
+
+            rocket.animation = lv.anim()
+            rocket.animation.set_exec_cb(rocket_animation_cb)
+            rocket.animation.set_completed_cb(rocket_completed_cb)
+            rocket.animation.set_delay(random.randint(0, 2000))
+            rocket.animation.set_duration(random.randint(1200, 2400))
+            rocket.animation.set_values(0, 100)
+            rocket.animation.set_path_cb(lv.anim_path_ease_out)
+            rocket.animation.start()
+
+        rockets = [ make_rocket() for i in range(6) ]
+
+        colors = [
+            lvr.COLOR_BACKGROUND,
+            lv.color_mix(lvr.COLOR_BACKGROUND, lvr.COLOR_PRIMARY, 224)
+        ]
+        opas = [
+            lv.OPA.TRANSP.value,
+            lv.OPA.COVER.value
+        ]
+        fracs = [
+            0,
+            48
+        ]
+
+        grad_dsc = lv.grad_dsc()
+        grad_dsc.init_stops(colors, opas, fracs, len(colors))
+        grad_dsc.vertical_init()
+
+        panel_message = lvr.panel(layer_top, lv.FLEX_FLOW.COLUMN)
+        panel_message.set_flex_align(lv.FLEX_ALIGN.END, lv.FLEX_ALIGN.CENTER, lv.FLEX_ALIGN.CENTER)
+        panel_message.set_size(lv.pct(100), lv.dpx(300))
+        panel_message.set_align(lv.ALIGN.BOTTOM_MID)
+        panel_message.remove_flag(lv.OBJ_FLAG.SCROLLABLE)
+        panel_message.set_style_bg_grad(grad_dsc, lv.STATE.DEFAULT)
+        panel_message.set_style_bg_opa(lv.OPA.COVER, lv.STATE.DEFAULT)
+
+        label_text = lvr.label(panel_message)
+        label_text.set_text('\n\nRinkhals has now reached 1000 community members and 256 GitHub stars.\nThank you for your interest in this project!\nHave fun priting :) Julien\n')
+        label_text.set_width(lv.pct(100))
+        label_text.set_style_text_font(lvr.get_font_subtitle(), lv.STATE.DEFAULT)
+        label_text.set_long_mode(lv.LABEL_LONG_MODE.WRAP)
+        label_text.set_style_text_align(lv.TEXT_ALIGN.CENTER, lv.STATE.DEFAULT)
+
+        def close_fireworks(e, panel_fireworks=panel_fireworks, panel_message=panel_message):
+            self.fireworks_hidden = True
+            panel_fireworks.add_flag(lv.OBJ_FLAG.HIDDEN)
+            panel_message.delete()
+
+        button_close = lvr.button(panel_message)
+        button_close.set_text('Yay! Let me print now!')
+        button_close.add_event_cb(close_fireworks, lv.EVENT_CODE.CLICKED, None)
+        button_close.set_style_margin_bottom(lv.dpx(15), lv.STATE.DEFAULT)
 
     def enable_app(self, app):
         logging.info(f'Enabling {app}...')

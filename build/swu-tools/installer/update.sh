@@ -3,6 +3,11 @@
 UPDATE_PATH="/useremain/update_swu"
 TMP_TOOL_PATH="/tmp/rin"
 
+if [ -f /useremain/rinkhals/.reboot-marker ]; then
+    rm /useremain/rinkhals/.reboot-marker
+    exit 0
+fi
+
 if [ "$1" == "ssh" ]; then
     # Kill anything on port 2222
     INODE=$(cat /proc/net/tcp | grep 00000000:08AE | awk '/.*:.*:.*/{print $10;}')
@@ -43,6 +48,7 @@ chmod +x $TMP_TOOL_PATH/ld-uClibc
 chmod +x $TMP_TOOL_PATH/python
 chmod +x $TMP_TOOL_PATH/dropbear
 chmod +x $TMP_TOOL_PATH/sftp-server
+chmod +x $TMP_TOOL_PATH/tools/*.sh
 
 # Start SSH async
 nohup $0 ssh > /dev/null &

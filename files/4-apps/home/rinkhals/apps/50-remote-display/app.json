@@ -1,0 +1,13 @@
+{
+    "$version": "1",
+
+    "name": "Remote Display",
+    "description": "Enables VNC server running on port 5900 and client web application (noVNC) running on port 5800. Warning: This app is CPU-intensive, so connecting to VNC is not recommended while printing.",
+    "version": "1.0.0",
+
+    "requirements":
+    {
+        "memory": 4,
+        "cpu": 10
+    }
+}

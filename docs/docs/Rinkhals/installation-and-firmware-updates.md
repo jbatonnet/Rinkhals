@@ -29,6 +29,16 @@ On the Kobra series of 3D printer, it's possible to sideload .swu files to insta
     - If the progress bar turns green and you hear 2 beeps, the printer reboots and Rinkhals is installed
     - If the progress bar turns red and you ear 3 beeps, the installation failed but everything should still work as usual. You will then find more information in the `aGVscF9zb3Nf/install.log` file on the USB drive
 
+## How to uninstall Rinkhals
+
+To quickly uninstall Rinkhals, use the Rinkhals installer as instructed on the home page.
+
+To uninstall it manually:
+1. **Disable Rinkhals** by disabling from the touch UI or by creating a .disable-rinkhals file on a USB drive or at this location: /useremain/rinkhals/.disable-rinkhals
+2. **Reboot your printer**, it will boot the stock firmware
+3. If you want, you can **delete Rinkhals** by deleting the /useremain/rinkhals directory
+
+
 ## Special note for Kobra 2 Pro [Mainbord Trigorilla Spe B v1.0.x] with Firmware 3.1.4
 
 There are a number of issues with stock firmware 3.1.4 on the Kobra 2 Pro. You will need to downgrade to firmware 3.1.2.3 in order to install Rinkhals.

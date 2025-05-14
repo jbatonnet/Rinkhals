@@ -75,7 +75,10 @@ zip -r debug-bundle.zip .
 DATE=$(date '+%Y%m%d-%H%M%S')
 ID=$(cat /useremain/dev/device_id | cksum | cut -f 1 -d ' ')
 
-cp debug-bundle.zip /mnt/udisk/aGVscF9zb3Nf/debug-bundle_${ID}_${DATE}.zip
+if [ -e /mnt/udisk ]; then
+    mkdir -p /mnt/udisk/aGVscF9zb3Nf
+    cp debug-bundle.zip /mnt/udisk/aGVscF9zb3Nf/debug-bundle_${ID}_${DATE}.zip
+fi
 
 # Cleanup
 cd
