@@ -33,7 +33,7 @@ Since people have been asking, I accept donations but please remember that I wor
 </p>
 
 
-## How to install Rinkhals
+## Rinkhals installer
 
 > [!WARNING]
 > **Make sure you're confident tweaking your printer and you understand what you're doing. I'm not responsible if you brick your printer (even if there's some [documentation](https://jbatonnet.github.io/Rinkhals/Kobra%20Printers/recover-boot-issues/) about that)**
@@ -41,11 +41,20 @@ Since people have been asking, I accept donations but please remember that I wor
 > [!CAUTION]
 > Many users want to change their Klipper printer configuration (the printer.cfg file). I strongly advise not modifying the stock printer configuration. Rinkhals offers additional protection you don't have while modifying directly your printer configuration. **I won't offer any support** and **your printer might not work properly or not boot anymore**. Check the documentation for more information: [Printer configuration](https://jbatonnet.github.io/Rinkhals/Rinkhals/printer-configuration/)
 
-Rinkhals uses an overlay system to keep its modifications isolated from the stock firmware. This way it's easier to revert back to stock if needed, or use multiple versions in parrallel.
+There are two options to install Rinkhals:
+1. Use the provided Rinkhals installer (named **install-*.swu**)
+2. Install the raw swu directly (named **update-*.swu**)
 
-Download the release you want from the [Releases](https://github.com/jbatonnet/Rinkhals/releases) page, rename it as **update.swu** in a directory named **aGVscF9zb3Nf** on a FAT32 USB drive.
+Either way, you'll need to:
+- Download the release / file you want from the [Releases](https://github.com/jbatonnet/Rinkhals/releases) page
+- Rename the downlaoded SWU file as **update.swu**
+- Copy it in a directory named **aGVscF9zb3Nf** on a FAT32 USB drive
+- Plug the USB drive in your printer
+
+More detailed information about the Rinkhals installer are available in the [documentation](https://jbatonnet.github.io/Rinkhals/Rinkhals/rinkhals-installer/)
 
 For more information about installation, firmware updates and details about specific situations, go to https://jbatonnet.github.io/Rinkhals/Rinkhals/installation-and-firmware-updates/
+
 
 ## Touch UI
 
@@ -69,12 +78,6 @@ An apps system is provided in Rinkhals. It allows for the users to easily add so
 - https://github.com/basvd/Rinkhals.WebUI (a web interface for Rinkhals)
 
 Instructions on how to install or develop apps are on the other repo as well.
-
-## How to uninstall Rinkhals
-
-1. **Disable Rinkhals** by disabling from the touch UI or by creating a .disable-rinkhals file on a USB drive or at this location: /useremain/rinkhals/.disable-rinkhals
-2. **Reboot your printer**, it will boot the stock firmware
-3. If you want, you can **delete Rinkhals** by deleting the /useremain/rinkhals directory
 
 
 <p align="center">
