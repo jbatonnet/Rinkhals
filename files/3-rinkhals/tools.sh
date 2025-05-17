@@ -1,3 +1,5 @@
+export TMPDIR=/useremain/tmp
+if [ ! -d ${TMPDIR} ] ; then mkdir ${TMPDIR} ; chmod a+rwx ${TMPDIR} ; fi
 export RINKHALS_ROOT=$(realpath /useremain/rinkhals/.current)
 export RINKHALS_VERSION=$(cat $RINKHALS_ROOT/.version)
 export RINKHALS_HOME=/useremain/home/rinkhals
