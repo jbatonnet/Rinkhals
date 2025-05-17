@@ -1169,7 +1169,7 @@ class RinkhalsInstallApp(BaseApp):
                 version.path = v.path
                 break
 
-        action_text = None
+        action_text = 'Install'
         warning_text = None
         action_uninstall = False
 
@@ -1181,10 +1181,8 @@ class RinkhalsInstallApp(BaseApp):
             action_uninstall = True
         elif version.test:
             warning_text = 'This is a test version, it might not be completely stable'
-            action_text = 'Install'
         elif rinkhals_current and version.version < rinkhals_current.version:
             warning_text = 'This version is older than the currently installed one'
-            action_text = 'Install'
         elif rinkhals_current and version.version > rinkhals_current.version:
             action_text = 'Upgrade'
 
