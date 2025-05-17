@@ -25,10 +25,10 @@ In this documentation, the following printers will be refered to with their mode
 
 ## Documentation structure
 
-- [Rinkhals](rinkhals/index.md): Documentation about Rinkhals, its features and internals
-- [Guides](guides/index.md): High level guides for Simplyprint, Spoolman, ...
-- [Printers](printers/index.md): Generic and specific documentation about the Anycubic Kobra series of 3D printer
-- [Firmware](kobra-firmware/index.md): Reverse engineering and documentation about the firmware for those printers
+- [Rinkhals](rinkhals/): Documentation about Rinkhals, its features and internals
+- [Guides](guides/): High level guides for Simplyprint, Spoolman, ...
+- [Printers](printers/): Generic and specific documentation about the Anycubic Kobra series of 3D printer
+- [Firmware](kobra-firmware/): Reverse engineering and documentation about the firmware for those printers
 
 ## FAQ
 

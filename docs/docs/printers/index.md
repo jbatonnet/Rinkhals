@@ -15,5 +15,5 @@ Below you'll find documentation about specific printers:
 
 ## General
 
-- [Mainboard connection](mainboard-connection/index.md)
+- [Mainboard connection](mainboard-connection/)
 - [Recover boot issues](recover-boot-issues.md)
