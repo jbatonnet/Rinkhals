@@ -2,7 +2,7 @@
 title: Installation and firmware updates
 ---
 
-Check this page to better understand what is Rinkhals and how it works: [How Does Rinkhals work?](how-does-Rinkhals-work.md)
+Check this page to better understand what is Rinkhals and how it works: [How Does Rinkhals work?](installation-and-firmware-updates.md)
 
 ## Any firmware installation + SWU tools
 On the Kobra series of 3D printer, it's possible to sideload .swu files to install or execute things. For example, official updates are provided as .swu files, similar to Rinkhals and other firmwares.

@@ -9,7 +9,7 @@ GoKlipper (1) is not starting properly, it's most likely due to a printer config
 
 1. GoKlipper is Anycubic's reimplementation of Klipper in Go
 
-Please check the information in [I got 11407 or my printer doesn't boot anymore](printer-configuration.md#i-got-11407-or-my-printer-doesnt-boot-anymore)
+Please check the information in [I got 11407 or my printer doesn't boot anymore](Rinkhals/printer-configuration.md#i-got-11407-or-my-printer-doesnt-boot-anymore)
 
 
 ## How can I print multicolor / with the ACE from Orca Slicer?
