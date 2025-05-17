@@ -1,5 +1,5 @@
 ---
-title: FAQ
+title: Rinkhals FAQ
 weight: -2
 ---
 
@@ -7,7 +7,7 @@ weight: -2
 GoKlipper (1) is not starting properly, it's most likely due to a printer configuration issue.
 { .annotate }
 
-1. GoKlipper is Anycubic's reimplementation of Klipper
+1. GoKlipper is Anycubic's reimplementation of Klipper in Go
 
 Please check the information in [I got 11407 or my printer doesn't boot anymore](printer-configuration.md#i-got-11407-or-my-printer-doesnt-boot-anymore)
 
@@ -17,7 +17,7 @@ Filament mapping is stored in the gcode and depends on your slicer configuration
 
 In Orca, you can add 4 filaments and they will be mapped with the 4 slots of the ACE Pro from left to right. You can then either export gcode or print directly.
 
-![Orca Slicer Filament settings panel with 4 filaments](../assets/orca-filament.webp)
+![Orca Slicer Filament settings panel with 4 filaments](./assets/orca-filament.webp)
 
 Later, if you need to print with only one filament, you’ll need to remove the other and keep only one before exporting gcode or printing.
 
