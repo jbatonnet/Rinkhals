@@ -70,8 +70,9 @@ Rinkhals is using [vanilla Moonraker](https://github.com/Arksine/moonraker) plus
 When using GoKlipper and LAN mode, this component will intercept Print calls from Mainsail, Fluid, Orca and more and replace it with a proprietary Anycubic call. This call allows a few settings to be changed, such as Bed leveling on print start, flow calibration and resonance testing.
 By default, those settings are all disabled for every print. This behavior can be changed using [app configuration](apps/configuration.md).
 
-> [!WARNING]
-> This app consumes a lot of memory. Be careful while using multiple frontends (Mainsail, Fluidd, ...) at the same time.
+!!! warning
+
+    This app consumes a lot of memory. Be careful while using multiple frontends (Mainsail, Fluidd, ...) at the same time.
 
 | 40-moonraker | |
 |-|-|
@@ -90,13 +91,15 @@ It's a SPA (Single Page Application) served using [Lighttpd](https://www.lighttp
 
 Lighttpd is also configured to expose up to 4 cameras proxying to mjpg-streamer. Cameras are accessible using /webcam or /webcam0 for the first one, then /webcam1, /webcam2 and /webcam3 for the other.
 
-> [!NOTE]
-> Port 80 is dynamically allocated depending on the order of app startup.<br />
-> By default during their startup, Mainsail and Fluidd will try to use port 80. This is made to ensure that you can expose multiple frontends while choosing which one is using port 80.
+!!! note
 
-> [!TIP]
-> It is possible to expose another interface on port 80.<br />
-> Make sure that your custom app open and listens to port 80 before Mainsail and/or Fluidd by using a name prefix with a number below 25.
+    Port 80 is dynamically allocated depending on the order of app startup.
+    By default during their startup, Mainsail and Fluidd will try to use port 80. This is made to ensure that you can expose multiple frontends while choosing which one is using port 80.
+
+!!! tip
+
+    It is possible to expose another interface on port 80.
+    Make sure that your custom app open and listens to port 80 before Mainsail and/or Fluidd by using a name prefix with a number below 25.
 
 | 25-mainsail | |
 |-|-|

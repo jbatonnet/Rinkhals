@@ -14,6 +14,7 @@ The main project is located on GitHub: https://github.com/jbatonnet/Rinkhals
 This documentation covers what we know about those printers, what we know about Anycubic software, Rinkhals and some high levels guides to achieve specific things.
 
 In this documentation, the following printers will be refered to with their model code used everywhere in Rinkhals:
+
 - K2P: Anycubic Kobra 2 Pro
 - K3: Anycubic Kobra 3 (+ combo)
 - K3M: Anycubic Kobra 3 Max (+ combo)
@@ -25,10 +26,10 @@ In this documentation, the following printers will be refered to with their mode
 
 ## Documentation structure
 
-- [Rinkhals](rinkhals/): Documentation about Rinkhals, its features and internals
+- [Rinkhals](Rinkhals/): Documentation about Rinkhals, its features and internals
 - [Guides](guides/): High level guides for Simplyprint, Spoolman, ...
 - [Printers](printers/): Generic and specific documentation about the Anycubic Kobra series of 3D printer
-- [Firmware](kobra-firmware/): Reverse engineering and documentation about the firmware for those printers
+- [Firmware](firmware/): Reverse engineering and documentation about the firmware for those printers
 
 ## FAQ
 
