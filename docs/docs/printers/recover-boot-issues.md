@@ -13,7 +13,7 @@ It is possible to recover from this situation and restore the partitions to a bo
 You will need to build a special USB cable and access to a Linux machine (Windows might work but neither confirmed nor documented yet).
 
 ## Mainboard connection
-Follow the guide on this page: [Mainboard connection](mainboard-connection/)
+Follow the guide on this page: [Mainboard connection](mainboard-connection/index.md)
 
 ## Restore broken partitions
 I uploaded a copy of working partitions to ease the recovery process. It uses 2.3.5.3 firmware and I deleted / changed all the device-specific keys, you will need to provide/restore yours in the files listed below (in the userdata and useremain partitions).

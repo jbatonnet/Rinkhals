@@ -1,8 +1,9 @@
 ---
-title: Rinkhals
+title: Rinkhals project
+weight: 0
 ---
 
-# Core principles
+## Core principles
 
 The goal of Rinkhals is to expand existing Anycubic features with better compatibility, apps and more. It will likely not support all use cases, like running vanilla Klipper or your specific feature / plugin.
 
@@ -14,7 +15,8 @@ Rinkhals includes many firmware protection features. It is designed as an overla
 
 For anyone curious enough: [Rinkhals internals](how-rinkhals-works.md)
 
-# Summary
+
+## Summary
 
 - There are no prerequisites for Rinkhals, except version compatibility
 - [Installation instructions](installation-and-firmware-updates.md)
@@ -28,9 +30,9 @@ TLDR:
 - Fluidd on port 4408
 
 
-# Features and built-in apps
+## Features and built-in apps
 
-## ADB (Android Debug Bridge)
+### ADB (Android Debug Bridge)
 
 ADB is a protocol and client / server programs to help remote accessing and debugging Android devices. Nowadays it is used as a remote access protocol on many other devices.
 
@@ -45,7 +47,7 @@ adb shell
 ```
 
 
-## SSH
+### SSH
 
 OpenSSH is bundled but disbaled in most Anycubic Kobra firmwares (except for the KS1). 
 Rinkhals bundles Dropbear, a lightweight SSH server alternative to OpenSSH.
@@ -56,12 +58,12 @@ On the K2P, K3 and KS1, the root password is `rockchip`
 On the K3M, the root password is not yet known.
 
 
-## Default apps
+### Default apps
 
 System apps are normal Rinkhals apps that are bundled in every Rinkhals release. They can still be enabled or disabled depending on your preference, and they can be overriden by adding a user app with the same name.
 
 
-### Moonraker
+#### Moonraker
 
 Moonraker is an API gateway for Klipper. It exposes Klipper information and interactions to 3rd party clients using web API and websockets.
 
@@ -83,7 +85,7 @@ By default, those settings are all disabled for every print. This behavior can b
 | Memory usage | 25MB ~ 100+MB |
 
 
-### Mainsail
+#### Mainsail
 
 Mainsail is a web interface for Klipper-based printers. It connects to Moonraker over web API and websocket to expose live control and metrics.
 
@@ -110,7 +112,7 @@ Lighttpd is also configured to expose up to 4 cameras proxying to mjpg-streamer.
 | Memory usage | 1 ~ 4 MB |
 
 
-### Fluidd
+#### Fluidd
 
 Fluidd is another web interface for Klipper-based printers. It connects to Moonraker over web API and websocket to expose live control and metrics.
 
@@ -125,7 +127,7 @@ Please refer to Mainsail documentation above as the behavior is exactly the same
 | Memory usage | 1 ~ 4 MB |
 
 
-### mjpg-streamer
+#### mjpg-streamer
 
 mjpg-streamer is a lightweight web server to expose a camera stream over HTTP. In Rinkhals, it is used to expose the connected cameras in Mainsail, Fluidd and other Moonraker clients.
 
@@ -142,7 +144,7 @@ By default, a low compatible resolution of 640x480 is used. Resolution can be ch
 | Memory usage | ? |
 
 
-### VNC / Remote display
+#### VNC / Remote display
 
 This app starts a VNC server on the printer to expose remote control of the display and its touch inputs.
 
@@ -157,7 +159,7 @@ When enabled and started, you can connect your VNC client to port 5900 or access
 | Memory usage | ? |
 
 
-### Rinkhals monitor
+#### Rinkhals monitor
 
 This app allows to collect system metrics and expose them in a MQTT server. The data is preformatted to be discovered and used with Home Assistant but might be used by anything reading MQTT messages.
 

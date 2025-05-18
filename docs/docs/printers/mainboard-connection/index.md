@@ -14,38 +14,6 @@ Kobra 3, Kobra 3 Max and Kobra S1 ones are different but use a very similar stru
 Here is a step by step guide on how to do it with a Kobra 3 mainboard without the SW2 switch:
 [Kobra 3 mainboard with missing SW2](kobra-3-mainboard-with-missing-sw2.md)
 
-## Mainboard information
-
-??? info "Kobra 3 Mainboard"
-
-    <div class="grid cards" markdown>
-
-    - ![Kobra 3 Mainboard](../../assets/mainboard-connection/kobra3-mainboard.webp){ width="300" }
-    Mainboard for the Kobra 3 (early unit)
-    - ![Kobra 3 Mainboard with SW2](../../assets/mainboard-connection/kobra3-mainboard-sw2.webp)
-    Cropped image of SW2 and surrounding components (early unit)
-    - ![Kobra 3 mainboard with no SW2](../../assets/mainboard-connection/kobra3-mainboard-no-sw2.webp)
-    Cropped image of SW2 and surrounding components (late unit with missing SW2)
-
-    </div>
-
-??? info "Kobra 3 Max Mainboard"
-
-    <div class="grid cards" markdown>
-
-    - ![Front side of a Kobra 3 Max mainboard](../../assets/mainboard-connection/k3m-mainboard-front.webp)
-    Front side of a Kobra 3 Max mainboard
-    - ![Back side of a Kobra 3 Max mainboard](../../assets/mainboard-connection/k3m-mainboard-back.webp)
-    Back side of a Kobra 3 Max mainboard
-
-    [Kobra 3 Max investigation](kobra-3-max-investigation.md)
-
-    </div>
-
-??? info "Kobra S1 Mainboard"
-
-    **TODO**
-
 ## Building the cable
 
 The motherboard has USB firmware access using a JST MX / Molex PicoBlade 1.25mm pitch connector. You will need to build a cable to make it usable using a classic USB-A or USB-C connector.
@@ -69,9 +37,9 @@ Follow the wiring shown in the pictures. Beware, the colors don't mean anything 
 
 <div class="grid cards" markdown>
 
-- ![USB-C end of the cable](../../assets/mainboard-connection/cable-usbc-end.webp){ width="300" }
+- ![USB-C end of the cable](../../assets/mainboard-connection/cable-usbc-end.webp)<div />
 USB-C end of the cable
-- ![JST end of the cable](../../assets/mainboard-connection/cable-jst-end.webp)
+- ![JST end of the cable](../../assets/mainboard-connection/cable-jst-end.webp)<div />
 JST end of the cable
 </div>
 

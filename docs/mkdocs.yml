@@ -1,10 +1,19 @@
 site_name: Rinkhals Documentation
-# Placeholder URL
 site_url: https://jbatonnet.github.io/Rinkhals/
+
+repo_url: https://github.com/jbatonnet/Rinkhals
+repo_name: jbatonnet/Rinkhals
+edit_uri: edit/master/docs/docs/
+
+copyright: MIT License
+
 theme:
   name: material
 
-  palette:
+  favicon: assets/icon.png
+  logo: assets/icon.png
+
+  palette:   
     # Palette toggle for automatic mode
     - media: "(prefers-color-scheme)"
       toggle:
@@ -14,6 +23,7 @@ theme:
     # Palette toggle for light mode
     - media: "(prefers-color-scheme: light)"
       scheme: default 
+      primary: blue grey
       toggle:
         icon: material/brightness-7
         name: Switch to dark mode
@@ -21,19 +31,34 @@ theme:
     # Palette toggle for dark mode
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
+      primary: blue grey
       toggle:
         icon: material/brightness-4
         name: Switch to system preference
   
   features:
-    - navigation.tabs
-    - navigation.indexes
     - content.code.copy
     - content.code.annotate
+    - content.action.edit
+    - search.suggest
+    - search.highlight
+    - navigation.tabs
+    - navigation.instant
+    - navigation.instant.prefetch
+    - navigation.instant.progress
+    - navigation.top
+    - toc.follow
+    - toc.integrate
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/jbatonnet/Rinkhals
 
 plugins:
   - search
   - mkdocs-nav-weight
+  - glightbox
 
 markdown_extensions:
   - attr_list
@@ -42,6 +67,8 @@ markdown_extensions:
   - pymdownx.superfences
   - footnotes
   - md_in_html
+  - toc:
+      toc_depth: 3
   - pymdownx.tabbed:
       alternate_style: true
   - pymdownx.highlight:

@@ -1,6 +1,8 @@
 ---
-title: Rinkhals FAQ
-weight: -2
+title: FAQ
+weight: 4
+#hide:
+#  - navigation
 ---
 
 ## My printer is stuck with error 11407
@@ -55,3 +57,15 @@ If you’re running stock firmware or any other, you’ll need to use the SSH SW
 2. Extract and get the SSH tool
 3. Copy the tool as `update.swu` on a FAT32 USB drive in a `aGVscF9zb3Nf` directory (same as during Rinkhals installation)
 4. Use any SSH client to connect to your printer IP on port 2222
+
+
+## How does Rinkhals work with official updates (stock OTA)?
+When you install an official update, Rinkhals startup files will be overwritten and thus Rinkhals won't boot anymore.
+
+In this case, you can reflash a Rinkhals version that supports your firmware version and it will start again. Your configuration will be kept.
+
+If you update your printer firmware to a version that's not supported with Rinkhals, you can either:
+
+- Wait for the new Rinkhals version to be released. Please do not open issues or ask for ETA, I'm working on my free time!
+- Reinstall a supported version of your printer firmware and install a matching Rinkhals version
+- Starting from 20250316_01, you can create a .enable-rinkhals file at the root of a USB drive, plug it and reboot your printer. It will force Rinkhals to start, but you might experience weird behavior or even worst as the version was not tested.
