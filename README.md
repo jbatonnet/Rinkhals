@@ -33,13 +33,15 @@ Since people have been asking, I accept donations but please remember that I wor
 </p>
 
 
-## Rinkhals installer
+## Rinkhals installation
 
 > [!WARNING]
 > **Make sure you're confident tweaking your printer and you understand what you're doing. I'm not responsible if you brick your printer (even if there's some [documentation](https://jbatonnet.github.io/Rinkhals/Kobra%20Printers/recover-boot-issues/) about that)**
 
 > [!CAUTION]
 > Many users want to change their Klipper printer configuration (the printer.cfg file). I strongly advise not modifying the stock printer configuration. Rinkhals offers additional protection you don't have while modifying directly your printer configuration. **I won't offer any support** and **your printer might not work properly or not boot anymore**. Check the documentation for more information: [Printer configuration](https://jbatonnet.github.io/Rinkhals/Rinkhals/printer-configuration/)
+
+A [quick start guide](https://jbatonnet.github.io/Rinkhals/guides/rinkhals-quick-start/) is available to get Rinkhals up and running on your printer.
 
 There are two options to install Rinkhals:
 1. Use the provided Rinkhals installer (named **install-*.swu**)
@@ -50,6 +52,8 @@ Either way, you'll need to:
 - Rename the downlaoded SWU file as **update.swu**
 - Copy it in a directory named **aGVscF9zb3Nf** on a FAT32 USB drive
 - Plug the USB drive in your printer
+
+
 
 More detailed information about the Rinkhals installer are available in the [documentation](https://jbatonnet.github.io/Rinkhals/Rinkhals/rinkhals-installer/)
 
@@ -84,6 +88,12 @@ Instructions on how to install or develop apps are on the other repo as well.
     <img width="48" src="https://github.com/jbatonnet/Rinkhals/blob/master/icon.png?raw=true" />
 </p>
 
+
+## Rinkhals Installer
+
+From the release pages, you'll find the installer-\*.swu files for your printer model. This is an interactive touch tool to install and update Rinkhals and system firmware updates.
+
+You can find more information in [the documentation](https://jbatonnet.github.io/Rinkhals/Rinkhals/rinkhals-installer/)
 
 ## Documentation / Known issues
 

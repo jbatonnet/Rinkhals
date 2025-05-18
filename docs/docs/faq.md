@@ -13,6 +13,13 @@ GoKlipper (1) is not starting properly, it's most likely due to a printer config
 
 Please check the information in [I got 11407 or my printer doesn't boot anymore](Rinkhals/printer-configuration.md#i-got-11407-or-my-printer-doesnt-boot-anymore)
 
+## Should I use installer-\*.swu or update-\*.swu?
+
+The installer-\*.swu is the Rinkhals Installer tool. It's like a web installer on steroids. Using this tool you can download any Rinkhals or system firmware and perform some other operations. Check more details on the [Installer page](Rinkhals/rinkhals-installer.md)
+
+The update-\*.swu is the full Rinkhals package. There's no installation screen here, it will just install the downloaded Rinkhals version on your printer. Useful for offline installations for example.
+
+Either way, select the right SWU for your printer, download it and install it as described in the [installation page](Rinkhals/installation-and-firmware-updates.md).
 
 ## How can I print multicolor / with the ACE from Orca Slicer?
 Filament mapping is stored in the gcode and depends on your slicer configuration.
