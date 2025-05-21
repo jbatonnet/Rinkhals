@@ -5,6 +5,10 @@ mkdir -p /files/1-buildroot
 rm -rf /files/1-buildroot/*
 cp -pr ./output/target/* /files/1-buildroot/
 
+# Fix a broken symlink in iptables
+cd /files/1-buildroot/usr/bin
+ln -f ../sbin/xtables-legacy-multi iptables-xml
+
 # Clean unused files
 rm -rf /files/1-buildroot/dev
 rm -rf /files/1-buildroot/lib32
