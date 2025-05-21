@@ -41,6 +41,7 @@ jobs:
         compression-level: 0
         path: |
           build/dist/*-k2p-k3.swu
+          build/dist/*-k2p-k3.zip
 
     - name: Upload artifact for KS1
       uses: actions/upload-artifact@v4
@@ -49,6 +50,7 @@ jobs:
         compression-level: 0
         path: |
           build/dist/*-ks1.swu
+          build/dist/*-ks1.zip
 
     - name: Upload artifact for K3M
       uses: actions/upload-artifact@v4
@@ -57,3 +59,4 @@ jobs:
         compression-level: 0
         path: |
           build/dist/*-k3m.swu
+          build/dist/*-k3m.zip
