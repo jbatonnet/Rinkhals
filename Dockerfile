@@ -191,18 +191,47 @@ RUN chmod +x /build/get-novnc.sh && \
     /build/get-novnc.sh
 
 ###############################################################
-# tool-installer prepares Installer tool files
-FROM build-base AS tool-installer
+# build-swu-installer builds the Installer tool SWU files
+FROM build-base AS build-swu-installer
 COPY ./build/swu-tools/installer/ /build/swu-tools/installer/
 COPY ./build/*.* /build/
 COPY --from=buildroot-rebuild /files/1-buildroot/ /files/1-buildroot/
 COPY --from=build-python-armv7 /files/2-python/ /files/2-python/
 COPY ./files/3-rinkhals/ /files/3-rinkhals/
 COPY ./files/*.* /files/
+
 RUN chmod +x /build/swu-tools/installer/build-swu.sh
 RUN KOBRA_MODEL_CODE=K3 /build/swu-tools/installer/build-swu.sh /swu/installer-k2p-k3.swu
-RUN KOBRA_MODEL_CODE=KS1 /build/swu-tools/installer/build-swu.sh /swu/installer-ks1.swu
 RUN KOBRA_MODEL_CODE=K3M /build/swu-tools/installer/build-swu.sh /swu/installer-k3m.swu
+RUN KOBRA_MODEL_CODE=KS1 /build/swu-tools/installer/build-swu.sh /swu/installer-ks1.swu
+
+###############################################################
+# build-swu-tools builds the tools SWU files
+FROM build-base AS build-swu-tools
+COPY ./build/swu-tools/ /build/swu-tools/
+COPY ./build/*.* /build/
+COPY --from=buildroot-rebuild /files/1-buildroot/ /files/1-buildroot/
+COPY --from=build-python-armv7 /files/2-python/ /files/2-python/
+COPY ./files/3-rinkhals/ /files/3-rinkhals/
+COPY ./files/*.* /files/
+
+RUN <<EOT
+    set -e
+    chmod +x /build/swu-tools/*/build-swu.sh
+    for tool in $(ls /build/swu-tools/); do
+        if [ "$tool" = "installer" ]; then
+            continue
+        fi
+        KOBRA_MODEL_CODE=K3 /build/swu-tools/$tool/build-swu.sh /swu/${tool}-k2p-k3.swu
+        KOBRA_MODEL_CODE=K3M /build/swu-tools/$tool/build-swu.sh /swu/${tool}-k3m.swu
+        KOBRA_MODEL_CODE=KS1 /build/swu-tools/$tool/build-swu.sh /swu/${tool}-ks1.swu
+    done
+    cd /swu
+    for suffix in k2p-k3 k3m ks1; do
+        zip -j "tools-${suffix}.zip" *.swu -i "*-${suffix}.swu"
+    done
+EOT
+
 
 ###############################################################
 # prepare-bundle collects all files and prepares a bundle
@@ -265,7 +294,7 @@ FROM scratch AS files-export
 COPY --from=prepare-bundle /bundle/ /
 
 ###############################################################
-# build-swu
+# build-swu builds the main firmware SWU files
 FROM prepare-bundle AS build-swu
 COPY ./build/tools.sh /
 RUN <<EOT
@@ -280,7 +309,8 @@ RUN <<EOT
 EOT
 
 ###############################################################
-# swu-export creates the firmware updates export image
+# swu-export creates the SWU build export image
 FROM scratch AS swu-export
-COPY --from=tool-installer /swu/ /
+COPY --from=build-swu-installer /swu/ /
+COPY --from=build-swu-tools /swu/*.zip /
 COPY --from=build-swu /swu/ /
