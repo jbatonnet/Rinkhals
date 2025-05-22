@@ -877,7 +877,7 @@ class RinkhalsInstallApp(BaseApp):
                     tag_version.set_color(lv.color_make(200, 130, 0))
                     tag_version.set_icon('')
                     tag_version.set_text('Test')
-                elif not latest_done:
+                elif not v.test and not latest_done:
                     latest_done = True
 
                     tag_version = lvr.tag(panel_version)

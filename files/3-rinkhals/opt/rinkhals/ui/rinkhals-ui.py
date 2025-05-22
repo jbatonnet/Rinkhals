@@ -1247,8 +1247,8 @@ class RinkhalsUiApp(BaseApp):
         if not USING_SIMULATOR:
             self.clear()
             system('sync && reboot')
-        else:
-            self.quit()
+
+        self.quit()
     def restart_rinkhals(self, e=None):
         logging.info('Restarting Rinkhals...')
 
@@ -1272,13 +1272,13 @@ class RinkhalsUiApp(BaseApp):
             self.clear()
             with open('/useremain/rinkhals/.disable-rinkhals', 'wb'):
                 pass
-            system('reboot')
+            system('sync && reboot')
 
         self.quit()
 
     def clear(self):
         if not USING_SIMULATOR:
-            system(f'dd if=/dev/zero of=/dev/fb0 bs={SCREEN_WIDTH * 4} count={SCREEN_HEIGHT}')
+            system(f'dd if=/dev/zero of=/dev/fb0 bs={self.screen_info.width * 4} count={self.screen_info.height}')
 
 
 if __name__ == '__main__':
