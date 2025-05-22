@@ -904,15 +904,15 @@ class RinkhalsUiApp(BaseApp):
 
             for i in range(1):
                 if not USING_SIMULATOR:
-                    if os.system('rm -rf /useremain/update_swu') != 0:
+                    if system('rm -rf /useremain/update_swu') != 0:
                         break
-                    if os.system(f'unzip -P {password} /useremain/update.swu -d /useremain') != 0:
+                    if system(f'unzip -P {password} /useremain/update.swu -d /useremain') != 0:
                         break
-                    if os.system('rm /useremain/update.swu') != 0:
+                    if system('rm /useremain/update.swu') != 0:
                         break
-                    if os.system('tar zxf /useremain/update_swu/setup.tar.gz -C /useremain/update_swu') != 0:
+                    if system('tar zxf /useremain/update_swu/setup.tar.gz -C /useremain/update_swu') != 0:
                         break
-                    if os.system('chmod +x /useremain/update_swu/update.sh') != 0:
+                    if system('chmod +x /useremain/update_swu/update.sh') != 0:
                         break
                 else:
                     time.sleep(1)
@@ -925,7 +925,7 @@ class RinkhalsUiApp(BaseApp):
 
                 if not USING_SIMULATOR:
                     logging.info('Starting Rinkhals update...')
-                    os.system('/useremain/update_swu/update.sh &')
+                    system('/useremain/update_swu/update.sh &')
                 else:
                     time.sleep(1)
                     self.quit()
@@ -1246,7 +1246,7 @@ class RinkhalsUiApp(BaseApp):
 
         if not USING_SIMULATOR:
             self.clear()
-            os.system('sync && reboot')
+            system('sync && reboot')
         else:
             self.quit()
     def restart_rinkhals(self, e=None):
@@ -1254,7 +1254,7 @@ class RinkhalsUiApp(BaseApp):
 
         if not USING_SIMULATOR:
             self.clear()
-            os.system(RINKHALS_ROOT + '/start.sh')
+            system(RINKHALS_ROOT + '/start.sh')
 
         self.quit()
     def stop_rinkhals(self, e=None):
@@ -1262,7 +1262,7 @@ class RinkhalsUiApp(BaseApp):
 
         if not USING_SIMULATOR:
             self.clear()
-            os.system(RINKHALS_ROOT + '/stop.sh')
+            system(RINKHALS_ROOT + '/stop.sh')
 
         self.quit()
     def disable_rinkhals(self, e=None):
@@ -1272,13 +1272,13 @@ class RinkhalsUiApp(BaseApp):
             self.clear()
             with open('/useremain/rinkhals/.disable-rinkhals', 'wb'):
                 pass
-            os.system('reboot')
+            system('reboot')
 
         self.quit()
 
     def clear(self):
         if not USING_SIMULATOR:
-            os.system(f'dd if=/dev/zero of=/dev/fb0 bs={SCREEN_WIDTH * 4} count={SCREEN_HEIGHT}')
+            system(f'dd if=/dev/zero of=/dev/fb0 bs={SCREEN_WIDTH * 4} count={SCREEN_HEIGHT}')
 
 
 if __name__ == '__main__':
