@@ -1274,6 +1274,7 @@ class RinkhalsInstallApp(BaseApp):
             for i in range(1):
                 lv.lock()
                 self.modal_ota_rinkhals.button_action.set_state(lv.STATE.DISABLED, True)
+                self.modal_ota_rinkhals.button_uninstall.set_state(lv.STATE.DISABLED, True)
                 self.modal_ota_rinkhals.label_progress_text.set_text('Extracting...')
                 self.root_modal.clear_event_cb()
                 lv.unlock()
@@ -1296,7 +1297,7 @@ class RinkhalsInstallApp(BaseApp):
                     time.sleep(1)
                     self.quit()
                 else:
-                    self.install_swu()
+                    self.install_swu('async')
 
                 return
             
@@ -1304,6 +1305,7 @@ class RinkhalsInstallApp(BaseApp):
             self.modal_ota_rinkhals.obj_progress_bar.set_style_bg_color(lvr.COLOR_DANGER, lv.STATE.DEFAULT)
             self.modal_ota_rinkhals.label_progress_text.set_text('Extraction failed')
             self.modal_ota_rinkhals.button_action.set_state(lv.STATE.DISABLED, False)
+            self.modal_ota_rinkhals.button_uninstall.set_state(lv.STATE.DISABLED, False)
             lv.unlock()
 
         def uninstall_version():
@@ -1505,7 +1507,7 @@ class RinkhalsInstallApp(BaseApp):
             return False
 
         return True
-    def install_swu(self):
+    def install_swu(self, params=''):
         # Patch the update script
         with open('/useremain/update_swu/update.sh', 'r+') as f:
             update_script = f.read()
@@ -1518,7 +1520,7 @@ class RinkhalsInstallApp(BaseApp):
             f.write(update_script)
 
         # Run the update script
-        system('/useremain/update_swu/update.sh')
+        system(f'/useremain/update_swu/update.sh {params}')
 
         if os.path.exists('/useremain/rinkhals/.version'):
             if os.path.exists('/userdata/app/gk/start.sh'):
@@ -1527,7 +1529,10 @@ class RinkhalsInstallApp(BaseApp):
                     if 'Rinkhals/begin' not in script_content:
                         system(f'cat {SCRIPT_PATH}/start.sh.patch >> /userdata/app/gk/start.sh')
             if os.path.exists('/userdata/app/gk/restart_k3c.sh'):
-                system(f'cat {SCRIPT_PATH}/start.sh.patch >> /userdata/app/gk/restart_k3c.sh')
+                with open('/userdata/app/gk/start.sh', 'r') as f:
+                    script_content = f.read()
+                    if 'Rinkhals/begin' not in script_content:
+                        system(f'cat {SCRIPT_PATH}/start.sh.patch >> /userdata/app/gk/restart_k3c.sh')
 
         # Store the reboot marker
         os.makedirs('/useremain/rinkhals', exist_ok=True)

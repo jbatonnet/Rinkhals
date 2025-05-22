@@ -50,7 +50,7 @@ case "$1" in
         stop
         ;;
     *)
-        echo "Usage: $0 {status|start|stop}" >&2
+        echo "Usage: $0 {status|start|debug|stop}" >&2
         exit 1
         ;;
 esac
