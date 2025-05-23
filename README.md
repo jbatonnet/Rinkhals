@@ -20,6 +20,7 @@ Here are the suported printers and firmwares with latest Rinkhals release:
 | Kobra 3 (+ combo) | `2.3.9.3` `2.4.0` |
 | Kobra 2 Pro | `3.1.2.3` | Only with mainboard [Trigorilla Spe **B** v1.0.x](https://1coderookie.github.io/Kobra2ProInsights/hardware/mainboard/#trigorilla_spe_b_v10x-stock-new-revision). `3.1.4` is buggy |
 | Kobra S1 (+ combo) | `2.5.1.6` `2.5.2.3` |
+| Kobra 3 Max (+ combo) | `2.4.6` |
 
 In case you're wondering this project is named after rinkhals, a sub-species of Cobras ... Kobra ... Rinkhals 👏
 
@@ -103,17 +104,21 @@ If your printer shows a 11407 error, check the documentation there: [Read about 
 
 ## SWU tools
 
+> [!NOTE]
+> Those tools are also available through the Rinkhals installer touch UI ([documentation](https://jbatonnet.github.io/Rinkhals/Rinkhals/rinkhals-installer/))
+
 This repo contains some tools you can use **no matter what firmware you are using**. It is a set of scripts packaged in a SWU file.
 
-They are available on this page: https://github.com/jbatonnet/Rinkhals/actions/workflows/build-swu-tools.yml
-
-You can download the SWU file for the tool you want, copy it as **update.swu** on a FAT32 USB drive in a **aGVscF9zb3Nf** directory, plug the USB drive in your printer and it just works.
+From the [Releases](https://github.com/jbatonnet/Rinkhals/releases) page, identify the tools.zip file for your printer.
+Extract it, copy the SWU file you want as **update.swu** on a FAT32 USB drive in a **aGVscF9zb3Nf** directory, plug the USB drive in your printer and it just works.
 You will ear two beeps, the second one will tell you that the tool completed its work. There is no need to reboot afterwards.
 
 Here are the tools available:
 - **SSH**: get a SSH server running on port **2222**, even on stock firmware
 - **Backup partitions**: creates a dump of your userdata and useremain partition on the USB drive
 - **Debug bundle**: creates a zip file with printer and configuration information on the USB drive to ease debugging
+- **Rinkhals uninstall**: uninstall Rinkhals completely from your printer
+- **Clean Rinkhals**: Removes old Rinkhals versions from your printer (keeps 3 versions including the current one)
 
 <p align="center">
     <img width="48" src="https://github.com/jbatonnet/Rinkhals/blob/master/icon.png?raw=true" />

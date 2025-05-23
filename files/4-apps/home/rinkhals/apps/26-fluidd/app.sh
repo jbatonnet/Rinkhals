@@ -20,6 +20,8 @@ status() {
 start() {
     stop
 
+    mkdir -p /useremain/tmp
+    
     sed "s#\./#$APP_ROOT/#g" $APP_ROOT/lighttpd.conf > $APP_ROOT/lighttpd.conf.tmp
     lighttpd -D -f $APP_ROOT/lighttpd.conf.tmp &> /dev/null &
     PID=$!

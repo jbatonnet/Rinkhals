@@ -248,6 +248,8 @@ class Kobra:
                         state = 'printing'
                     if state.lower() == 'leveling':
                         state = 'printing'
+                    if state.lower() == 'resonance':
+                        state = 'printing'
                     if state.lower() == 'onpause':
                         state = 'paused'
 

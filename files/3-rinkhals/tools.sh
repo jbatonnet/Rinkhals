@@ -13,6 +13,9 @@ elif [ "$KOBRA_MODEL_ID" == "20024" ]; then
 elif [ "$KOBRA_MODEL_ID" == "20025" ]; then
     export KOBRA_MODEL="Anycubic Kobra S1"
     export KOBRA_MODEL_CODE=KS1
+elif [ "$KOBRA_MODEL_ID" == "20026" ]; then
+    export KOBRA_MODEL="Anycubic Kobra 3 Max"
+    export KOBRA_MODEL_CODE=K3M
 fi
 
 export KOBRA_VERSION=$(cat /useremain/dev/version)
@@ -39,7 +42,7 @@ quit() {
 }
 
 check_compatibility() {
-    if [ "$KOBRA_MODEL_CODE" != "K2P" ] && [ "$KOBRA_MODEL_CODE" == "K3" ] && [ "$KOBRA_MODEL_CODE" == "KS1" ]; then
+    if [ "$KOBRA_MODEL_CODE" != "K2P" ] && [ "$KOBRA_MODEL_CODE" == "K3" ] && [ "$KOBRA_MODEL_CODE" == "KS1" ] && [ "$KOBRA_MODEL_CODE" == "K3M" ]; then
         log "Your printer's model is not recognized, exiting"
         quit
     fi
@@ -57,6 +60,11 @@ is_verified_firmware() {
         fi
     elif [ "$KOBRA_MODEL_CODE" = "KS1" ]; then
         if [ "$KOBRA_VERSION" = "2.5.1.6" ] || [ "$KOBRA_VERSION" = "2.5.2.3" ]; then
+            echo 1
+            return
+        fi
+    elif [ "$KOBRA_MODEL_CODE" = "K3M" ]; then
+        if [ "$KOBRA_VERSION" = "2.4.6" ]; then
             echo 1
             return
         fi

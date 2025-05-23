@@ -17,6 +17,8 @@ title: Rinkhals quick start guide
 !!! note
     The installer you downloaded will still work for future releases. You can leave it on your USB drive and just plug it, even for future releases
 
+You can read more information about the Rinkhals installer on this [page](../Rinkhals/rinkhals-installer.md).
+
 - Go to the release page on GitHub: [Rinkhals releases](https://github.com/jbatonnet/Rinkhals/releases)
 - Select and download the right installer-\*.swu for your printer
 - Rename the downloaded SWU file as **update.swu**

@@ -29,7 +29,7 @@ debug() {
 
     cp -rf kobra.py moonraker/moonraker/components/kobra.py
     python /opt/rinkhals/scripts/process-cfg.py moonraker.conf > /userdata/app/gk/printer_data/config/moonraker.generated.conf
-    HOME=/userdata/app/gk python ./moonraker/moonraker/moonraker.py -c /userdata/app/gk/printer_data/config/moonraker.generated.conf $@
+    TMPDIR=/useremain/tmp HOME=/userdata/app/gk python ./moonraker/moonraker/moonraker.py -c /userdata/app/gk/printer_data/config/moonraker.generated.conf $@
 }
 stop() {
     kill_by_name moonraker.py
@@ -50,7 +50,7 @@ case "$1" in
         stop
         ;;
     *)
-        echo "Usage: $0 {status|start|stop}" >&2
+        echo "Usage: $0 {status|start|debug|stop}" >&2
         exit 1
         ;;
 esac

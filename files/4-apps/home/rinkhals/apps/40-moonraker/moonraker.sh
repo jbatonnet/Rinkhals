@@ -12,4 +12,5 @@ cp -rf kobra.py moonraker/moonraker/components/kobra.py
 python /opt/rinkhals/scripts/process-cfg.py moonraker.conf > /userdata/app/gk/printer_data/config/moonraker.generated.conf
 
 # Start Klippy
-HOME=/userdata/app/gk python ./moonraker/moonraker/moonraker.py -c /userdata/app/gk/printer_data/config/moonraker.generated.conf >> $RINKHALS_ROOT/logs/app-moonraker.log 2>&1
+mkdir -p /useremain/tmp
+TMPDIR=/useremain/tmp HOME=/userdata/app/gk python ./moonraker/moonraker/moonraker.py -c /userdata/app/gk/printer_data/config/moonraker.generated.conf >> $RINKHALS_ROOT/logs/app-moonraker.log 2>&1

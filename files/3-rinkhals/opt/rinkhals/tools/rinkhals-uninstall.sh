@@ -32,6 +32,7 @@ fi
 # Delete Rinkhals completely
 rm -rf /useremain/rinkhals 2> /dev/null
 rm -rf /useremain/home/rinkhals 2> /dev/null
+rm -rf /userdata/app/gk/K3SysUi.patch 2> /dev/null
 
 sed -i '/# Rinkhals\/begin/,/# Rinkhals\/end/d' /userdata/app/gk/start.sh
 if [ -f /userdata/app/gk/restart_k3c.sh ]; then

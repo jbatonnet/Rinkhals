@@ -63,7 +63,6 @@ log " --------------------------------------------------"
 echo
 
 touch /useremain/rinkhals/.disable-rinkhals
-rm /useremain/rinkhals/.reboot-marker 2> /dev/null
 
 VERIFIED_FIRMWARE=$(is_verified_firmware)
 if [ "$VERIFIED_FIRMWARE" != "1" ] && [ ! -f /mnt/udisk/.enable-rinkhals ] && [ ! -f /useremain/rinkhals/.enable-rinkhals ]; then
@@ -333,6 +332,7 @@ export LD_LIBRARY_PATH=$OLD_LD_LIBRARY_PATH
 log "> Cleaning up..."
 
 rm /useremain/rinkhals/.disable-rinkhals
+rm /useremain/rinkhals/.reboot-marker 2> /dev/null
 
 echo
 log "Rinkhals started"

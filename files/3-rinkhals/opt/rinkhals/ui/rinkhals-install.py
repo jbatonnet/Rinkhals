@@ -877,7 +877,7 @@ class RinkhalsInstallApp(BaseApp):
                     tag_version.set_color(lv.color_make(200, 130, 0))
                     tag_version.set_icon('')
                     tag_version.set_text('Test')
-                elif not latest_done:
+                elif not v.test and not latest_done:
                     latest_done = True
 
                     tag_version = lvr.tag(panel_version)
@@ -1129,7 +1129,10 @@ class RinkhalsInstallApp(BaseApp):
         elif diagnostic.fix_action and callable(diagnostic.fix_action):
             fix_text = diagnostic.fix_text or 'Run custom fix'
             fix_action = 'Fix'
-            fix_cb = diagnostic.fix_action
+            def fix_cb(e):
+                diagnostic.fix_action()
+                self.hide_modal()
+                self.layout_main(True)
 
         self.modal_diagnostic.label_fix.set_text('Fix: ' + fix_text)
 
@@ -1268,61 +1271,41 @@ class RinkhalsInstallApp(BaseApp):
             lv.unlock()
 
         def install_version():
-            lv.lock()
-            self.modal_ota_rinkhals.button_action.set_state(lv.STATE.DISABLED, True)
-            self.modal_ota_rinkhals.label_progress_text.set_text('Extracting...')
-            self.root_modal.clear_event_cb()
-            lv.unlock()
-
-            if self.printer_info.model_code == 'K2P' or self.printer_info.model_code == 'K3':
-                password = 'U2FsdGVkX19deTfqpXHZnB5GeyQ/dtlbHjkUnwgCi+w='
-            elif self.printer_info.model_code == 'KS1':
-                password = 'U2FsdGVkX1+lG6cHmshPLI/LaQr9cZCjA8HZt6Y8qmbB7riY'
-
-            logging.info(f'Extracting Rinkhals update...')
-
             for i in range(1):
-                if not USING_SIMULATOR:
-                    if system('rm -rf /useremain/update_swu') != 0:
-                        break
-                    if system(f'unzip -P {password} /useremain/update.swu -d /useremain') != 0:
-                        break
-                    if system('rm /useremain/update.swu') != 0:
-                        break
-                    if system('tar zxf /useremain/update_swu/setup.tar.gz -C /useremain/update_swu') != 0:
-                        break
-                    if system('chmod +x /useremain/update_swu/update.sh') != 0:
-                        break
-                else:
+                lv.lock()
+                self.modal_ota_rinkhals.button_action.set_state(lv.STATE.DISABLED, True)
+                self.modal_ota_rinkhals.button_uninstall.set_state(lv.STATE.DISABLED, True)
+                self.modal_ota_rinkhals.label_progress_text.set_text('Extracting...')
+                self.root_modal.clear_event_cb()
+                lv.unlock()
+
+                logging.info(f'Extracting Rinkhals update...')
+
+                if USING_SIMULATOR:
                     time.sleep(1)
+                else:
+                    if not self.extract_swu():
+                        break
 
                 lv.lock()
                 self.modal_ota_rinkhals.label_progress_text.set_text('Installing...')
                 lv.unlock()
 
-                if not USING_SIMULATOR:
-                    logging.info('Starting Rinkhals update...')
+                logging.info('Starting Rinkhals update...')
 
-                    # Patch the update script
-                    with open('/useremain/update_swu/update.sh', 'r+') as f:
-                        update_script = f.read()
-                        update_script = update_script.replace('rm -f $USB_PATH/update.swu', '')
-                        #update_script = update_script.replace('reboot', 'echo')
-
-                        f.truncate(0)
-                        f.seek(0)
-                        f.write(update_script)
-
-                    system('/useremain/update_swu/update.sh &')
-                else:
+                if USING_SIMULATOR:
                     time.sleep(1)
                     self.quit()
+                else:
+                    self.install_swu('async')
+
                 return
             
             lv.lock()
             self.modal_ota_rinkhals.obj_progress_bar.set_style_bg_color(lvr.COLOR_DANGER, lv.STATE.DEFAULT)
             self.modal_ota_rinkhals.label_progress_text.set_text('Extraction failed')
             self.modal_ota_rinkhals.button_action.set_state(lv.STATE.DISABLED, False)
+            self.modal_ota_rinkhals.button_uninstall.set_state(lv.STATE.DISABLED, False)
             lv.unlock()
 
         def uninstall_version():
@@ -1458,69 +1441,33 @@ class RinkhalsInstallApp(BaseApp):
             lv.unlock()
 
         def install_version():
-            lv.lock()
-            self.modal_ota_firmware.button_action.set_state(lv.STATE.DISABLED, True)
-            self.modal_ota_firmware.button_cancel.set_state(lv.STATE.DISABLED, True)
-            self.modal_ota_firmware.label_progress_text.set_text('Extracting...')
-            lv.unlock()
-
-            if self.printer_info.model_code == 'K2P' or self.printer_info.model_code == 'K3':
-                password = 'U2FsdGVkX19deTfqpXHZnB5GeyQ/dtlbHjkUnwgCi+w='
-            elif self.printer_info.model_code == 'KS1':
-                password = 'U2FsdGVkX1+lG6cHmshPLI/LaQr9cZCjA8HZt6Y8qmbB7riY'
-
-            logging.info(f'Extracting Rinkhals update...')
-
             for i in range(1):
-                if not USING_SIMULATOR:
-                    if system('rm -rf /useremain/update_swu') != 0:
-                        break
-                    if system(f'unzip -P {password} /useremain/update.swu -d /useremain') != 0:
-                        break
-                    if system('rm /useremain/update.swu') != 0:
-                        break
-                    if system('tar zxf /useremain/update_swu/setup.tar.gz -C /useremain/update_swu') != 0:
-                        break
-                    if system('chmod +x /useremain/update_swu/update.sh') != 0:
-                        break
-                else:
+                lv.lock()
+                self.modal_ota_firmware.button_action.set_state(lv.STATE.DISABLED, True)
+                self.modal_ota_firmware.button_cancel.set_state(lv.STATE.DISABLED, True)
+                self.modal_ota_firmware.label_progress_text.set_text('Extracting...')
+                lv.unlock()
+
+                logging.info(f'Extracting system update...')
+
+                if USING_SIMULATOR:
                     time.sleep(1)
+                else:
+                    if not self.extract_swu():
+                        break
 
                 lv.lock()
                 self.modal_ota_firmware.label_progress_text.set_text('Installing...')
                 lv.unlock()
 
-                if not USING_SIMULATOR:
-                    logging.info('Starting Rinkhals update...')
+                logging.info('Starting system update...')
 
-                    # Patch the update script
-                    with open('/useremain/update_swu/update.sh', 'r+') as f:
-                        update_script = f.read()
-                        update_script = update_script.replace('rm -rf ${swu_path}/update.swu', 'echo')
-                        update_script = update_script.replace('reboot', 'echo')
-
-                        f.truncate(0)
-                        f.seek(0)
-                        f.write(update_script)
-
-                    system('/useremain/update_swu/update.sh')
-
-                    if os.path.exists('/useremain/rinkhals/.version'):
-                        if os.path.exists('/userdata/app/gk/start.sh'):
-                            with open('/userdata/app/gk/start.sh', 'r') as f:
-                                script_content = f.read()
-                                if 'Rinkhals/begin' not in script_content:
-                                    system(f'cat {SCRIPT_PATH}/start.sh.patch >> /userdata/app/gk/start.sh')
-                        if os.path.exists('/userdata/app/gk/restart_k3c.sh'):
-                            system(f'cat {SCRIPT_PATH}/start.sh.patch >> /userdata/app/gk/restart_k3c.sh')
-
-                    os.makedirs('/useremain/rinkhals', exist_ok=True)
-                    open('/useremain/rinkhals/.reboot-marker', 'w').close()
-
-                    system('reboot')
-                else:
+                if USING_SIMULATOR:
                     time.sleep(1)
                     self.quit()
+                else:
+                    self.install_swu()
+
                 return
             
             lv.lock()
@@ -1539,6 +1486,60 @@ class RinkhalsInstallApp(BaseApp):
         self.modal_ota_firmware.button_action.add_event_cb(lambda e: run_async(download_version), lv.EVENT_CODE.CLICKED, None)
 
         self.show_modal(self.modal_ota_firmware)
+
+    def extract_swu(self):
+        if self.printer_info.model_code == 'K2P' or self.printer_info.model_code == 'K3':
+            password = 'U2FsdGVkX19deTfqpXHZnB5GeyQ/dtlbHjkUnwgCi+w='
+        elif self.printer_info.model_code == 'KS1':
+            password = 'U2FsdGVkX1+lG6cHmshPLI/LaQr9cZCjA8HZt6Y8qmbB7riY'
+        elif self.printer_info.model_code == 'K3M':
+            password = '4DKXtEGStWHpPgZm8Xna9qluzAI8VJzpOsEIgd8brTLiXs8fLSu3vRx8o7fMf4h6'
+            
+        if system('rm -rf /useremain/update_swu') != 0:
+            return False
+        if system(f'unzip -P {password} /useremain/update.swu -d /useremain') != 0:
+            return False
+        if system('rm /useremain/update.swu') != 0:
+            return False
+        if system('tar zxf /useremain/update_swu/setup.tar.gz -C /useremain/update_swu') != 0:
+            return False
+        if system('chmod +x /useremain/update_swu/update.sh') != 0:
+            return False
+
+        return True
+    def install_swu(self, params=''):
+        # Patch the update script
+        with open('/useremain/update_swu/update.sh', 'r+') as f:
+            update_script = f.read()
+            update_script = update_script.replace('rm -rf ${swu_path}/update.swu', 'echo')
+            update_script = update_script.replace('rm -f $USB_PATH/update.swu', '')
+            update_script = update_script.replace('reboot', 'echo')
+
+            f.truncate(0)
+            f.seek(0)
+            f.write(update_script)
+
+        # Run the update script
+        system(f'/useremain/update_swu/update.sh {params}')
+
+        if os.path.exists('/useremain/rinkhals/.version'):
+            if os.path.exists('/userdata/app/gk/start.sh'):
+                with open('/userdata/app/gk/start.sh', 'r') as f:
+                    script_content = f.read()
+                    if 'Rinkhals/begin' not in script_content:
+                        system(f'cat {SCRIPT_PATH}/start.sh.patch >> /userdata/app/gk/start.sh')
+            if os.path.exists('/userdata/app/gk/restart_k3c.sh'):
+                with open('/userdata/app/gk/start.sh', 'r') as f:
+                    script_content = f.read()
+                    if 'Rinkhals/begin' not in script_content:
+                        system(f'cat {SCRIPT_PATH}/start.sh.patch >> /userdata/app/gk/restart_k3c.sh')
+
+        # Store the reboot marker
+        os.makedirs('/useremain/rinkhals', exist_ok=True)
+        open('/useremain/rinkhals/.reboot-marker', 'w').close()
+
+        # Sync and reboot
+        system('sync && reboot')
 
 
 if __name__ == '__main__':
