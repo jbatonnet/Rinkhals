@@ -1,33 +1,39 @@
 ---
 title: Rinkhals quick start guide
 ---
-
+#TODO: 
 ## To install Rinkhals
 
 ### Using the full offline package
 
 - Go to the release page on GitHub: [Rinkhals releases](https://github.com/jbatonnet/Rinkhals/releases)
 - Select and download the right update-\*.swu for your printer
-- Rename the downloaded SWU file as **update.swu**
-- Copy it in a directory named **aGVscF9zb3Nf** on a FAT32 USB drive
-- Plug the USB drive in your printer
-
+- Follow the install [instructions](../Rinkhals/installation-and-firmware-updates.md) for your printer.
+- 
 ### Using the Rinkhals installer
 
 !!! note
     The installer you downloaded will still work for future releases. You can leave it on your USB drive and just plug it, even for future releases
 
-You can read more information about the Rinkhals installer on this [page](../Rinkhals/rinkhals-installer.md).
-
 - Go to the release page on GitHub: [Rinkhals releases](https://github.com/jbatonnet/Rinkhals/releases)
 - Select and download the right installer-\*.swu for your printer
 - Rename the downloaded SWU file as **update.swu**
-- Copy it in a directory named **aGVscF9zb3Nf** on a FAT32 USB drive
-- Plug the USB drive in your printer
-- Wait ~10s for the installer to appear
-- Go to Update > Rinkahls > Manage
-- Select the version you want to install
-- Tap Download then Install
+#### For Kobra 3 series printers:
+    - Copy it in a directory named **aGVscF9zb3Nf**on a FAT32 USB drive
+    - Plug the USB drive in your printer
+    - Wait ~10s for the installer to appear
+    - Go to Update > Rinkahls > Manage
+    - Select the version you want to install
+    - Tap Download then Install
+#### For Kobra 2 series printers:
+    - Copy it in a directory named **update**on a FAT32 USB drive
+    - Plug the USB drive in your printer
+    - Navigate to Settings --> More settings --> About this machine
+    - Touch the orange arrow next to the version number
+    - Wait ~10s for the installer to appear
+    - Go to Update > Rinkahls > Manage
+    - Select the version you want to install
+    - Tap Download then Install
 
 
 ## Find the IP address of your printer
