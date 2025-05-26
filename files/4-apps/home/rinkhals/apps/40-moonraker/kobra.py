@@ -519,40 +519,45 @@ class Kobra:
                 rpc_method = web_request.get_endpoint()
                 if self.is_goklipper_running() and rpc_method == "objects/list":
                     logging.info('[Kobra] Injected objects list')
-                    return {
-                        "objects": [
-                            "motion_report",
-                            "gcode_macro pause",
-                            "gcode_macro resume",
-                            "gcode_macro cancel_print",
-                            "gcode_macro t0",
-                            "gcode_macro t1",
-                            "gcode_macro t2",
-                            "gcode_macro t3",
-                            "configfile",
-                            "heaters",
-                            "respond",
-                            "display_status",
-                            "extruder",
-                            "fan",
-                            "gcode_move",
-                            "heater_bed",
-                            "mcu",
-                            "mcu nozzle_mcu",
-                            "ota_filament_hub",
-                            "pause_resume",
-                            "pause_resume/cancel",
-                            "print_stats",
-                            "toolhead",
-                            "verify_heater extrude",
-                            "verify_heater heater_bed",
-                            "virtual_sdcard",
-                            "webhooks",
-                            "bed_mesh",
-                            "bed_mesh \"default\"",
-                            "idle_timeout"
-                        ]
-                    }
+
+                    objects = [
+                        "motion_report",
+                        "gcode_macro pause",
+                        "gcode_macro resume",
+                        "gcode_macro cancel_print",
+                        "gcode_macro t0",
+                        "gcode_macro t1",
+                        "gcode_macro t2",
+                        "gcode_macro t3",
+                        "configfile",
+                        "heaters",
+                        "respond",
+                        "display_status",
+                        "extruder",
+                        "fan",
+                        "gcode_move",
+                        "heater_bed",
+                        "mcu",
+                        "mcu nozzle_mcu",
+                        "ota_filament_hub",
+                        "pause_resume",
+                        "pause_resume/cancel",
+                        "print_stats",
+                        "toolhead",
+                        "verify_heater extrude",
+                        "verify_heater heater_bed",
+                        "virtual_sdcard",
+                        "webhooks",
+                        "bed_mesh",
+                        "bed_mesh \"default\"",
+                        "idle_timeout"
+                    ]
+                    
+                    if self.KOBRA_MODEL_CODE == 'KS1':
+                        objects.append("fan_generic air_filter_fan")
+                        objects.append("fan_generic box_fan")
+
+                    return { "objects": objects }
                 return await original_request(me, web_request)
             return request
 
