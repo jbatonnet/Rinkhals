@@ -69,10 +69,10 @@ This UI allows you to manage installed apps, trigger an OTA update, reboot your 
 
 <p align="center">
     <!-- <img width="192" src="./.github/images/screenshot-settings.png"> -->
-    <img width="192" src="./.github/images/screenshot-rinkhals-main.png">
-    <img width="192" src="./.github/images/screenshot-rinkhals-apps.png">
-    <img width="192" src="./.github/images/screenshot-rinkhals-app.png">
-    <img width="192" src="./.github/images/screenshot-rinkhals-ota.png">
+    <img width="192" src="./docs/docs/assets/rinkhals-ui/ui-main.png">
+    <img width="192" src="./docs/docs/assets/rinkhals-ui/ui-apps.png">
+    <img width="192" src="./docs/docs/assets/rinkhals-ui/ui-apps-moonraker.png">
+    <img width="192" src="./docs/docs/assets/rinkhals-ui/ui-updates.png">
     <!-- <img width="192" src="./.github/images/screenshot-rinkhals-advanced.png"> -->
 </p>
 
