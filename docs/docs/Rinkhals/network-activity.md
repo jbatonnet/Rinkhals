@@ -22,13 +22,11 @@ title: Network activity
 
 Those URLs are repositories and mirrors for system / Rinkhals updates. They are used explicitely by Rinkhals when checking for updates.
 
-- [https://github.com/jbatonnet/Rinkhals](https://github.com/jbatonnet/Rinkhals): To check / download Rinkhals updates
-- [https://rinkhals.meowcat285.com](https://rinkhals.meowcat285.com): To check / download system updates
-- [https://cdn.cloud-universe.anycubic.com/attachment](https://cdn.cloud-universe.anycubic.com/attachment): To download official updates
-
-And soon:
-
-- [https://github.com/jbatonnet/Rinkhals.apps](https://github.com/jbatonnet/Rinkhals.apps): As a trusted repository to check / download new apps
+- [https://github.com](https://github.com): To check / download Rinkhals updates
+- [https://api.github.com](https://api.github.com): To check Rinkhals updates
+- [https://raw.githubusercontent.com](https://raw.githubusercontent.com): As a trusted repository to check / download new apps
+- [https://cdn.meowcat285.com](https://cdn.meowcat285.com): To check / download system updates
+- [https://cdn.cloud-universe.anycubic.com](https://cdn.cloud-universe.anycubic.com): To download official updates
 
 ### MQTT
 

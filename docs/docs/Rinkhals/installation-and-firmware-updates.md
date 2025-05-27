@@ -26,7 +26,6 @@ On the Kobra series of 3D printer, it's possible to sideload .swu files to insta
 5. Navigate using the touch UI to Settings --> More settings --> About Machine
 6. Click the orange arrow next to `Firmware version`
 
-
 !!! note "Special note for Kobra 2 Pro [Mainbord Trigorilla Spe B v1.0.x] with Firmware 3.1.4"
     There are a number of issues with stock firmware 3.1.4 on the Kobra 2 Pro. You will need to downgrade to firmware 3.1.2.3 in order to install Rinkhals.
 
@@ -55,13 +54,15 @@ On the Kobra series of 3D printer, it's possible to sideload .swu files to insta
 - Make sure your printer firmware is supported (as described on the home page and on the releases page)
 - Download the version of Rinkhals you want to install from the [Releases](https://github.com/jbatonnet/Rinkhals/releases)
 - Follow the installation steps above
-- 
+
 ### If you have a Kobra 3 series printer:
+
 - After about 20 seconds (the time for the printer to prepare the update), you will see a progress bar on the screen
     - If the progress bar turns green and you hear 2 beeps, the printer reboots and Rinkhals is installed
     - If the progress bar turns red and you ear 3 beeps, the installation failed but everything should still work as usual. You will then find more information in the `aGVscF9zb3Nf/install.log` file on the USB drive
-    - 
+
 ### If you have a Kobra 2 series printer:
+
 - The printer will reboot twice and beep both times.
     - If you have a Rinkhals icon in the settings tab then Rinkhals is installed.
     - If you don't have Rinkhals icon in the settings tab:
