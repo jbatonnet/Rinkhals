@@ -51,7 +51,7 @@ There are two options to install Rinkhals:
 Either way, you'll need to:
 - Download the release / file you want from the [Releases](https://github.com/jbatonnet/Rinkhals/releases) page
 - Rename the downlaoded SWU file as **update.swu**
-- Copy it in a directory named **aGVscF9zb3Nf** on a FAT32 USB drive
+- Copy it in a directory named **aGVscF9zb3Nf** or **update**,depending on your printer, on a FAT32 USB drive
 - Plug the USB drive in your printer
 
 
@@ -110,7 +110,7 @@ If your printer shows a 11407 error, check the documentation there: [Read about 
 This repo contains some tools you can use **no matter what firmware you are using**. It is a set of scripts packaged in a SWU file.
 
 From the [Releases](https://github.com/jbatonnet/Rinkhals/releases) page, identify the tools.zip file for your printer.
-Extract it, copy the SWU file you want as **update.swu** on a FAT32 USB drive in a **aGVscF9zb3Nf** directory, plug the USB drive in your printer and it just works.
+Extract it, copy the SWU file you want as **update.swu** on a FAT32 USB drive in a **aGVscF9zb3Nf** or **update**,depending on your printer, directory, plug the USB drive in your printer and it just works.
 You will ear two beeps, the second one will tell you that the tool completed its work. There is no need to reboot afterwards.
 
 Here are the tools available:
