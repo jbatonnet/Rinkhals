@@ -27,7 +27,7 @@ start() {
     if [ "$RESOLUTION" != "" ]; then
         RESOLUTION="-r $RESOLUTION"
     else
-        RESOLUTION=""
+        RESOLUTION="-r 1280x720"
     fi
 
     PORT=8080
