@@ -1,0 +1,20 @@
+FFMPEG_ROCKCHIP_VERSION = 57d5befee96f229b05fa09334a4d7a6f95a324bd
+FFMPEG_ROCKCHIP_SITE = https://github.com/nyanmisaka/ffmpeg-rockchip
+FFMPEG_ROCKCHIP_SITE_METHOD = git
+
+FFMPEG_ROCKCHIP_LICENSE = LGPLv2.1
+FFMPEG_ROCKCHIP_LICENSE_FILES = LICENSE.md
+
+FFMPEG_ROCKCHIP_DEPENDENCIES = libdrm
+
+define FFMPEG_ROCKCHIP_BUILD_CMDS
+	$(MAKE) $(TARGET_CONFIGURE_OPTS) -C $(@D) \
+		CFLAGS="$(TARGET_CFLAGS) -I$(STAGING_DIR)/usr/include/drm" \
+		LDFLAGS="$(TARGET_LDFLAGS) -L$(STAGING_DIR)/usr/lib -ldrm -lvncserver"
+endef
+
+define FFMPEG_ROCKCHIP_INSTALL_TARGET_CMDS
+	$(INSTALL) -D -m 0755 $(@D)/bin/drm-vncserver $(TARGET_DIR)/usr/bin
+endef
+
+$(eval $(generic-package))

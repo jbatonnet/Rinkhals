@@ -1,0 +1,4 @@
+config BR2_PACKAGE_FFMPEG_ROCKCHIP
+    bool "ffmpeg-rockchip"
+    help
+      FFmpeg with async and zero-copy Rockchip MPP & RGA support
