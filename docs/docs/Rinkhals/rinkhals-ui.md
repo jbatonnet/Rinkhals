@@ -36,7 +36,7 @@ By tapping the app name you will enter the app details view where you can indivi
 
 - **Reboot printer**: Reboot the printer (`sync && reboot`)
 - **Restart Rinkhals**: Soft reboot for Rinkhals. Will restart the currently running version of Rinkhals.
-- **Switch to stock**: Stops Rinkhals, making the pritner switch to stock firmware. On the next reboot, the printer will reboot back to Rinkhals.
+- **Switch to stock**: Stops Rinkhals, making the printer switch to stock firmware. On the next reboot, the printer will reboot back to Rinkhals.
 - **Disable Rinkhals**: Disables Rinkhals and reboot to stock firmware. Rinkhals is now disabled and will need to be reinstalled and re-enabled to start again.
   
 <div style="clear: both;"></div>
