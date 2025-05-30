@@ -23,6 +23,10 @@ if [ "$KOBRA_MODEL_CODE" = "KS1" ]; then
     SCALE="0.75"
     ROTATION="PI"
     FILTER="[0:v] drawbox=x=0:y=0:w=iw:h=ih:t=fill:c=black"
+elif [ "$KOBRA_MODEL_CODE" = "K3M" ]; then
+    SCALE="0.5"
+    ROTATION="-PI/2"
+    FILTER="[0:v] drawbox=x=24:y=0:w=iw-24:h=ih:t=fill:c=black"
 else
     SCALE="0.5"
     ROTATION="PI/2"
