@@ -42,7 +42,7 @@ title: Rinkhals quick start guide
 
 ## Find the IP address of your printer
 
-There are 2 options to find your printer IP address. First, make sure the pritner is connected to your Wi-Fi following the on screen instruction or wizard.
+There are 2 options to find your printer IP address. First, make sure the printer is connected to your Wi-Fi following the on screen instruction or wizard.
 
 ### From your printer screen
 

@@ -82,7 +82,7 @@ During the installation process, the installation will be patched in order for R
 ![](../assets/rinkhals-installer/installer-tools-uninstall.png){ width="160", align=right }
 ![](../assets/rinkhals-installer/installer-tools.png){ width="160", align=right }
 
-- **Generate a Debug Bundle**: Generate a ZIP of useful logs / states of your pritner on the USB drive
+- **Generate a Debug Bundle**: Generate a ZIP of useful logs / states of your printer on the USB drive
 - **Reset Rinkhals configuration**: Create a backup of your configuration on the USB drive and resets printer, moonraker and other configurations to default
 - **Backup partitions**: Create a backup of /userdata and /useremain partitions (excluding gcodes, Rinkhals and other less important things) on the USB drive
 - **Clean old Rinkhals**: Remove older Rinkhals versions, keeping only the last 3 version including the currently running one
@@ -103,5 +103,5 @@ Tapping on them will show more details and the appropriate fix to apply.
 The list of diagnostics is increasing over time, here are a couple of examples:
 
 - Rinkhals being disabled
-- Modified pritner configuration
+- Modified printer configuration
 - Missing startup files
