@@ -39,7 +39,7 @@ lvr.set_debug_rendering(DEBUG_RENDERING)
 
 if USING_SIMULATOR:
     PrinterInfo.simulate(
-        model_code='K3',
+        model_code='K3M',
         model='Anycubic Kobra',
         rinkhals_version='20250424_01',
         system_version='1.2.3.4',
@@ -231,18 +231,15 @@ class RinkhalsUiApp(BaseApp):
             label_rinkhals.set_style_pad_top(lv.dpx(20), lv.STATE.DEFAULT)
             label_rinkhals.set_style_pad_bottom(lv.dpx(10), lv.STATE.DEFAULT)
             
+            self.screen_logo.label_model = lvr.subtitle(self.screen_logo)
+            self.screen_logo.label_model.set_text('Model:')
+
             self.screen_logo.label_firmware = lvr.subtitle(self.screen_logo)
             self.screen_logo.label_firmware.set_text('Firmware:')
 
             self.screen_logo.label_version = lvr.subtitle(self.screen_logo)
             self.screen_logo.label_version.set_text('Version:')
-            
-            self.screen_logo.label_root = lvr.subtitle(self.screen_logo)
-            self.screen_logo.label_root.set_text('Root: ?')
-            
-            self.screen_logo.label_home = lvr.subtitle(self.screen_logo)
-            self.screen_logo.label_home.set_text('Home: ?')
-            
+                        
             self.screen_logo.label_disk = lvr.subtitle(self.screen_logo)
             self.screen_logo.label_disk.set_text('Disk usage: ?')
 
@@ -273,10 +270,10 @@ class RinkhalsUiApp(BaseApp):
             button_settings.set_style_text_color(lvr.COLOR_DANGER, lv.STATE.DEFAULT)
             button_settings.add_event_cb(lambda e: self.show_screen(self.screen_advanced), lv.EVENT_CODE.CLICKED, None)
 
-        fireworks_shown = get_app_property('rinkhals_ui', 'fireworks_shown')
-        if not fireworks_shown or fireworks_shown.lower() != 'true':
-            set_app_property('rinkhals_ui', 'fireworks_shown', 'True')
-            self.show_fireworks()
+        # fireworks_shown = get_app_property('rinkhals_ui', 'fireworks_shown')
+        # if not fireworks_shown or fireworks_shown.lower() != 'true':
+        #     set_app_property('rinkhals_ui', 'fireworks_shown', 'True')
+        #     self.show_fireworks()
 
         self.show_screen(self.screen_main)
         run_async(self.layout_async)
@@ -568,10 +565,9 @@ class RinkhalsUiApp(BaseApp):
         elif screen == self.screen_apps: self.layout_apps()
 
     def layout_main(self):
+        self.screen_logo.label_model.set_text(f'Model: {KOBRA_MODEL}')
         self.screen_logo.label_firmware.set_text(f'Firmware: {KOBRA_VERSION}')
         self.screen_logo.label_version.set_text(f'Version: {RINKHALS_VERSION}')
-        self.screen_logo.label_root.set_text(f'Root: {ellipsis(RINKHALS_ROOT, 32)}')
-        self.screen_logo.label_home.set_text(f'Home: {ellipsis(RINKHALS_HOME, 32)}')
         self.screen_logo.label_disk.set_text(f'Disk usage: ?')
 
         def update_disk_usage(result):
