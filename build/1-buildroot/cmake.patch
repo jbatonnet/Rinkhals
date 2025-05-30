@@ -1,0 +1,14 @@
+diff --git a/package/cmake/cmake.mk b/package/cmake/cmake.mk
+index 56c92e53e9accf297ff7b9d3d1766c0f4f52ca96..49c44b7f80b87838c37564742ff29761fb563ce2 100644
+--- a/package/cmake/cmake.mk
++++ b/package/cmake/cmake.mk
+@@ -64,9 +64,6 @@ define HOST_CMAKE_INSTALL_CMDS
+ endef
+ 
+ define CMAKE_REMOVE_EXTRA_DATA
+-	rm $(TARGET_DIR)/usr/bin/{cmake,cpack}
+-	rm -fr $(TARGET_DIR)/usr/share/cmake-$(CMAKE_VERSION_MAJOR)/{completions,editors}
+-	rm -fr $(TARGET_DIR)/usr/share/cmake-$(CMAKE_VERSION_MAJOR)/{Help,include}
+ endef
+ 
+ define CMAKE_INSTALL_CTEST_CFG_FILE
