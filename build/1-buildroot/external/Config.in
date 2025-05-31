@@ -1,2 +1,5 @@
 source "$BR2_EXTERNAL_RINKHALS_PATH/package/drm-vncserver/Config.in"
 source "$BR2_EXTERNAL_RINKHALS_PATH/package/lv_micropython/Config.in"
+source "$BR2_EXTERNAL_RINKHALS_PATH/package/rockchip-mpp/Config.in"
+source "$BR2_EXTERNAL_RINKHALS_PATH/package/rockchip-rga/Config.in"
+source "$BR2_EXTERNAL_RINKHALS_PATH/package/ffmpeg-rockchip/Config.in"

@@ -109,15 +109,4 @@ endef
 # 	--disable-x86asm \
 # )
 
-# define FFMPEG_ROCKCHIP_BUILD_CMDS
-# 	$(TARGET_MAKE_ENV) $(MAKE) CC="$(TARGET_CC)" ALLFLAGS_C="$(TARGET_CFLAGS)" \
-# 		CXX="$(TARGET_CXX)" ALLFLAGS_CPP="$(TARGET_CXXFLAGS)" \
-# 		LDFLAGS="$(TARGET_LDFLAGS)" -C $(@D)
-# endef
-
-# define FFMPEG_ROCKCHIP_INSTALL_TARGET_CMDS
-# 	$(INSTALL) -D -m 0755 $(@D)/ffmpeg $(TARGET_DIR)/usr/bin/ffmpeg
-# endef
-
 $(eval $(autotools-package))
-#$(eval $(generic-package))
