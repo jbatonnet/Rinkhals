@@ -3,6 +3,6 @@ ROCKCHIP_RGA_SITE = https://github.com/nyanmisaka/rk-mirrors
 ROCKCHIP_RGA_SITE_METHOD = git
 
 ROCKCHIP_RGA_STAGING = YES
-ROCKCHIP_RGA_TARGET = NO
+ROCKCHIP_RGA_TARGET = YES
 
 $(eval $(meson-package))
