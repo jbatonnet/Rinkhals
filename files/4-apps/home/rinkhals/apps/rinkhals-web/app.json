@@ -1,0 +1,13 @@
+{
+    "$version": "1",
+
+    "name": "Rinkhals Web",
+    "description": "A web interface for Rinkhals",
+    "version": "0.1",
+
+    "requirements":
+    {
+        "memory": 1,
+        "cpu": 4
+    }
+}

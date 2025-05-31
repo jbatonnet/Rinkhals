@@ -1,0 +1,177 @@
+#!/bin/sh
+
+
+################
+# Decode query string
+
+urldecode() {
+  # Input URL encoded string
+  _encoded_url="$1"
+
+  # Replace '+' with spaces first
+  _decoded_url=""
+  _c=''
+  _i=0
+  _len=${#_encoded_url} # This is a Bashism/Zshism. For pure ASH, need a loop for length.
+
+  # ASH compatible way to replace '+' with spaces:
+  # Using sed for portability
+  _temp_url=$(echo "$_encoded_url" | sed 's/\+/ /g')
+
+  _final_decoded=""
+  _buffer=""
+  _hex_char=""
+
+  # Process character by character
+  _len_temp=$(echo "$_temp_url" | wc -c) # Approx length for loop
+  _j=0
+
+  # Loop through the string, character by character
+  while [ "$_j" -lt "$_len_temp" ]; do
+    _char=$(echo "$_temp_url" | cut -c $((_j+1)))
+    
+    if [ "$_char" = "%" ]; then
+      # Expecting two hex digits
+      _hex_val=$(echo "$_temp_url" | cut -c $((_j+2))-$((_j+3)))
+      # Convert hex to decimal, then decimal to char using printf
+      # This is the tricky part without printf %b directly
+      # A simple way is to use awk's printf for this, or a lookup table.
+      # For a pure ASH shell without awk or perl, it's very hard directly.
+      # Let's rely on a common trick: hex to char conversion via printf.
+      # This still depends on printf interpreting \x, which might not be universal for all ash, but is common.
+      _converted_char=$(printf '\\x%s' "$_hex_val")
+      _final_decoded="${_final_decoded}$(printf '%b' "$_converted_char")" # This printf %b is the hurdle.
+      _j=$((_j+2)) # Skip two hex digits
+    else
+      _final_decoded="${_final_decoded}${_char}"
+    fi
+    _j=$((_j+1))
+  done
+
+  echo "$_final_decoded"
+}
+
+IFS='&' 
+for pair in $QUERY_STRING; do
+  key=$(printf '%s' "$pair" | cut -d= -f1 | tr '[:lower:]' '[:upper:]')
+  value=$(printf '%s' "$pair" | cut -d= -f2-)
+  value=$(urldecode "$value")
+  export $(echo "QUERY_STRING_$key")="$value"
+done
+unset IFS
+
+#set
+
+################
+# Actions
+
+list() {
+    dir=$1
+    if [ ! -d "$dir" ]; then
+        echo "Status: 400 Bad Request"
+        echo "Content-Type: application/json"
+        echo
+        echo "{\"error\": \"Invalid directory\"}"
+        exit 1
+    fi
+
+    echo "Content-Type: application/json"
+    echo
+
+    printf '['
+    first=1
+    for entry in "$dir"/.* "$dir"/*; do
+        base=$(basename "$entry")
+        [ "$base" = "." ] && continue
+        [ "$base" = ".." ] && continue
+        
+        [ -e "$entry" ] || continue
+
+        if [ $first -eq 0 ]; then
+            printf ','
+        fi
+        first=0
+        
+        name=$(basename "$entry")
+        name=$(printf '%s' "$name" | sed 's/"/\\"/g')
+        
+        type=$(ls -ld "$entry" 2>/dev/null | cut -c1)
+
+        
+        if [ "$type" = "l" ]; then
+            target=$(readlink "$entry")
+            printf '{"name":"%s","type":"%s","target":"%s"}' "$name" "$type" "$target"
+        elif [ "$type" = "-" ]; then
+            type="f"
+            size=$(ls -ld "$entry" 2>/dev/null | awk '{print $5}')
+            permissions=$(ls -ld "$entry" 2>/dev/null | awk '{print substr($1,2)}')
+            owner=$(ls -ld "$entry" 2>/dev/null | awk '{print $3}')
+            group=$(ls -ld "$entry" 2>/dev/null | awk '{print $4}')
+            printf '{"name":"%s","type":"%s","size":"%s","owner":"%s","group":"%s","permissions":"%s"}' "$name" "$type" "$size" "$owner" "$group" "$permissions"
+        else
+            printf '{"name":"%s","type":"%s"}' "$name" "$type"
+        fi
+    done
+    printf ']\n'
+}
+
+read() {
+    cat $1
+}
+
+write() {
+    echo dede
+}
+
+delete() {
+    echo dede
+}
+
+
+################
+# Interpret the action
+
+QUERY_STRING_ACTION=$(echo "$QUERY_STRING_ACTION" | tr '[:upper:]' '[:lower:]')
+
+case "${QUERY_STRING_ACTION:-list}" in
+    "list")
+        list "${QUERY_STRING_PATH:-.}"
+        ;;
+    "read")
+        read "${QUERY_STRING_PATH}"
+        ;;
+    "write")
+        #write "${QUERY_STRING_PATH}"
+        ;;
+    "delete")
+        #delete "${QUERY_STRING_PATH}"
+        ;;
+    *)
+        echo "Unknown or missing action: $QUERY_STRING_ACTION"
+        ;;
+esac
+
+
+
+
+
+
+# IFS='&' read -ra parts <<< "$QUERY_STRING"
+# for part in "${parts[@]}"; do
+#   echo "$part"
+# done
+
+
+
+# IFS='&' 
+# for pair in $QUERY_STRING; do
+#   key=$(printf '%s' "$pair" | cut -d= -f1)
+#   value=$(printf '%s' "$pair" | cut -d= -f2-)
+#   # value=$(printf '%s' "$value" | sed 's/+/ /g; s/%/\\x/g' | xargs -0 printf '%b')
+
+#   echo "Key: $key"
+#   echo "Value: $value"
+# done
+# unset IFS
+
+#set
