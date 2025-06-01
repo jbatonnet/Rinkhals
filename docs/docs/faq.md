@@ -75,4 +75,4 @@ If you update your printer firmware to a version that's not supported with Rinkh
 
 - Wait for the new Rinkhals version to be released. Please do not open issues or ask for ETA, I'm working on my free time!
 - Reinstall a supported version of your printer firmware and install a matching Rinkhals version
-- Starting from 20250316_01, you can create a .enable-rinkhals file at the root of a USB drive, plug it and reboot your printer. It will force Rinkhals to start, but you might experience weird behavior or even worst as the version was not tested.
+- Starting from 20250316_01, you can create a .enable-rinkhals file at the root of a USB drive, plug it and reboot your printer. It will force Rinkhals to start, but you might experience weird behavior or even worse as the version was not tested.

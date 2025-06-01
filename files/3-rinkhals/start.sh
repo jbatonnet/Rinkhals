@@ -262,7 +262,9 @@ for TARGET in $TARGETS; do
     fi
 done
 
-./gklib -a /tmp/unix_uds1 /userdata/app/gk/printer_data/config/printer.generated.cfg >> $RINKHALS_ROOT/logs/gklib.log 2>&1 &
+# Tweak processes priority to avoid MCU timing and more generally priting errors. (https://github.com/jbatonnet/Rinkhals/issues/128)
+nice -n -20 ./gklib -a /tmp/unix_uds1 /userdata/app/gk/printer_data/config/printer.generated.cfg >> $RINKHALS_ROOT/logs/gklib.log 2>&1 &
+chrt -p 89 $(get_by_name ksoftirqd/0)
 
 sleep 2
 

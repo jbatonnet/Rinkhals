@@ -494,17 +494,24 @@ class Diagnostic:
                     if firmware_version == '2.3.8':   supposed_hash = 'addcb2cc9e34a867f49a7396bfdf276c'
                     if firmware_version == '2.3.8.9': supposed_hash = '0e6c2c875b997d861afa83c7453f5b6a'
                     if firmware_version == '2.4.0':   supposed_hash = 'eeac181517406e37d34463a79a5e2ebf'
+                    if firmware_version == '2.4.0.4': supposed_hash = '7da3310baa37c466d790c7a2d8c0d097'
                 elif printer_info.model_code == 'KS1':
                     if firmware_version == '2.4.8.3': supposed_hash = '6ca031c6b72b86bb6a78311b308b2163'
                     if firmware_version == '2.5.0.2': supposed_hash = 'e142ceaba7a7fe56c1f5d51d15be2b96'
                     if firmware_version == '2.5.0.6': supposed_hash = 'c2d6967dce8803a20c3087b4e2764633'
                     if firmware_version == '2.5.1.6': supposed_hash = 'f41fdca985d7fdb02d561f5d271eb526'
+                    if firmware_version == '2.5.2.2': supposed_hash = None
+                    if firmware_version == '2.5.2.3': supposed_hash = 'b29e8594f56001c09d4e232696b9827d'
+                    if firmware_version == '2.5.3.1': supposed_hash = '7678403dc8064f650931904f48be88f0'
                 elif printer_info.model_code == 'K2P':
                     if firmware_version == '3.1.2.3': supposed_hash = 'fb945efa204eec777a139adafc6a40aa'
                     if firmware_version == '3.1.4':   supposed_hash = None
                 elif printer_info.model_code == 'K3M':
                     if firmware_version == '2.4.4':   supposed_hash = None
                     if firmware_version == '2.4.4.9': supposed_hash = None
+                    if firmware_version == '2.4.5.3': supposed_hash = None
+                    if firmware_version == '2.4.6':   supposed_hash = 'ff5c2d8ae79b8d90d0ff7c697d85502d'
+                    if firmware_version == '2.4.6.5': supposed_hash = 'b79497202880f92b6e4a578a32e8f3a3'
 
             if supposed_hash is None:
                 printer_cfg_mtime = os.path.getmtime(printer_cfg_path)

@@ -9,8 +9,8 @@
         "resolution": {
             "display": "Resolution",
             "type": "enum",
-            "options": [ "640x480", "1280x720" ],
-            "default": "640x480"
+            "options": [ "640x480", "1280x720", "1920x1080" ],
+            "default": "1280x720"
         }
     }
 }

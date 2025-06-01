@@ -107,19 +107,14 @@ def patch_K3SysUi(binaryPath, modelCode, version):
     # bl  QStackedWidget::setCurrentIndex
     # b   0xfaf4c                          < patchReturnAddress
 
-    elif modelCode == 'K3' and version == '2.3.9.3':
-        buttonCallback = k3sysui.symbols['_ZZN10MainWindow19AcSettingPageUiInitEvENKUlvE_clEv']
-        patchJumpAddress = 0xfd3bc
-        patchReturnAddress = 0xfd3ec
-    elif modelCode == 'K3' and version == '2.4.0':
+    elif (modelCode == 'K3' and version == '2.4.0') or (modelCode == 'K3M' and version == '2.4.6'):
         buttonCallback = k3sysui.symbols['_ZZN10MainWindow19AcSettingPageUiInitEvENKUlvE_clEv']
         patchJumpAddress = 0xfd278
         patchReturnAddress = 0xfd2a8
-    
-    elif modelCode == 'K3M' and version == '2.4.6':
+    elif (modelCode == 'K3' and version == '2.4.0.4') or (modelCode == 'K3M' and version == '2.4.6.5'):
         buttonCallback = k3sysui.symbols['_ZZN10MainWindow19AcSettingPageUiInitEvENKUlvE_clEv']
-        patchJumpAddress = 0xfd278
-        patchReturnAddress = 0xfd2a8
+        patchJumpAddress = 0xfef8c
+        patchReturnAddress = 0xfefbc
 
     # KS1 - Settings > General > Service Support (4th button)
     
@@ -134,14 +129,14 @@ def patch_K3SysUi(binaryPath, modelCode, version):
     # bl      QStackedWidget::setCurrentIndex
     # nop                                      < patchReturnAddress
 
-    elif modelCode == 'KS1' and version == '2.5.1.6':
-        buttonCallback = k3sysui.symbols['_ZZN10MainWindow26AcSettingGeneralPageUiInitEvENKUlRK11QModelIndexE0_clES2_']
-        patchJumpAddress = 0x113210
-        patchReturnAddress = 0x113218
     elif modelCode == 'KS1' and version == '2.5.2.3':
         buttonCallback = k3sysui.symbols['_ZZN10MainWindow26AcSettingGeneralPageUiInitEvENKUlRK11QModelIndexE0_clES2_']
         patchJumpAddress = 0x1138d8
         patchReturnAddress = 0x1138e0
+    elif modelCode == 'KS1' and version == '2.5.3.1':
+        buttonCallback = k3sysui.symbols['_ZZN10MainWindow26AcSettingGeneralPageUiInitEvENKUlRK11QModelIndexE0_clES2_']
+        patchJumpAddress = 0x11f48c
+        patchReturnAddress = 0x11f494
 
     else:
         raise Exception('Unsupported model and version')
