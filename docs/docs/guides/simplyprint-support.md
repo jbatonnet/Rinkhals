@@ -18,7 +18,7 @@ This guide provides step-by-step instructions for installing **Rinkhals**, a cus
 2. Download the latest release of Rinkhals.
 
 ## 2. Prepare the USB Drive
-1. Format a USB drive as **FAT32**.
+1. Format a USB drive as **FAT32** (MBR, GPT is not supported)
 2. Create a directory named `aGVscF9zb3Nf` on the USB drive.
 
 ## 3. Install Rinkhals on the Printer

@@ -8,22 +8,32 @@ title: Rinkhals quick start guide
 
 - Go to the release page on GitHub: [Rinkhals releases](https://github.com/jbatonnet/Rinkhals/releases)
 - Select and download the right update-\*.swu for your printer
-- Rename the downloaded SWU file as **update.swu**
-- Copy it in a directory named **aGVscF9zb3Nf** on a FAT32 USB drive
-- Plug the USB drive in your printer
+- Follow the install [instructions](../Rinkhals/installation-and-firmware-updates.md) for your printer.
 
 ### Using the Rinkhals installer
 
 !!! note
     The installer you downloaded will still work for future releases. You can leave it on your USB drive and just plug it, even for future releases
 
-You can read more information about the Rinkhals installer on this [page](../Rinkhals/rinkhals-installer.md).
-
 - Go to the release page on GitHub: [Rinkhals releases](https://github.com/jbatonnet/Rinkhals/releases)
 - Select and download the right installer-\*.swu for your printer
 - Rename the downloaded SWU file as **update.swu**
-- Copy it in a directory named **aGVscF9zb3Nf** on a FAT32 USB drive
+
+#### For Kobra 3 series printers:
+
+- Copy it in a directory named **aGVscF9zb3Nf** on a FAT32 USB drive (MBR, GPT is not supported)
 - Plug the USB drive in your printer
+- Wait ~10s for the installer to appear
+- Go to Update > Rinkahls > Manage
+- Select the version you want to install
+- Tap Download then Install
+
+#### For Kobra 2 series printers:
+
+- Copy it in a directory named **update** on a FAT32 USB drive (MBR, GPT is not supported)
+- Plug the USB drive in your printer
+- Navigate to Settings --> More settings --> About this machine
+- Touch the orange arrow next to the version number
 - Wait ~10s for the installer to appear
 - Go to Update > Rinkahls > Manage
 - Select the version you want to install
@@ -32,7 +42,7 @@ You can read more information about the Rinkhals installer on this [page](../Rin
 
 ## Find the IP address of your printer
 
-There are 2 options to find your printer IP address. First, make sure the pritner is connected to your Wi-Fi following the on screen instruction or wizard.
+There are 2 options to find your printer IP address. First, make sure the printer is connected to your Wi-Fi following the on screen instruction or wizard.
 
 ### From your printer screen
 
