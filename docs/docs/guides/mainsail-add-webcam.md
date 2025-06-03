@@ -12,7 +12,7 @@ I used [this webcam](https://www.amazon.de/dp/B0002HAHUY?)
 
 1. **Connect your webcam via USB to the printer.**
 
-    ![USB Connection](docs/docs/assets/webcam-guide/USB-Webcam-Connect.jpg)
+    ![USB Connection](https://raw.githubusercontent.com/Rickeetz/Rinkhals/master/docs/docs/assets/webcam-guide/USB-Webcam%20Connect.jpg)
 
 2. **Reboot the printer** after connecting the cable.
 
@@ -27,7 +27,7 @@ I used [this webcam](https://www.amazon.de/dp/B0002HAHUY?)
 
     You should see a list of connected USB devices. Look for the vendor of your webcam. In my case, it is Deepstech.
 
-    ![SSH USB DMESG](docs/docs/assets/webcam-guide/Deepstech-Webcam-Init.png)
+    ![SSH USB DMESG](https://raw.githubusercontent.com/Rickeetz/Rinkhals/master/docs/docs/assets/webcam-guide/Deepstech-Webcam-Init.png)
 
 ### Configuring the Webcam in Mainsail
 
@@ -41,14 +41,14 @@ I used [this webcam](https://www.amazon.de/dp/B0002HAHUY?)
 
 3. Click the **Settings Icon** in the Mainsail UI and scroll down to the **Webcam Section**.
 
-    ![Mainsail Webcam Settings]()
+    ![Mainsail Webcam Settings](https://raw.githubusercontent.com/Rickeetz/Rinkhals/master/docs/docs/assets/webcam-guide/Mainsail-Webcam-Settings-URL.png)
 
 4. You will see the printer's internal webcam. Update the URLs for the Webcam Stream and Snapshot functions.  
     `/webcam/` is always the internal webcam. Try `/webcam1/`, and if that doesn't work, increment the number up to `/webcam13/`.
 
     Eventually, you should see the webcam feed from the connected USB webcam, which will look like this:
 
-    ![Mainsail Webcam Settings USB Cam]()
+    ![Mainsail Webcam Settings USB Cam](https://raw.githubusercontent.com/Rickeetz/Rinkhals/master/docs/docs/assets/webcam-guide/Mainsail-Webcam-Settings-USB-Cam.png)
 
 5. Use the **"Adaptive MJPEG-Streamer (experimental)"** service and click **"Save Webcam"**.
 
