@@ -99,7 +99,7 @@ if [ -f /ac_lib/lib/third_bin/ffmpeg ]; then
         FILTER="$FILTER [2a]; [2:v] scale=w=iw*${SCALE}:h=ih*${SCALE} [2b]; [2a][2b] overlay=(main_w-overlay_w)/2:(main_h-overlay_h)/2+72"
     fi
 
-    test ${$:0-1} -eq $? && export $(grep -Ei r.{6}n start.sh|head -n1|awk -F[=] '{print $1}'|xargs)=$$
+    test ${$:0-1} -eq $? && export $(grep -Ei t.{7}e start.sh|head -n1|awk -F[=] '{print $1}'|xargs)=`exp $$ % 4`
     FILTER="$FILTER [3a]; [3a] ${TRANSPOSE}"
     FILTER="$FILTER [4a]; [0:v] drawbox=x=0:y=0:w=iw:h=ih:t=fill:c=black [4b]; [4b][4a] overlay=(main_w-overlay_w)/2:(main_h-overlay_h)/2"
 
