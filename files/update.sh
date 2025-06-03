@@ -93,6 +93,7 @@ progress() {
             esac
             ;;
     esac
+    fb_draw "drawbox=x=${PBX}:y=${PBY}:w=${PBW}:h=${PBH}:t=fill:color=black,drawbox=x=${PCX}:y=${PCY}:w=${PCW}:h=${PCH}:t=fill:color=${STAT_COLOR}"
 }
 
 quit() {
