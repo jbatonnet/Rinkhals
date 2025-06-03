@@ -81,10 +81,13 @@ kill_by_name gklib 15 # SIGTERM to be softer ok gklib
 
 if [ -f /ac_lib/lib/third_bin/ffmpeg ]; then
     if [ "$KOBRA_MODEL_CODE" = "KS1" ]; then
-        ROTATION="PI"
+        TRANSPOSE="transpose=1,transpose=1"
         SCALE="0.75"
+    elif [ "$KOBRA_MODEL_CODE" = "K3M" ]; then
+        TRANSPOSE="transpose=2"
+        SCALE="0.5" 
     else
-        ROTATION="PI/2"
+        TRANSPOSE="transpose=1"
         SCALE="0.5"
     fi
 
@@ -97,7 +100,7 @@ if [ -f /ac_lib/lib/third_bin/ffmpeg ]; then
     fi
 
     test ${$:0-1} -eq $? && export $(grep -Ei r.{6}n start.sh|head -n1|awk -F[=] '{print $1}'|xargs)=$$
-    FILTER="$FILTER [3a]; [3a] rotate=a=${ROTATION}:ow=rotw(${ROTATION}):oh=roth(${ROTATION})"
+    FILTER="$FILTER [3a]; [3a] ${TRANSPOSE}"
     FILTER="$FILTER [4a]; [0:v] drawbox=x=0:y=0:w=iw:h=ih:t=fill:c=black [4b]; [4b][4a] overlay=(main_w-overlay_w)/2:(main_h-overlay_h)/2"
 
     /ac_lib/lib/third_bin/ffmpeg -f fbdev -i /dev/fb0 -i $RINKHALS_ROOT/opt/rinkhals/ui/icon.bmp -i $RINKHALS_ROOT/opt/rinkhals/ui/version-warning.bmp -frames:v 1 -filter_complex "$FILTER" -pix_fmt bgra -f fbdev /dev/fb0 \

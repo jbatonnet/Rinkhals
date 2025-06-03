@@ -22,20 +22,32 @@ log() {
     fi
 }
 progress() {
+    case "$KOBRA_MODEL_CODE" in
+        KS1)
+            TRANSPOSE=",transpose=2"
+            ;;
+        K3M)
+            TRANSPOSE=",transpose=1,transpose=1"
+            ;;
+        *)
+            TRANSPOSE=""
+            ;;
+    esac
+
     if [ "$1" == "success" ]; then
-        fb_draw "drawbox=x=16:y=16:w=32:h=ih-32:t=fill:color=black,drawbox=x=20:y=20:w=24:h=ih-40:t=fill:color=green"
+        fb_draw "drawbox=x=16:y=16:w=32:h=ih-32:t=fill:color=black,drawbox=x=20:y=20:w=24:h=ih-40:t=fill:color=green${TRANSPOSE}"
         return
     fi
     if [ "$1" == "error" ]; then
-        fb_draw "drawbox=x=16:y=16:w=32:h=ih-32:t=fill:color=black,drawbox=x=20:y=20:w=24:h=ih-40:t=fill:color=red"
+        fb_draw "drawbox=x=16:y=16:w=32:h=ih-32:t=fill:color=black,drawbox=x=20:y=20:w=24:h=ih-40:t=fill:color=red${TRANSPOSE}"
         return
     fi
     if [ $1 == 0 ]; then
-        fb_draw "drawbox=x=16:y=16:w=32:h=ih-32:t=fill:color=black"
+        fb_draw "drawbox=x=16:y=16:w=32:h=ih-32:t=fill:color=black${TRANSPOSE}"
         return
     fi
 
-    fb_draw "drawbox=x=16:y=16:w=32:h=ih-32:t=fill:color=black,drawbox=x=20:y=20:w=24:h=(ih-40)*${*}:t=fill:color=white"
+    fb_draw "drawbox=x=16:y=16:w=32:h=ih-32:t=fill:color=black,drawbox=x=20:y=20:w=24:h=(ih-40)*${*}:t=fill:color=white${TRANSPOSE}"
 }
 quit() {
     sync
