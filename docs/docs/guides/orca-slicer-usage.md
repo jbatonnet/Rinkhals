@@ -16,7 +16,7 @@ For the installation of Rinkhals, use [this guide](../Rinkhals/installation-and-
 
 When you first start OrcaSlicer, you will be prompted to select a printer preset. Look for your printer and the nozzle type you are using.
 
-![Printer Selection](docs/docs/assets/orca-guide/Printer-Selection.png)
+![Printer Selection](https://raw.githubusercontent.com/Rickeetz/Rinkhals/master/docs/docs/assets/orca-guide/Printer-Selection.png)
 
 Now you have a bare setup for your printer. 
 
@@ -24,24 +24,24 @@ We are now setting up the network service so you don’t need to use an SD card 
 
 Click the **Connection** button in the printer section on the left side.
 
-![Connection Button](../Rinkhals/docs/assets/orca-guide/Connection.png)
+![Connection Button](https://raw.githubusercontent.com/Rickeetz/Rinkhals/master/docs/docs/assets/orca-guide/Connection.png)
 
 Enter the local IP address of your printer and click the **Test** button.
 
 💡 **Tip**: Ensure your printer has a static IP address configured on your router to avoid connection issues.
 
-![Connection Settings](../Rinkhals/docs/assets/orca-guide/Connection-Settings-Orca.png)
+![Connection Settings](https://raw.githubusercontent.com/Rickeetz/Rinkhals/master/docs/docs/assets/orca-guide/Connection-Settings-Orca.png)
 
 Leave the other fields empty.
 
 If you see this message, you are done with setting up the network.
 
-![Connection Successful](../Rinkhals/docs/assets/orca-guide/Connection-OK-Orca.png)
+![Connection Successful](https://raw.githubusercontent.com/Rickeetz/Rinkhals/master/docs/docs/assets/orca-guide/Connection-OK-Orca.png)
 
 🛠️ **Troubleshooting** 🛠️  
 If you encounter this error:
 
-![Cannot Connect Error](../Rinkhals/docs/assets/orca-guide/Cannot-Connect-Port80-Orca.png)
+![Cannot Connect Error](https://raw.githubusercontent.com/Rickeetz/Rinkhals/master/docs/docs/assets/orca-guide/Cannot-Connect-Port80-Orca.png)
 
 Make sure your computer is connected to the same network as your printer. 
 Also, ensure you are using Fluidd or Mainsail as a WebUI and have the necessary apps for those services activated.
@@ -50,15 +50,15 @@ Click **OK** on the settings screen.
 
 Now you should be able to open the Mainsail (or Fluidd) WebUI with a click on the **Devices** tab in the upper-left corner of Orca.
 
-![Devices Tab](../Rinkhals/docs/assets/orca-guide/Device-Tab-Orca.png)
+![Devices Tab](https://raw.githubusercontent.com/Rickeetz/Rinkhals/master/docs/docs/assets/orca-guide/Device-Tab-Orca.png)
 
 The WebUI should look similar to this:
 
-![Mainsail WebUI](../Rinkhals/docs/assets/orca-guide/Orca-Mainsail-WebUI.png)
+![Mainsail WebUI](https://raw.githubusercontent.com/Rickeetz/Rinkhals/master/docs/docs/assets/orca-guide/Orca-Mainsail-WebUI.png)
 
 You can now slice your prints and send them off to your printer 🖨️ 😊✌️
 
-![Upload and Print](../Rinkhals/docs/assets/orca-guide/Orca-Upload-and-Print.png)
+![Upload and Print](https://raw.githubusercontent.com/Rickeetz/Rinkhals/master/docs/docs/assets/orca-guide/Orca-Upload-and-Print.png)
 
 You are done with setting up your printer on OrcaSlicer with the basic settings.
 
