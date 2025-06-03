@@ -16,7 +16,7 @@ For the installation of Rinkhals, use [this guide](../Rinkhals/installation-and-
 
 When you first start OrcaSlicer, you will be prompted to select a printer preset. Look for your printer and the nozzle type you are using.
 
-![Printer Selection](../Rinkhals/docs/assets/orca-guide/assets/orca-guide/Printer-Selection.png)
+![Printer Selection](../docs/docs/assets/orca-guide/Printer-Selection.png)
 
 Now you have a bare setup for your printer. 
 
