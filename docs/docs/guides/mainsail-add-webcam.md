@@ -1,5 +1,5 @@
 ---
-title: Add 3rd Party Webcams into Mainsail
+Add 3rd Party Webcams into Mainsail
 ---
 
 ⚠️ **This is Experimental! No support will be provided!** Expect performance degradations while using third-party webcams on your machine. ⚠️  
