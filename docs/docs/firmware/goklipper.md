@@ -18,7 +18,7 @@ The `gklib` log level can be set to 'debug' for more detailed logging by changin
 
 Note: existing properties of the 'sys' section have been omitted but should obviously be left unchanged.
 
-Logs are written to: `/useremain/rinkhals/.current/logs/gklib.log`
+Logs are written to: `/var/log/gklib.log`
 
 ## Profiler
 
