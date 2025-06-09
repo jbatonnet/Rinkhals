@@ -69,6 +69,7 @@ markdown_extensions:
   - md_in_html
   - toc:
       toc_depth: 3
+      permalink: ¶
   - pymdownx.tabbed:
       alternate_style: true
   - pymdownx.highlight:
