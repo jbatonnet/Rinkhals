@@ -15,8 +15,10 @@ This documentation covers what we know about those printers, what we know about 
 The main project is located on GitHub: [https://github.com/jbatonnet/Rinkhals](https://github.com/jbatonnet/Rinkhals)<br />
 To quickly start using Rinkhals, check the [quick start guide](guides/rinkhals-quick-start.md)
 
+If you prefer a video, [Kanrog](https://www.youtube.com/@kanrogcreations) on Discord made a video explaining how to install Rinkhals:
+
 <p align="center">
-    <img width="48" src="https://github.com/jbatonnet/Rinkhals/blob/master/icon.png?raw=true" />
+    <iframe width="480" height="270" src="https://www.youtube.com/embed/q7c-C_i0SBs?si=xoxS0yGHmW9JDjuS" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 </p>
 
 In this documentation, the following printers will be refered to with their model code used everywhere in Rinkhals:
