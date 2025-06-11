@@ -197,7 +197,7 @@ class RinkhalsUiApp(BaseApp):
         super().layout()
         
         # Leave an empty 24px gap at the top of K2P / K3 screen
-        if self.printer_info.model_code == 'K2P' or self.printer_info.model_code == 'K3' or self.printer_info.model_code == 'K3M':
+        if self.printer_info.model_code == 'K2P' or self.printer_info.model_code == 'K3' or self.printer_info.model_code == 'K3M' or self.printer_info.model_code == 'K3V2':
             layer_bottom = lv.display_get_default().get_layer_bottom()
             #layer_bottom.set_style_bg_opa(lv.OPA.TRANSP, lv.STATE.DEFAULT)
             layer_bottom.set_style_bg_opa(lv.OPA.COVER, lv.STATE.DEFAULT)
@@ -889,7 +889,7 @@ class RinkhalsUiApp(BaseApp):
             self.modal_ota.label_progress_text.set_text('Extracting...')
             lv.unlock()
 
-            if self.printer_info.model_code == 'K2P' or self.printer_info.model_code == 'K3':
+            if self.printer_info.model_code == 'K2P' or self.printer_info.model_code == 'K3' or self.printer_info.model_code == 'K3V2':
                 password = 'U2FsdGVkX19deTfqpXHZnB5GeyQ/dtlbHjkUnwgCi+w='
             elif self.printer_info.model_code == 'KS1':
                 password = 'U2FsdGVkX1+lG6cHmshPLI/LaQr9cZCjA8HZt6Y8qmbB7riY'
@@ -1016,7 +1016,7 @@ class RinkhalsUiApp(BaseApp):
 
                     assets = self.modal_ota.latest_release.get('assets', [])
                     for asset in assets:
-                        if (self.printer_info.model_code == 'K2P' or self.printer_info.model_code == 'K3') and asset['name'] == 'update-k2p-k3.swu':
+                        if (self.printer_info.model_code == 'K2P' or self.printer_info.model_code == 'K3' or self.printer_info.model_code == 'K3V2') and asset['name'] == 'update-k2p-k3.swu':
                             self.modal_ota.latest_release_url = asset['browser_download_url']
                         elif self.printer_info.model_code == 'KS1' and asset['name'] == 'update-ks1.swu':
                             self.modal_ota.latest_release_url = asset['browser_download_url']

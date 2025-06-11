@@ -21,7 +21,7 @@ compress_swu() {
     rm -f $SWU_PATH
     cd $SWU_DIR
 
-    if [ "$KOBRA_MODEL_CODE" = "K2P" ] || [ "$KOBRA_MODEL_CODE" = "K3" ]; then
+    if [ "$KOBRA_MODEL_CODE" = "K2P" ] || [ "$KOBRA_MODEL_CODE" = "K3" ] || [ "$KOBRA_MODEL_CODE" = "K3V2" ]; then
         zip -0 -P U2FsdGVkX19deTfqpXHZnB5GeyQ/dtlbHjkUnwgCi+w= -r $SWU_NAME update_swu
     elif [ "$KOBRA_MODEL_CODE" = "KS1" ]; then
         zip -0 -P U2FsdGVkX1+lG6cHmshPLI/LaQr9cZCjA8HZt6Y8qmbB7riY -r $SWU_NAME update_swu

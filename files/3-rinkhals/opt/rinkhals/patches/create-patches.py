@@ -111,7 +111,7 @@ def patch_K3SysUi(binaryPath, modelCode, version):
         buttonCallback = k3sysui.symbols['_ZZN10MainWindow19AcSettingPageUiInitEvENKUlvE_clEv']
         patchJumpAddress = 0xfd278
         patchReturnAddress = 0xfd2a8
-    elif (modelCode == 'K3' and version == '2.4.0.4') or (modelCode == 'K3M' and version == '2.4.6.5'):
+    elif (modelCode == 'K3' and version == '2.4.0.4') or (modelCode == 'K3M' and version == '2.4.6.5') or (modelCode == 'K3V2' and version == '1.0.5.8'):
         buttonCallback = k3sysui.symbols['_ZZN10MainWindow19AcSettingPageUiInitEvENKUlvE_clEv']
         patchJumpAddress = 0xfef8c
         patchReturnAddress = 0xfefbc
@@ -191,7 +191,7 @@ def patch_K3SysUi(binaryPath, modelCode, version):
     osSleep = k3sysui.symbols['_ZN8GobalVar7OsSleepEi']
     acDisplayWaitHandler = k3sysui.symbols['_ZN10MainWindow20AcDisplayWaitHandlerEhh']
     
-    if modelCode == 'K3' or modelCode == 'K3M':
+    if modelCode == 'K3' or modelCode == 'K3M' or modelCode == 'K3V2':
         acDisplayWaitHide = k3sysui.symbols['_ZN10MainWindow17AcDisplayWaitHideEv']
     elif modelCode == 'KS1':
         acDisplayWaitHide = k3sysui.symbols['_ZN10MainWindow17AcDisplayWaitHideEh']

@@ -54,7 +54,7 @@ Rinkhals bundles Dropbear, a lightweight SSH server alternative to OpenSSH.
 
 During Rinkhals startup, Dropbear is started and listens on port 22. Default root credentials are used for password authentication exclusively.
 
-On the K2P, K3 and KS1, the root password is `rockchip`
+On the K2P, K3, K3V2 and KS1, the root password is `rockchip`
 On the K3M, the root password is not yet known.
 
 

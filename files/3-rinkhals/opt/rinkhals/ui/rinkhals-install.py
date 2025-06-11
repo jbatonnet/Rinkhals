@@ -1488,7 +1488,7 @@ class RinkhalsInstallApp(BaseApp):
         self.show_modal(self.modal_ota_firmware)
 
     def extract_swu(self):
-        if self.printer_info.model_code == 'K2P' or self.printer_info.model_code == 'K3':
+        if self.printer_info.model_code == 'K2P' or self.printer_info.model_code == 'K3' or self.printer_info.model_code == 'K3V2':
             password = 'U2FsdGVkX19deTfqpXHZnB5GeyQ/dtlbHjkUnwgCi+w='
         elif self.printer_info.model_code == 'KS1':
             password = 'U2FsdGVkX1+lG6cHmshPLI/LaQr9cZCjA8HZt6Y8qmbB7riY'

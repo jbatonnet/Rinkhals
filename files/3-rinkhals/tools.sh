@@ -16,6 +16,9 @@ elif [ "$KOBRA_MODEL_ID" == "20025" ]; then
 elif [ "$KOBRA_MODEL_ID" == "20026" ]; then
     export KOBRA_MODEL="Anycubic Kobra 3 Max"
     export KOBRA_MODEL_CODE=K3M
+elif [ "$KOBRA_MODEL_ID" == "20027" ]; then
+    export KOBRA_MODEL="Anycubic Kobra 3 V2"
+    export KOBRA_MODEL_CODE=K3V2
 fi
 
 export KOBRA_VERSION=$(cat /useremain/dev/version)
@@ -65,6 +68,11 @@ is_verified_firmware() {
         fi
     elif [ "$KOBRA_MODEL_CODE" = "K3M" ]; then
         if [ "$KOBRA_VERSION" = "2.4.6" ] || [ "$KOBRA_VERSION" = "2.4.6.5" ]; then
+            echo 1
+            return
+        fi
+    elif [ "$KOBRA_MODEL_CODE" = "K3V2" ]; then
+        if [ "$KOBRA_VERSION" = "1.0.5.8" ]; then
             echo 1
             return
         fi

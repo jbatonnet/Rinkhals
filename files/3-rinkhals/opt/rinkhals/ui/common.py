@@ -144,6 +144,9 @@ class PrinterInfo:
             elif model_id == '20026':
                 printer_info.model = 'Anycubic Kobra 3 Max'
                 printer_info.model_code = 'K3M'
+            elif model_id == '20027':
+                printer_info.model = 'Anycubic Kobra 3 V2'
+                printer_info.model_code = 'K3V2'
         except:
             return None
         
@@ -512,6 +515,8 @@ class Diagnostic:
                     if firmware_version == '2.4.5.3': supposed_hash = None
                     if firmware_version == '2.4.6':   supposed_hash = 'ff5c2d8ae79b8d90d0ff7c697d85502d'
                     if firmware_version == '2.4.6.5': supposed_hash = 'b79497202880f92b6e4a578a32e8f3a3'
+                elif printer_info.model_code == 'K3V2':
+                    if firmware_version == '1.0.5.8': supposed_hash = None
 
             if supposed_hash is None:
                 printer_cfg_mtime = os.path.getmtime(printer_cfg_path)
