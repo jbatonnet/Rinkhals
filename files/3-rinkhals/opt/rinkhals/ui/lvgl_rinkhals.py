@@ -315,7 +315,12 @@ def checkbox(parent):
 
     def set_checked(enabled):
         result.set_style_text_opa(lv.OPA.COVER if enabled else lv.OPA.TRANSP, lv.STATE.DEFAULT)
+        result.state_checked = enabled
+    def get_checked():
+        return result.state_checked
+    result.state_checked = False
     result.set_checked = set_checked
+    result.get_checked = get_checked
 
     def set_text(text):
         result_label.set_text(text)
