@@ -932,8 +932,12 @@ class BaseApp:
         icon_back.set_text('')
         icon_back.add_event_cb(lambda e: self.show_screen(self.screen_main), lv.EVENT_CODE.CLICKED, None)
 
+        def refresh_ota(e):
+            self.show_screen(self.screen_ota)
+            self.show_ota(True)
+
         icon_refresh = lvr.button_icon(title_bar)
-        icon_refresh.add_event_cb(lambda e: self.show_screen(self.screen_ota), lv.EVENT_CODE.CLICKED, None)
+        icon_refresh.add_event_cb(refresh_ota, lv.EVENT_CODE.CLICKED, None)
         icon_refresh.set_text('')
         icon_refresh.set_align(lv.ALIGN.RIGHT_MID)
 
@@ -1284,7 +1288,7 @@ class BaseApp:
             self.modal_ota_firmware.button_action.set_width(lv.pct(45))
             self.modal_ota_firmware.button_action.set_text('Download')
 
-    def show_ota(self):
+    def show_ota(self, force=False):
         def refresh_rinkhals(force):
             lv.lock()
             self.screen_ota.button_rinkhals_refresh.set_state(lv.STATE.DISABLED, True)
@@ -1346,11 +1350,11 @@ class BaseApp:
 
         self.screen_ota.button_rinkhals_refresh.clear_event_cb()
         self.screen_ota.button_rinkhals_refresh.add_event_cb(lambda e: run_async(lambda: refresh_rinkhals(True)), lv.EVENT_CODE.CLICKED, None)
-        run_async(lambda: refresh_rinkhals(False))
+        run_async(lambda: refresh_rinkhals(force))
 
         self.screen_ota.button_firmware_refresh.clear_event_cb()
         self.screen_ota.button_firmware_refresh.add_event_cb(lambda e: run_async(lambda: refresh_firmware(True)), lv.EVENT_CODE.CLICKED, None)
-        run_async(lambda: refresh_firmware(False))
+        run_async(lambda: refresh_firmware(force))
     def show_ota_rinkhals(self, force=False):
         def refresh_available(force):
             lv.lock()
@@ -1391,8 +1395,9 @@ class BaseApp:
                 label_version.set_text(v.version)
 
                 if rinkhals_current and v.version == rinkhals_current.version:
-                    test_done = True
-                    latest_done = True
+                    if v.version != 'dev':
+                        test_done = True
+                        latest_done = True
 
                     tag_version = lvr.tag(panel_version)
                     tag_version.set_align(lv.ALIGN.RIGHT_MID)
@@ -1401,6 +1406,9 @@ class BaseApp:
                     tag_version.set_icon('')
                     tag_version.set_text('Current')
                 elif any([ i for i in rinkhals_installed if v.version == i.version ]):
+                    if not v.test:
+                        latest_done = True
+
                     tag_version = lvr.tag(panel_version)
                     tag_version.set_align(lv.ALIGN.RIGHT_MID)
                     tag_version.remove_flag(lv.OBJ_FLAG.CLICKABLE)

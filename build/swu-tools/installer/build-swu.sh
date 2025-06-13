@@ -46,7 +46,6 @@ cp -r /files/1-buildroot/usr/lib/python3.11 /tmp/update_swu/lib
 cp -r /files/3-rinkhals/opt/rinkhals/ui/assets /tmp/update_swu/
 cp -r /files/3-rinkhals/opt/rinkhals/ui/lvgl /tmp/update_swu/
 cp -r /files/3-rinkhals/opt/rinkhals/tools /tmp/update_swu/
-cp /files/3-rinkhals/opt/rinkhals/scripts/check-updates.py /tmp/update_swu/check_updates.py
 cp /files/start.sh.patch /tmp/update_swu/start.sh.patch
 cp /files/3-rinkhals/opt/rinkhals/ui/*.* /tmp/update_swu/
 cp $BUILD_ROOT/update.sh /tmp/update_swu/update.sh
