@@ -435,7 +435,19 @@ class Kobra:
                                 raise self.server.error("Failed to open mesh")
                     elif script.lower().startswith("bed_mesh_calibrate"):
                         logging.info('[Kobra] Injected bed mesh calibration script')
-                        web_request.get_args()["script"] = "MOVE_HEAT_POS\nM109 S140\nWIPE_NOZZLE\nBED_MESH_CALIBRATE\nSAVE_CONFIG"
+                        calibrate_script = [
+                            'MOVE_HEAT_POS',
+                            'M140 S60', # Set bed to 60
+                            'M109 S170', # Wait hotend to 170
+                            'M190 S60', # Wait bed to 60
+                            'WIPE_NOZZLE',
+                            'M109 S140', # Wait hotend to 140
+                            'BED_MESH_CALIBRATE',
+                            'TURN_OFF_HEATERS',
+                            'M106 S0', # Set fan speed to 0
+                            'SAVE_CONFIG'
+                        ]
+                        web_request.get_args()["script"] = '\n'.join(calibrate_script)
                     elif script.lower().startswith('bed_mesh_profile'):
                         name = re.search('save=(\"(?:[^\"]+)\"|(?:[^\s]+))', script.lower())
                         if name and name[1] != 'default':
