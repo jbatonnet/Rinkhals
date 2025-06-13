@@ -1868,3 +1868,57 @@ class BaseApp:
         self.modal_ota_firmware.button_action.add_event_cb(lambda e: run_async(download_version), lv.EVENT_CODE.CLICKED, None)
 
         self.show_modal(self.modal_ota_firmware)
+
+    def extract_swu(self):
+        if self.printer_info.model_code == 'K2P' or self.printer_info.model_code == 'K3' or self.printer_info.model_code == 'K3V2':
+            password = 'U2FsdGVkX19deTfqpXHZnB5GeyQ/dtlbHjkUnwgCi+w='
+        elif self.printer_info.model_code == 'KS1':
+            password = 'U2FsdGVkX1+lG6cHmshPLI/LaQr9cZCjA8HZt6Y8qmbB7riY'
+        elif self.printer_info.model_code == 'K3M':
+            password = '4DKXtEGStWHpPgZm8Xna9qluzAI8VJzpOsEIgd8brTLiXs8fLSu3vRx8o7fMf4h6'
+            
+        if system('rm -rf /useremain/update_swu') != 0:
+            return False
+        if system(f'unzip -P {password} /useremain/update.swu -d /useremain') != 0:
+            return False
+        if system('rm /useremain/update.swu') != 0:
+            return False
+        if system('tar zxf /useremain/update_swu/setup.tar.gz -C /useremain/update_swu') != 0:
+            return False
+        if system('chmod +x /useremain/update_swu/update.sh') != 0:
+            return False
+
+        return True
+    def install_swu(self, params=''):
+        # Patch the update script
+        with open('/useremain/update_swu/update.sh', 'r+') as f:
+            update_script = f.read()
+            update_script = update_script.replace('rm -rf ${swu_path}/update.swu', 'echo')
+            update_script = update_script.replace('rm -f $USB_PATH/update.swu', '')
+            update_script = update_script.replace('reboot', 'echo')
+
+            f.truncate(0)
+            f.seek(0)
+            f.write(update_script)
+
+        # Run the update script
+        system(f'/useremain/update_swu/update.sh {params}')
+
+        if os.path.exists('/useremain/rinkhals/.version'):
+            if os.path.exists('/userdata/app/gk/start.sh'):
+                with open('/userdata/app/gk/start.sh', 'r') as f:
+                    script_content = f.read()
+                    if 'Rinkhals/begin' not in script_content:
+                        system(f'cat {SCRIPT_PATH}/start.sh.patch >> /userdata/app/gk/start.sh')
+            if os.path.exists('/userdata/app/gk/restart_k3c.sh'):
+                with open('/userdata/app/gk/start.sh', 'r') as f:
+                    script_content = f.read()
+                    if 'Rinkhals/begin' not in script_content:
+                        system(f'cat {SCRIPT_PATH}/start.sh.patch >> /userdata/app/gk/restart_k3c.sh')
+
+        # Store the reboot marker
+        os.makedirs('/useremain/rinkhals', exist_ok=True)
+        open('/useremain/rinkhals/.reboot-marker', 'w').close()
+
+        # Sync and reboot
+        system('sync && reboot')
