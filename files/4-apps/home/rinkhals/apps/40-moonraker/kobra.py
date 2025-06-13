@@ -464,11 +464,10 @@ class Kobra:
                 # Do not send bed_mesh to goklipper, it does not support it
                 want_bed_mesh = False
                 if self.is_goklipper_running():
-                    if 'objects' in args and 'bed_mesh' in args['objects']:
+                    if 'objects' in args and ('bed_mesh' in args['objects'] or 'bed_mesh default' in args['objects'] or 'bed_mesh \"default\"' in args['objects']):
                         want_bed_mesh = True
                         del args['objects']['bed_mesh']
-                    if 'objects' in args and 'bed_mesh \"default\"' in args['objects']:
-                        want_bed_mesh = True
+                        del args['objects']['bed_mesh default']
                         del args['objects']['bed_mesh \"default\"']
 
                 result = await original__request_standard(me, web_request, timeout)
@@ -479,6 +478,7 @@ class Kobra:
                         result['status'] = {}
 
                     result['status']['bed_mesh'] = {}
+                    result['status']['bed_mesh default'] = {}
                     result['status']['bed_mesh \"default\"'] = {}
 
                     if os.path.isfile("/userdata/app/gk/printer_data/config/printer_mutable.cfg"):
@@ -495,7 +495,7 @@ class Kobra:
                                     "probed_matrix": points,
                                     "mesh_matrix": points
                                 }
-                                result['status']['bed_mesh \"default\"'] = {
+                                result['status']['bed_mesh default'] = {
                                     "points": points,
                                     "mesh_params": {
                                         "min_x": float(mesh["min_x"]),
@@ -510,6 +510,7 @@ class Kobra:
                                         "algo": mesh["algo"]
                                     }
                                 }
+                                #result['status']['bed_mesh \"default\"'] = result['status']['bed_mesh default']
                 return result
             return _request_standard
 
@@ -561,6 +562,7 @@ class Kobra:
                         "virtual_sdcard",
                         "webhooks",
                         "bed_mesh",
+                        "bed_mesh default",
                         "bed_mesh \"default\"",
                         "idle_timeout"
                     ]
