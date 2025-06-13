@@ -541,12 +541,9 @@ class Kobra:
                 rpc_method = web_request.get_endpoint()
                 if self.is_goklipper_running() and rpc_method == "objects/list":
                     logging.info('[Kobra] Injected objects list')
-
+                    
                     objects = [
                         "motion_report",
-                        "gcode_macro pause",
-                        "gcode_macro resume",
-                        "gcode_macro cancel_print",
                         "gcode_macro t0",
                         "gcode_macro t1",
                         "gcode_macro t2",
@@ -575,6 +572,11 @@ class Kobra:
                         "bed_mesh \"default\"",
                         "idle_timeout"
                     ]
+                    
+                    web_request.endpoint = 'gcode/help'
+                    result = await original_request(me, web_request)
+                    for gcode in result:
+                        objects.append(f"gcode_macro {gcode}")
                     
                     if self.KOBRA_MODEL_CODE == 'KS1':
                         objects.append("fan_generic air_filter_fan")
