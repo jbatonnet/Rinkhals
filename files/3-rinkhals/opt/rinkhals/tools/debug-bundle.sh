@@ -27,6 +27,10 @@ for VERSION in $(ls -1d */); do
     cp /useremain/rinkhals/$VERSION/logs/*.log $TMP_PATH/$VERSION 2> /dev/null
 done
 
+# Collect other logs
+mkdir -p $TMP_PATH/other
+cp /tmp/*.log $TMP_PATH/other 2> /dev/null
+
 # Collect general info
 cat /proc/cpuinfo > $TMP_PATH/cpuinfo.log 2> /dev/null
 cat /proc/meminfo > $TMP_PATH/meminfo.log 2> /dev/null
