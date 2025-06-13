@@ -419,6 +419,7 @@ class Kobra:
                 rpc_method = web_request.get_endpoint()
                 if self.is_goklipper_running() and rpc_method == "gcode/script":
                     script = web_request.get_str('script', "")
+
                     if script.lower() == "bed_mesh_map" and os.path.isfile("/userdata/app/gk/printer_data/config/printer_mutable.cfg"):
                         logging.info('[Kobra] Injected bed mesh')
                         with open("/userdata/app/gk/printer_data/config/printer_mutable.cfg", "r") as f:
@@ -454,6 +455,14 @@ class Kobra:
                             message = 'GoKlipper only support one default bed mesh'
                             logging.error(message)
                             raise self.server.error(message)
+                
+                    if script.lower() == 'help':
+                        web_request.endpoint = 'gcode/help'
+                        result = await original_request(me, web_request)
+                        result = '\n'.join([ f'// {g}: {result[g]}' for g in result ])
+                        self.server.send_event("server:gcode_response", result)
+                        return None
+
                 return await original_request(me, web_request)
             return request
 
