@@ -106,3 +106,22 @@ title: Anycubic Kobra S1
         "create_date": 1748257633
     }
     ```
+??? quote "2.5.3.5"
+    ```
+    {
+        "id": 139,
+        "model_id": 20025,
+        "machine_version": "1.1.0",
+        "firmware_name": "update.swu",
+        "peripheral_version": "",
+        "firmware_version": "2.5.3.5",
+        "firmware_url": "https://cdn.cloud-universe.anycubic.com/attachment/1933454620900286466_efz9nwrw.swu",
+        "firmware_size": 136521108,
+        "firmware_md5": "13fa2536989d32b3f0f2291ceca2d51c",
+        "parent_id": 120,
+        "force_update": false,
+        "time_cost": 20,
+        "update_desc": "1. Added support for cold bed tem.\n2. Fixed printer status issues after tangling\n3. Fixed large file parsing failures\n4. Other issues fixed",
+        "create_date": 1749807350
+    }
+    ```

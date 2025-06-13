@@ -129,14 +129,14 @@ def patch_K3SysUi(binaryPath, modelCode, version):
     # bl      QStackedWidget::setCurrentIndex
     # nop                                      < patchReturnAddress
 
-    elif modelCode == 'KS1' and version == '2.5.2.3':
-        buttonCallback = k3sysui.symbols['_ZZN10MainWindow26AcSettingGeneralPageUiInitEvENKUlRK11QModelIndexE0_clES2_']
-        patchJumpAddress = 0x1138d8
-        patchReturnAddress = 0x1138e0
     elif modelCode == 'KS1' and version == '2.5.3.1':
         buttonCallback = k3sysui.symbols['_ZZN10MainWindow26AcSettingGeneralPageUiInitEvENKUlRK11QModelIndexE0_clES2_']
         patchJumpAddress = 0x11f48c
         patchReturnAddress = 0x11f494
+    elif modelCode == 'KS1' and version == '2.5.3.5':
+        buttonCallback = k3sysui.symbols['_ZZN10MainWindow26AcSettingGeneralPageUiInitEvENKUlRK11QModelIndexE0_clES2_']
+        patchJumpAddress = 0x12048c
+        patchReturnAddress = 0x120494
 
     else:
         raise Exception('Unsupported model and version')

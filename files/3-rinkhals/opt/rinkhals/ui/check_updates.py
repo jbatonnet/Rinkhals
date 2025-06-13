@@ -114,7 +114,7 @@ class CheckUpdateProgram:
                 self.firmware_version = '2.4.0.4'
             elif model_code == 'KS1':
                 self.model_id = '20025'
-                self.firmware_version = '2.5.3.1'
+                self.firmware_version = '2.5.3.5'
             elif model_code == 'K3M':
                 self.model_id = '20026'
                 self.firmware_version = '2.4.6.5'

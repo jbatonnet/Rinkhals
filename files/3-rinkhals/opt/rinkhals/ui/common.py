@@ -506,6 +506,7 @@ class Diagnostic:
                     if firmware_version == '2.5.2.2': supposed_hash = None
                     if firmware_version == '2.5.2.3': supposed_hash = 'b29e8594f56001c09d4e232696b9827d'
                     if firmware_version == '2.5.3.1': supposed_hash = '7678403dc8064f650931904f48be88f0'
+                    if firmware_version == '2.5.3.5': supposed_hash = 'd4021a6471d431dcebbe1b2f7bc17add'
                 elif printer_info.model_code == 'K2P':
                     if firmware_version == '3.1.2.3': supposed_hash = 'fb945efa204eec777a139adafc6a40aa'
                     if firmware_version == '3.1.4':   supposed_hash = None
@@ -516,7 +517,7 @@ class Diagnostic:
                     if firmware_version == '2.4.6':   supposed_hash = 'ff5c2d8ae79b8d90d0ff7c697d85502d'
                     if firmware_version == '2.4.6.5': supposed_hash = 'b79497202880f92b6e4a578a32e8f3a3'
                 elif printer_info.model_code == 'K3V2':
-                    if firmware_version == '1.0.5.8': supposed_hash = None
+                    if firmware_version == '1.0.5.8': supposed_hash = '94b173bb47de679f11439e363a4628c8'
 
             if supposed_hash is None:
                 printer_cfg_mtime = os.path.getmtime(printer_cfg_path)
