@@ -23,39 +23,40 @@ log() {
 }
 
 progress() {
+    STATUS=${1}
     case "${KOBRA_MODEL_CODE}" in
         KS1)
-            PBX=16
-            PBY=16
-            PBH=32
-            PBW=iw-32
-            PCX=20
-            PCY=20
-            PCH=24
-            PCW=iw-40
+            PBX="16"
+            PBY="16"
+            PBH="32"
+            PBW="(iw-32)"
+            PCX="20"
+            PCY="20"
+            PCH="24"
+            PCW="(iw-40)"
             ;;
         K3M)
-            PBX=iw-48
-            PBY=32
-            PBW=32
-            PBH=ih-64
-            PCX=iw-44
-            PCY=36
-            PCW=24
-            PCH=ih-72
+            PBX="(iw-48)"
+            PBY="16"
+            PBW="32"
+            PBH="(ih-32)"
+            PCX="(iw-44)"
+            PCY="20"
+            PCW="24"
+            PCH="(ih-40)"
             ;;
         *)
-            PBX=16
-            PBY=16
-            PBW=32
-            PBH=ih-32
-            PCX=20
-            PCY=20
-            PCW=24
-            PCH=ih-40
+            PBX="16"
+            PBY="16"
+            PBW="32"
+            PBH="(ih-32)"
+            PCX="20"
+            PCY="20"
+            PCW="24"
+            PCH="(ih-40)"
         ;;
     esac
-    case "${1}" in
+    case "${STATUS}" in
         success)
             STAT_COLOR=green
             ;;
@@ -64,31 +65,20 @@ progress() {
             ;;
         *)
             STAT_COLOR=white
+            if [ "${STATUS}" = "0" ]; then
+              STATUS="0.005"
+            fi
             case "${KOBRA_MODEL_CODE}" in
                 KS1)
-                    if [ "${STATUS}" = "0" ]; then
-                        PCX="${PCX}+${PCW}-1"
-                        PCW=1
-                    else
-                        PCX="(${PCX})+((${PCW})-(${PCW})*${STATUS})"
-                        PCW="(${PCW})*${STATUS}"
-                    fi
+                    PCX="(${PCX})+((${PCW})-(${PCW})*${STATUS})"
+                    PCW="(${PCW})*${STATUS}"
                     ;;
                 K3M)
-                    if [ "${STATUS}" = "0" ]; then
-                        PCY="(${PCY})+(${PCH})-1"
-                        PCH=1
-                    else
-                        PCY="(${PCY})+((${PCH})-(${PCH})*${STATUS})"
-                        PCH="(${PCH})*${STATUS}"
-                    fi
+                    PCY="(${PCY})+((${PCH})-(${PCH})*${STATUS})"
+                    PCH="(${PCH})*${STATUS}"
                     ;;
                 *)
-                    if [ "${STATUS}" = "0" ]; then
-                        PCH="1"
-                    else
-                        PCH="(${PCH})*${STATUS}"
-                    fi
+                    PCH="(${PCH})*${STATUS}"
                     ;;
             esac
             ;;
