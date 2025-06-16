@@ -8,7 +8,9 @@ For this guide, I will use the Kobra S1.
 
 Download and install the latest OrcaSlicer application from: [Official OrcaSlicer Repo](https://github.com/SoftFever/OrcaSlicer/releases)
 
-🚨 **Important** 🚨: Do not use websites like "orcaslicer.net", "orcaslicer.co" or "orca-slicer.com" as those are not the official websites.
+!!! warning Important
+
+    Do not use websites like "orcaslicer.net", "orcaslicer.co" or "orca-slicer.com" as those are not the official websites.
 
 Make sure you have Rinkhals installed on your printer. 
 
@@ -28,7 +30,9 @@ Click the **Connection** button in the printer section on the left side.
 
 Enter the local IP address of your printer and click the **Test** button.
 
-💡 **Tip**: Ensure your printer has a static IP address configured on your router to avoid connection issues.
+!!! note Tip
+
+    Ensure your printer has a static IP address configured on your router to avoid connection issues.
 
 ![Connection Settings](https://raw.githubusercontent.com/Rickeetz/Rinkhals/master/docs/docs/assets/orca-guide/Connection-Settings-Orca.png)
 

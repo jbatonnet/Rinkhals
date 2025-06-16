@@ -1,12 +1,13 @@
 ---
-Add 3rd Party Webcams into Mainsail
+title: Add 3rd Party Webcams into Mainsail
 ---
 
 ⚠️ **This is Experimental! No support will be provided!** Expect performance degradations while using third-party webcams on your machine. ⚠️  
 The machine will most likely only accept USB webcams that do not require additional drivers.
 
-I used [this webcam](https://www.amazon.de/dp/B0002HAHUY?)  
-*Not an affiliated link.*
+Tested Webcams:
+
+- EMEET Full HD Webcam - C960 1080P ✅
 
 ### Adding a USB Webcam to Mainsail
 
@@ -44,7 +45,7 @@ I used [this webcam](https://www.amazon.de/dp/B0002HAHUY?)
     ![Mainsail Webcam Settings](https://raw.githubusercontent.com/Rickeetz/Rinkhals/master/docs/docs/assets/webcam-guide/Mainsail-Webcam-Settings-URL.png)
 
 4. You will see the printer's internal webcam. Update the URLs for the Webcam Stream and Snapshot functions.  
-    `/webcam/` is always the internal webcam. Try `/webcam1/`, and if that doesn't work, increment the number up to `/webcam13/`.
+    `/webcam/` is always the internal webcam. Try `/webcam1/`, and if that doesn't work, increment the number up to `/webcam3/`.
 
     Eventually, you should see the webcam feed from the connected USB webcam, which will look like this:
 
@@ -54,12 +55,9 @@ I used [this webcam](https://www.amazon.de/dp/B0002HAHUY?)
 
 6. Switch to your **Dashboard** and set the webcams to "All." You should now see both webcams working.
 
-⚠️ **Do not use the stream option!** It will spike your CPU usage. ⚠️
+!!! note
+    
+    **Do not use the stream option!** It will spike your CPU usage. ⚠️
 
----
 
 🎉 You have successfully added a webcam! Happy Printing! 😃
-
----
-
-Tested Webcams : EMEET Full HD Webcam - C960 1080P ✅
