@@ -21,22 +21,71 @@ log() {
         echo "$(date): ${*}" >> $USB_PATH/install.log
     fi
 }
-progress() {
-    if [ "$1" == "success" ]; then
-        fb_draw "drawbox=x=16:y=16:w=32:h=ih-32:t=fill:color=black,drawbox=x=20:y=20:w=24:h=ih-40:t=fill:color=green"
-        return
-    fi
-    if [ "$1" == "error" ]; then
-        fb_draw "drawbox=x=16:y=16:w=32:h=ih-32:t=fill:color=black,drawbox=x=20:y=20:w=24:h=ih-40:t=fill:color=red"
-        return
-    fi
-    if [ $1 == 0 ]; then
-        fb_draw "drawbox=x=16:y=16:w=32:h=ih-32:t=fill:color=black"
-        return
-    fi
 
-    fb_draw "drawbox=x=16:y=16:w=32:h=ih-32:t=fill:color=black,drawbox=x=20:y=20:w=24:h=(ih-40)*${*}:t=fill:color=white"
+progress() {
+    STATUS=${1}
+    case "${KOBRA_MODEL_CODE}" in
+        KS1)
+            PBX="16"
+            PBY="16"
+            PBH="32"
+            PBW="(iw-32)"
+            PCX="20"
+            PCY="20"
+            PCH="24"
+            PCW="(iw-40)"
+            ;;
+        K3M)
+            PBX="(iw-48)"
+            PBY="16"
+            PBW="32"
+            PBH="(ih-32)"
+            PCX="(iw-44)"
+            PCY="20"
+            PCW="24"
+            PCH="(ih-40)"
+            ;;
+        *)
+            PBX="16"
+            PBY="16"
+            PBW="32"
+            PBH="(ih-32)"
+            PCX="20"
+            PCY="20"
+            PCW="24"
+            PCH="(ih-40)"
+        ;;
+    esac
+    case "${STATUS}" in
+        success)
+            STAT_COLOR=green
+            ;;
+        error)
+            STAT_COLOR=red
+            ;;
+        *)
+            STAT_COLOR=white
+            if [ "${STATUS}" = "0" ]; then
+              STATUS="0.005"
+            fi
+            case "${KOBRA_MODEL_CODE}" in
+                KS1)
+                    PCX="(${PCX})+((${PCW})-(${PCW})*${STATUS})"
+                    PCW="(${PCW})*${STATUS}"
+                    ;;
+                K3M)
+                    PCY="(${PCY})+((${PCH})-(${PCH})*${STATUS})"
+                    PCH="(${PCH})*${STATUS}"
+                    ;;
+                *)
+                    PCH="(${PCH})*${STATUS}"
+                    ;;
+            esac
+            ;;
+    esac
+    fb_draw "drawbox=x=${PBX}:y=${PBY}:w=${PBW}:h=${PBH}:t=fill:color=black,drawbox=x=${PCX}:y=${PCY}:w=${PCW}:h=${PCH}:t=fill:color=${STAT_COLOR}"
 }
+
 quit() {
     sync
     progress error

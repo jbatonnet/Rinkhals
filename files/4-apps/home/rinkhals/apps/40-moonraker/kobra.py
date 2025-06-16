@@ -419,6 +419,7 @@ class Kobra:
                 rpc_method = web_request.get_endpoint()
                 if self.is_goklipper_running() and rpc_method == "gcode/script":
                     script = web_request.get_str('script', "")
+
                     if script.lower() == "bed_mesh_map" and os.path.isfile("/userdata/app/gk/printer_data/config/printer_mutable.cfg"):
                         logging.info('[Kobra] Injected bed mesh')
                         with open("/userdata/app/gk/printer_data/config/printer_mutable.cfg", "r") as f:
@@ -435,13 +436,33 @@ class Kobra:
                                 raise self.server.error("Failed to open mesh")
                     elif script.lower().startswith("bed_mesh_calibrate"):
                         logging.info('[Kobra] Injected bed mesh calibration script')
-                        web_request.get_args()["script"] = "MOVE_HEAT_POS\nM109 S140\nWIPE_NOZZLE\nBED_MESH_CALIBRATE\nSAVE_CONFIG"
+                        calibrate_script = [
+                            'MOVE_HEAT_POS',
+                            'M140 S60', # Set bed to 60
+                            'M109 S170', # Wait hotend to 170
+                            'M190 S60', # Wait bed to 60
+                            'WIPE_NOZZLE',
+                            'M109 S140', # Wait hotend to 140
+                            'BED_MESH_CALIBRATE',
+                            'TURN_OFF_HEATERS',
+                            'M106 S0', # Set fan speed to 0
+                            'SAVE_CONFIG'
+                        ]
+                        web_request.get_args()["script"] = '\n'.join(calibrate_script)
                     elif script.lower().startswith('bed_mesh_profile'):
                         name = re.search('save=(\"(?:[^\"]+)\"|(?:[^\s]+))', script.lower())
                         if name and name[1] != 'default':
                             message = 'GoKlipper only support one default bed mesh'
                             logging.error(message)
                             raise self.server.error(message)
+                
+                    if script.lower() == 'help':
+                        web_request.endpoint = 'gcode/help'
+                        result = await original_request(me, web_request)
+                        result = '\n'.join([ f'// {g}: {result[g]}' for g in result ])
+                        self.server.send_event("server:gcode_response", result)
+                        return None
+
                 return await original_request(me, web_request)
             return request
 
@@ -452,11 +473,10 @@ class Kobra:
                 # Do not send bed_mesh to goklipper, it does not support it
                 want_bed_mesh = False
                 if self.is_goklipper_running():
-                    if 'objects' in args and 'bed_mesh' in args['objects']:
+                    if 'objects' in args and ('bed_mesh' in args['objects'] or 'bed_mesh default' in args['objects'] or 'bed_mesh \"default\"' in args['objects']):
                         want_bed_mesh = True
                         del args['objects']['bed_mesh']
-                    if 'objects' in args and 'bed_mesh \"default\"' in args['objects']:
-                        want_bed_mesh = True
+                        del args['objects']['bed_mesh default']
                         del args['objects']['bed_mesh \"default\"']
 
                 result = await original__request_standard(me, web_request, timeout)
@@ -467,6 +487,7 @@ class Kobra:
                         result['status'] = {}
 
                     result['status']['bed_mesh'] = {}
+                    result['status']['bed_mesh default'] = {}
                     result['status']['bed_mesh \"default\"'] = {}
 
                     if os.path.isfile("/userdata/app/gk/printer_data/config/printer_mutable.cfg"):
@@ -483,7 +504,7 @@ class Kobra:
                                     "probed_matrix": points,
                                     "mesh_matrix": points
                                 }
-                                result['status']['bed_mesh \"default\"'] = {
+                                result['status']['bed_mesh default'] = {
                                     "points": points,
                                     "mesh_params": {
                                         "min_x": float(mesh["min_x"]),
@@ -498,6 +519,7 @@ class Kobra:
                                         "algo": mesh["algo"]
                                     }
                                 }
+                                #result['status']['bed_mesh \"default\"'] = result['status']['bed_mesh default']
                 return result
             return _request_standard
 
@@ -519,12 +541,9 @@ class Kobra:
                 rpc_method = web_request.get_endpoint()
                 if self.is_goklipper_running() and rpc_method == "objects/list":
                     logging.info('[Kobra] Injected objects list')
-
+                    
                     objects = [
                         "motion_report",
-                        "gcode_macro pause",
-                        "gcode_macro resume",
-                        "gcode_macro cancel_print",
                         "gcode_macro t0",
                         "gcode_macro t1",
                         "gcode_macro t2",
@@ -549,9 +568,15 @@ class Kobra:
                         "virtual_sdcard",
                         "webhooks",
                         "bed_mesh",
+                        "bed_mesh default",
                         "bed_mesh \"default\"",
                         "idle_timeout"
                     ]
+                    
+                    web_request.endpoint = 'gcode/help'
+                    result = await original_request(me, web_request)
+                    for gcode in result:
+                        objects.append(f"gcode_macro {gcode}")
                     
                     if self.KOBRA_MODEL_CODE == 'KS1':
                         objects.append("fan_generic air_filter_fan")

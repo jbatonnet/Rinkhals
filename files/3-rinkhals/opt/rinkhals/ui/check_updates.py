@@ -111,15 +111,22 @@ class CheckUpdateProgram:
                 self.firmware_version = '3.1.4'
             elif model_code == 'K3':
                 self.model_id = '20024'
-                self.firmware_version = '2.3.8.9'
+                self.firmware_version = '2.4.0.4'
             elif model_code == 'KS1':
                 self.model_id = '20025'
-                self.firmware_version = '2.5.1.6'
+                self.firmware_version = '2.5.3.5'
             elif model_code == 'K3M':
                 self.model_id = '20026'
+                self.firmware_version = '2.4.6.5'
+            elif model_code == 'K3V2':
+                self.model_id = '20027'
+                self.firmware_version = '1.0.5.8'
+            elif model_code.isdigit():
+                self.model_id = model_code
                 self.firmware_version = '1.2.3.4'
             else:
                 return None
+            
         if current_version:
             self.firmware_version = current_version
 

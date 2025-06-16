@@ -196,27 +196,6 @@ class RinkhalsUiApp(BaseApp):
     def layout(self):
         super().layout()
         
-        # Leave an empty 24px gap at the top of K2P / K3 screen
-        if self.printer_info.model_code == 'K2P' or self.printer_info.model_code == 'K3' or self.printer_info.model_code == 'K3M':
-            layer_bottom = lv.display_get_default().get_layer_bottom()
-            #layer_bottom.set_style_bg_opa(lv.OPA.TRANSP, lv.STATE.DEFAULT)
-            layer_bottom.set_style_bg_opa(lv.OPA.COVER, lv.STATE.DEFAULT)
-            layer_bottom.set_style_bg_color(lv.color_black(), lv.STATE.DEFAULT)
-
-            original_root = self.root_screen
-            original_root.set_style_bg_opa(lv.OPA.TRANSP, lv.STATE.DEFAULT)
-
-            self.root_screen = lvr.panel(original_root)
-            self.root_screen.add_style(lvr.get_style_screen(), lv.STATE.DEFAULT)
-            self.root_screen.set_size(lv.pct(100), self.screen_info.height - 24)
-            self.root_screen.set_align(lv.ALIGN.BOTTOM_MID)
-            self.root_screen.set_style_pad_all(0, lv.STATE.DEFAULT)
-
-            self.root_modal.set_parent(self.root_screen)
-            self.screen_composition.set_parent(self.root_screen)
-
-            #lv.screen_load(original_root)
-
         if self.screen_logo:
             self.screen_logo.set_flex_flow(lv.FLEX_FLOW.COLUMN)
             self.screen_logo.set_flex_align(lv.FLEX_ALIGN.CENTER, lv.FLEX_ALIGN.CENTER, lv.FLEX_ALIGN.CENTER)
@@ -261,8 +240,8 @@ class RinkhalsUiApp(BaseApp):
             
             button_ota = lvr.button(self.screen_main)
             button_ota.set_width(lv.pct(100))
-            button_ota.set_text('Check for updates')
-            button_ota.add_event_cb(lambda e: self.layout_ota(), lv.EVENT_CODE.CLICKED, None)
+            button_ota.set_text('Install & Updates')
+            button_ota.add_event_cb(lambda e: self.show_screen(self.screen_ota), lv.EVENT_CODE.CLICKED, None)
 
             button_settings = lvr.button(self.screen_main)
             button_settings.set_width(lv.pct(100))
@@ -277,7 +256,6 @@ class RinkhalsUiApp(BaseApp):
 
         self.show_screen(self.screen_main)
         run_async(self.layout_async)
-
     def layout_async(self):
         with lvr.lock():
             self.screen_apps = lvr.panel(self.root_screen)
@@ -478,80 +456,11 @@ class RinkhalsUiApp(BaseApp):
                 button_disable.add_event_cb(lambda e: self.show_text_dialog('Are you sure you want\nto disable Rinkhals?\n\nYou will need to reinstall\nRinkhals to start it again', action='Yes', action_color=lvr.COLOR_DANGER, callback=lambda: self.disable_rinkhals()), lv.EVENT_CODE.CLICKED, None)
 
         with lvr.lock():
-            self.modal_ota = lvr.modal(self.root_modal)
-            if self.modal_ota:
-                label_title = lvr.title(self.modal_ota)
-                label_title.set_text('Check for updates')
-                label_title.set_style_pad_bottom(lv.dpx(10), lv.STATE.DEFAULT)
-
-                label_rinkhals = lvr.label(self.modal_ota)
-                label_rinkhals.set_style_text_color(lvr.COLOR_TEXT, lv.STATE.DEFAULT)
-                label_rinkhals.set_text('Rinkhals')
-                label_rinkhals.set_style_margin_bottom(-lv.dpx(20), lv.STATE.DEFAULT)
-
-                panel_rinkhals = lvr.panel(self.modal_ota)
-                panel_rinkhals.set_width(lv.pct(100))
-                panel_rinkhals.set_flex_flow(lv.FLEX_FLOW.ROW)
-                panel_rinkhals.set_flex_align(lv.FLEX_ALIGN.CENTER, lv.FLEX_ALIGN.CENTER, lv.FLEX_ALIGN.CENTER)
-                panel_rinkhals.set_style_pad_column(0, lv.STATE.DEFAULT)
-                panel_rinkhals.set_style_bg_opa(lv.OPA.TRANSP, lv.STATE.DEFAULT)
-
-                panel_rinkhals_current = lvr.panel(panel_rinkhals, flex_flow=lv.FLEX_FLOW.COLUMN, flex_align=lv.FLEX_ALIGN.CENTER)
-                panel_rinkhals_current.set_style_pad_row(-lv.dpx(2), lv.STATE.DEFAULT)
-                panel_rinkhals_current.set_width(lv.pct(50))
-                panel_rinkhals_current.set_style_pad_all(0, lv.STATE.DEFAULT)
-
-                label_rinkhals_current = lvr.subtitle(panel_rinkhals_current)
-                label_rinkhals_current.set_text('Current')
-                
-                self.modal_ota.label_rinkhals_current = lvr.label(panel_rinkhals_current)
-                self.modal_ota.label_rinkhals_current.set_text(RINKHALS_VERSION)
-
-                panel_rinkhals_latest = lvr.panel(panel_rinkhals, flex_flow=lv.FLEX_FLOW.COLUMN, flex_align=lv.FLEX_ALIGN.CENTER)
-                panel_rinkhals_latest.set_style_pad_row(-lv.dpx(2), lv.STATE.DEFAULT)
-                panel_rinkhals_latest.set_width(lv.pct(50))
-                panel_rinkhals_latest.set_style_pad_all(0, lv.STATE.DEFAULT)
-
-                label_rinkhals_latest = lvr.subtitle(panel_rinkhals_latest)
-                label_rinkhals_latest.set_text('Latest')
-                
-                self.modal_ota.label_rinkhals_latest = lvr.label(panel_rinkhals_latest)
-                self.modal_ota.label_rinkhals_latest.set_text('?')
-
-                self.modal_ota.panel_progress = lvr.panel(self.modal_ota, flex_flow=lv.FLEX_FLOW.COLUMN, flex_align=lv.FLEX_ALIGN.CENTER)
-                self.modal_ota.panel_progress.set_width(lv.pct(100))
-                self.modal_ota.panel_progress.set_style_pad_row(lv.dpx(2), lv.STATE.DEFAULT)
-
-                panel_progress_background = lvr.panel(self.modal_ota.panel_progress)
-                panel_progress_background.set_size(lv.pct(100), lv.dpx(10))
-                panel_progress_background.set_style_pad_all(0, lv.STATE.DEFAULT)
-                panel_progress_background.set_style_bg_color(lv.color_lighten(lvr.COLOR_BACKGROUND, 48), lv.STATE.DEFAULT)
-                panel_progress_background.set_style_bg_opa(lv.OPA.COVER, lv.STATE.DEFAULT)
-                panel_progress_background.remove_flag(lv.OBJ_FLAG.SCROLLABLE)
-
-                self.modal_ota.obj_progress_bar = lvr.panel(panel_progress_background)
-                self.modal_ota.obj_progress_bar.set_align(lv.ALIGN.LEFT_MID)
-                self.modal_ota.obj_progress_bar.set_style_bg_color(lvr.COLOR_PRIMARY, lv.STATE.DEFAULT)
-                self.modal_ota.obj_progress_bar.set_style_bg_opa(lv.OPA.COVER, lv.STATE.DEFAULT)
-                self.modal_ota.obj_progress_bar.set_size(lv.pct(24), lv.pct(100))
-
-                self.modal_ota.label_progress_text = lvr.label(self.modal_ota.panel_progress)
-                self.modal_ota.label_progress_text.set_text('Ready')
-
-                panel_actions = lvr.panel(self.modal_ota)
-                panel_actions.set_width(lv.pct(100))
-                panel_actions.set_flex_flow(lv.FLEX_FLOW.ROW)
-                panel_actions.set_flex_align(lv.FLEX_ALIGN.CENTER, lv.FLEX_ALIGN.CENTER, lv.FLEX_ALIGN.CENTER)
-                panel_actions.set_style_pad_column(lv.dpx(15), lv.STATE.DEFAULT)
-                panel_actions.set_style_pad_all(0, lv.STATE.DEFAULT)
-
-                self.modal_ota.button_cancel = lvr.button(panel_actions)
-                self.modal_ota.button_cancel.set_width(lv.pct(45))
-                self.modal_ota.button_cancel.set_text('Cancel')
-                
-                self.modal_ota.button_action = lvr.button(panel_actions)
-                self.modal_ota.button_action.set_width(lv.pct(45))
-                self.modal_ota.button_action.set_text('Download')
+            self.layout_ota()
+        with lvr.lock():
+            self.layout_ota_rinkhals()
+        with lvr.lock():
+            self.layout_ota_firmware()
 
         with lvr.lock():
             self.modal_selection = lvr.modal(self.root_modal)
@@ -561,10 +470,9 @@ class RinkhalsUiApp(BaseApp):
     def show_screen(self, screen):
         super().show_screen(screen)
 
-        if screen == self.screen_main: self.layout_main()
-        elif screen == self.screen_apps: self.layout_apps()
-
-    def layout_main(self):
+        if screen == self.screen_main: self.show_main()
+        elif screen == self.screen_apps: self.show_apps()
+    def show_main(self):
         self.screen_logo.label_model.set_text(f'Model: {KOBRA_MODEL}')
         self.screen_logo.label_firmware.set_text(f'Firmware: {KOBRA_VERSION}')
         self.screen_logo.label_version.set_text(f'Version: {RINKHALS_VERSION}')
@@ -577,7 +485,7 @@ class RinkhalsUiApp(BaseApp):
 
         if USING_SHELL:
             shell_async(f'df -Ph {RINKHALS_ROOT} | tail -n 1 | awk \'{{print $3 " / " $2 " (" $5 ")"}}\'', update_disk_usage)
-    def layout_apps(self):
+    def show_apps(self):
         def toggle_app(app, checked):
             if checked:
                 logging.info(f'Enabling {app}...')
@@ -630,7 +538,9 @@ class RinkhalsUiApp(BaseApp):
                 self.app_checkboxes[app] = checkbox_app
 
         run_async(refresh_apps)
-    def layout_app(self, app):
+    def show_app(self, app):
+        self.show_screen(self.screen_app)
+        
         if isinstance(app, lv.event):
             app = app.get_user_data()
 
@@ -737,7 +647,9 @@ class RinkhalsUiApp(BaseApp):
             self.screen_app.label_cpu.set_text(f'{round(app_cpu, 1)}%')
             lv.unlock()
         run_async(update_memory)
-    def layout_app_settings(self, app):
+    def show_app_settings(self, app):
+        self.show_screen(self.screen_app_settings)
+        
         app_root = get_app_root(app)
 
         app_manifest = None
@@ -863,195 +775,6 @@ class RinkhalsUiApp(BaseApp):
         button_reset.set_width(lv.pct(100))
         button_reset.set_text('Reset to default')
         button_reset.add_event_cb(lambda e: reset_default(), lv.EVENT_CODE.CLICKED, None)
-    def layout_ota(self):
-        def cancel_ota(e):
-            if not USING_SIMULATOR:
-                if os.path.exists('/useremain/update.swu'):
-                    os.remove('/useremain/update.swu')
-            self.hide_modal()
-
-        self.modal_ota.label_rinkhals_latest.set_text('-')
-        self.modal_ota.panel_progress.add_flag(lv.OBJ_FLAG.HIDDEN)
-        self.modal_ota.button_action.set_text('Refresh')
-        self.modal_ota.button_action.set_state(lv.STATE.DISABLED, False)
-        self.modal_ota.button_cancel.set_state(lv.STATE.DISABLED, False)
-        self.modal_ota.button_action.clear_event_cb()
-        self.modal_ota.button_action.add_event_cb(lambda e: run_async(check_rinkhals_update), lv.EVENT_CODE.CLICKED, None)
-        self.modal_ota.button_cancel.clear_event_cb()
-        self.modal_ota.button_cancel.add_event_cb(cancel_ota, lv.EVENT_CODE.CLICKED, None)
-
-        self.show_modal(self.modal_ota)
-
-        def install_rinkhals_update():
-            lv.lock()
-            self.modal_ota.button_action.set_state(lv.STATE.DISABLED, True)
-            self.modal_ota.button_cancel.set_state(lv.STATE.DISABLED, True)
-            self.modal_ota.label_progress_text.set_text('Extracting...')
-            lv.unlock()
-
-            if self.printer_info.model_code == 'K2P' or self.printer_info.model_code == 'K3':
-                password = 'U2FsdGVkX19deTfqpXHZnB5GeyQ/dtlbHjkUnwgCi+w='
-            elif self.printer_info.model_code == 'KS1':
-                password = 'U2FsdGVkX1+lG6cHmshPLI/LaQr9cZCjA8HZt6Y8qmbB7riY'
-            elif self.printer_info.model_code == 'K3M':
-                password = '4DKXtEGStWHpPgZm8Xna9qluzAI8VJzpOsEIgd8brTLiXs8fLSu3vRx8o7fMf4h6'
-
-            logging.info(f'Extracting Rinkhals update...')
-
-            for i in range(1):
-                if not USING_SIMULATOR:
-                    if system('rm -rf /useremain/update_swu') != 0:
-                        break
-                    if system(f'unzip -P {password} /useremain/update.swu -d /useremain') != 0:
-                        break
-                    if system('rm /useremain/update.swu') != 0:
-                        break
-                    if system('tar zxf /useremain/update_swu/setup.tar.gz -C /useremain/update_swu') != 0:
-                        break
-                    if system('chmod +x /useremain/update_swu/update.sh') != 0:
-                        break
-                else:
-                    time.sleep(1)
-
-                lv.lock()
-                self.modal_ota.label_progress_text.set_text('Installing...')
-                lv.unlock()
-
-                # TODO: Replace reboot by something we control (like start.sh maybe?)
-
-                if not USING_SIMULATOR:
-                    logging.info('Starting Rinkhals update...')
-                    system('/useremain/update_swu/update.sh &')
-                else:
-                    time.sleep(1)
-                    self.quit()
-                return
-            
-            lv.lock()
-            self.modal_ota.obj_progress_bar.set_style_bg_color(lvr.COLOR_DANGER, lv.STATE.DEFAULT)
-            self.modal_ota.label_progress_text.set_text('Extraction failed')
-            self.modal_ota.button_action.set_state(lv.STATE.DISABLED, False)
-            self.modal_ota.button_cancel.set_state(lv.STATE.DISABLED, False)
-            lv.unlock()
-
-        def download_rinkhals_update():
-            lv.lock()
-            self.modal_ota.button_action.set_state(lv.STATE.DISABLED, True)
-            self.modal_ota.panel_progress.remove_flag(lv.OBJ_FLAG.HIDDEN)
-            self.modal_ota.obj_progress_bar.set_style_bg_color(lvr.COLOR_PRIMARY, lv.STATE.DEFAULT)
-            self.modal_ota.obj_progress_bar.set_width(lv.pct(0))
-            self.modal_ota.label_progress_text.set_text('Starting...')
-            lv.unlock()
-
-            target_path = f'{RINKHALS_ROOT}/../../build/dist/update-download.swu' if USING_SIMULATOR else '/useremain/update.swu'
-
-            try:
-                logging.info(f'Downloading Rinkhals {self.modal_ota.latest_version} from {self.modal_ota.latest_release_url}...')
-
-                import requests
-                with requests.get(self.modal_ota.latest_release_url, stream=True) as r:
-                    r.raise_for_status()
-                    with open(target_path, 'wb') as f:
-                        total_length = int(r.headers.get('content-length', 0))
-                        downloaded = 0
-                        last_update_time = 0
-
-                        for chunk in r.iter_content(chunk_size=8192):
-                            if chunk:
-                                if self.modal_ota.has_flag(lv.OBJ_FLAG.HIDDEN):
-                                    logging.info('Download canceled.')
-                                    return
-                                
-                                f.write(chunk)
-                                downloaded += len(chunk)
-
-                                current_time = time.time()
-                                if current_time - last_update_time >= 0.75:
-                                    last_update_time = current_time
-
-                                    progress = int(downloaded / total_length * 100)
-                                    downloaded_mb = downloaded / (1024 * 1024)
-                                    total_mb = total_length / (1024 * 1024)
-
-                                    lv.lock()
-                                    self.modal_ota.obj_progress_bar.set_width(lv.pct(progress))
-                                    self.modal_ota.label_progress_text.set_text(f'{progress}% ({downloaded_mb:.1f}M / {total_mb:.1f}M)')
-                                    lv.unlock()
-
-                logging.info('Download completed.')
-
-                lv.lock()
-                self.modal_ota.obj_progress_bar.set_width(lv.pct(100))
-                self.modal_ota.label_progress_text.set_text('Ready to install')
-                self.modal_ota.button_action.set_text('Install')
-                self.modal_ota.button_action.clear_event_cb()
-                self.modal_ota.button_action.add_event_cb(lambda e: run_async(install_rinkhals_update), lv.EVENT_CODE.CLICKED, None)
-                lv.unlock()
-            except Exception as e:
-                logging.info(f'Download failed. {e}')
-
-                lv.lock()
-                self.modal_ota.obj_progress_bar.set_style_bg_color(lvr.COLOR_DANGER, lv.STATE.DEFAULT)
-                self.modal_ota.label_progress_text.set_text('Failed')
-                lv.unlock()
-                
-            lv.lock()
-            self.modal_ota.button_action.set_state(lv.STATE.DISABLED, False)
-            lv.unlock()
-
-        def check_rinkhals_update():
-            self.modal_ota.latest_release = None
-            self.modal_ota.latest_version = None
-            self.modal_ota.latest_release_url = None
-            
-            try:
-                logging.info('Checking latest Rinkhals update...')
-
-                import requests
-                response = requests.get('https://api.github.com/repos/jbatonnet/Rinkhals/releases/latest')
-
-                if response.status_code == 200:
-                    self.modal_ota.latest_release = response.json()
-                    self.modal_ota.latest_version = self.modal_ota.latest_release.get('tag_name')
-
-                    assets = self.modal_ota.latest_release.get('assets', [])
-                    for asset in assets:
-                        if (self.printer_info.model_code == 'K2P' or self.printer_info.model_code == 'K3') and asset['name'] == 'update-k2p-k3.swu':
-                            self.modal_ota.latest_release_url = asset['browser_download_url']
-                        elif self.printer_info.model_code == 'KS1' and asset['name'] == 'update-ks1.swu':
-                            self.modal_ota.latest_release_url = asset['browser_download_url']
-                        elif self.printer_info.model_code == 'K3M' and asset['name'] == 'update-k3m.swu':
-                            self.modal_ota.latest_release_url = asset['browser_download_url']
-
-                    logging.info(f'Found update {self.modal_ota.latest_version} from {self.modal_ota.latest_release_url}')
-                else:
-                    logging.error(f'Failed to fetch latest release: {response.status_code}')
-            except Exception as e:
-                logging.error(f'Error checking Rinkhals update: {e}')
-
-            lv.lock()
-            if self.modal_ota.latest_version and self.modal_ota.latest_release_url:
-                self.modal_ota.label_rinkhals_latest.set_text(ellipsis(self.modal_ota.latest_version, 16))
-                self.modal_ota.button_action.set_text('Download' if self.modal_ota.latest_version != RINKHALS_VERSION else 'Refresh')
-                
-                self.modal_ota.button_action.clear_event_cb()
-                self.modal_ota.button_action.add_event_cb(lambda e: run_async(download_rinkhals_update) if self.modal_ota.latest_version != RINKHALS_VERSION else lambda e: run_async(check_rinkhals_update), lv.EVENT_CODE.CLICKED, None)
-            else:
-                self.modal_ota.label_rinkhals_latest.set_text('-')
-                self.modal_ota.button_action.set_text('Refresh')
-                
-                self.modal_ota.button_action.clear_event_cb()
-                self.modal_ota.button_action.add_event_cb(lambda: run_async(check_rinkhals_update), lv.EVENT_CODE.CLICKED, None)
-            lv.unlock()
-
-        run_async(check_rinkhals_update)
-
-    def show_app(self, app):
-        self.show_screen(self.screen_app)
-        self.layout_app(app)
-    def show_app_settings(self, app):
-        self.show_screen(self.screen_app_settings)
-        self.layout_app_settings(app)
     def show_selection_dialog(self, options, select_callback=None):
         if self.modal_selection.panel_selection:
             self.modal_selection.panel_selection.delete()

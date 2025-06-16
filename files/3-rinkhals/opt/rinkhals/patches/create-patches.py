@@ -111,7 +111,7 @@ def patch_K3SysUi(binaryPath, modelCode, version):
         buttonCallback = k3sysui.symbols['_ZZN10MainWindow19AcSettingPageUiInitEvENKUlvE_clEv']
         patchJumpAddress = 0xfd278
         patchReturnAddress = 0xfd2a8
-    elif (modelCode == 'K3' and version == '2.4.0.4') or (modelCode == 'K3M' and version == '2.4.6.5'):
+    elif (modelCode == 'K3' and version == '2.4.0.4') or (modelCode == 'K3M' and version == '2.4.6.5') or (modelCode == 'K3V2' and version == '1.0.5.8'):
         buttonCallback = k3sysui.symbols['_ZZN10MainWindow19AcSettingPageUiInitEvENKUlvE_clEv']
         patchJumpAddress = 0xfef8c
         patchReturnAddress = 0xfefbc
@@ -129,14 +129,14 @@ def patch_K3SysUi(binaryPath, modelCode, version):
     # bl      QStackedWidget::setCurrentIndex
     # nop                                      < patchReturnAddress
 
-    elif modelCode == 'KS1' and version == '2.5.2.3':
-        buttonCallback = k3sysui.symbols['_ZZN10MainWindow26AcSettingGeneralPageUiInitEvENKUlRK11QModelIndexE0_clES2_']
-        patchJumpAddress = 0x1138d8
-        patchReturnAddress = 0x1138e0
     elif modelCode == 'KS1' and version == '2.5.3.1':
         buttonCallback = k3sysui.symbols['_ZZN10MainWindow26AcSettingGeneralPageUiInitEvENKUlRK11QModelIndexE0_clES2_']
         patchJumpAddress = 0x11f48c
         patchReturnAddress = 0x11f494
+    elif modelCode == 'KS1' and version == '2.5.3.5':
+        buttonCallback = k3sysui.symbols['_ZZN10MainWindow26AcSettingGeneralPageUiInitEvENKUlRK11QModelIndexE0_clES2_']
+        patchJumpAddress = 0x12048c
+        patchReturnAddress = 0x120494
 
     else:
         raise Exception('Unsupported model and version')
@@ -191,7 +191,7 @@ def patch_K3SysUi(binaryPath, modelCode, version):
     osSleep = k3sysui.symbols['_ZN8GobalVar7OsSleepEi']
     acDisplayWaitHandler = k3sysui.symbols['_ZN10MainWindow20AcDisplayWaitHandlerEhh']
     
-    if modelCode == 'K3' or modelCode == 'K3M':
+    if modelCode == 'K3' or modelCode == 'K3M' or modelCode == 'K3V2':
         acDisplayWaitHide = k3sysui.symbols['_ZN10MainWindow17AcDisplayWaitHideEv']
     elif modelCode == 'KS1':
         acDisplayWaitHide = k3sysui.symbols['_ZN10MainWindow17AcDisplayWaitHideEh']
