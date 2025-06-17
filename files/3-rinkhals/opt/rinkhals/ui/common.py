@@ -110,8 +110,8 @@ SIMULATED_RINKHALS_VERSION = '20250424_01'
 SIMULATED_FIRMWARE_VERSION = '1.2.3.4'
 
 class PrinterInfo:
-    model_code: int
-    model: int
+    model_code: str
+    model: str
 
     def get():
         printer_info = PrinterInfo()
@@ -403,7 +403,13 @@ class Firmware:
 
         try:
             import requests
-            response = requests.get(manifest_url, timeout=5)
+
+            current_version = Rinkhals.get_current_version()
+
+            headers = {
+                'User-Agent': f'Rinkhals/{current_version.version if current_version else "Unknown"} ({printer_info.model_code if printer_info else "Unknown"})'
+            }
+            response = requests.get(manifest_url, timeout=5, headers=headers)
             if response.status_code != 200:
                 logging.warning(f'Failed to fetch firmware manifest: {response.status_code}')
                 return versions
@@ -1762,7 +1768,18 @@ class BaseApp:
                 logging.info(f'Downloading Rinkhals {version.version} from {version.url}...')
 
                 import requests
-                with requests.get(version.url, stream=True) as r:
+
+                printer_info = PrinterInfo.get()
+                current_version = Rinkhals.get_current_version()
+
+                headers = {
+                    'User-Agent': f'Rinkhals/{current_version.version if current_version else "Unknown"} ({printer_info.model_code if printer_info else "Unknown"})'
+                }
+
+                if 'anycubic' in version.url:
+                    headers = {}
+
+                with requests.get(version.url, stream=True, headers=headers) as r:
                     r.raise_for_status()
                     with open(target_path, 'wb') as f:
                         downloaded = 0
