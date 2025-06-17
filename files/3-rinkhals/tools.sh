@@ -1,6 +1,7 @@
 export RINKHALS_ROOT=$(realpath /useremain/rinkhals/.current)
 export RINKHALS_VERSION=$(cat $RINKHALS_ROOT/.version)
 export RINKHALS_HOME=/useremain/home/rinkhals
+export RINKHALS_LOGS=/tmp/rinkhals
 
 export KOBRA_MODEL_ID=$(cat /userdata/app/gk/config/api.cfg | sed -nr 's/.*"modelId"\s*:\s*"([0-9]+)".*/\1/p')
 
@@ -37,8 +38,8 @@ beep() {
 log() {
     echo "${*}"
 
-    mkdir -p $RINKHALS_ROOT/logs
-    echo "$(date): ${*}" >> $RINKHALS_ROOT/logs/rinkhals.log
+    mkdir -p $RINKHALS_LOGS
+    echo "$(date): ${*}" >> $RINKHALS_LOGS/rinkhals.log
 }
 quit() {
     exit 1

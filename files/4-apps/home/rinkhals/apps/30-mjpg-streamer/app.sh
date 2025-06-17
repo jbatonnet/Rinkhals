@@ -33,7 +33,7 @@ start() {
     PORT=8080
     for CAMERA in $CAMERAS; do
         #log "Starting mjpg-streamer for $CAMERA on port $PORT"
-        mjpg_streamer -i "/usr/lib/mjpg-streamer/input_uvc.so -d $CAMERA $RESOLUTION -n" -o "/usr/lib/mjpg-streamer/output_http.so -p $PORT -w /usr/share/mjpg-streamer/www" >> $RINKHALS_ROOT/logs/app-mjpg-streamer.log 2>&1 &
+        mjpg_streamer -i "/usr/lib/mjpg-streamer/input_uvc.so -d $CAMERA $RESOLUTION -n" -o "/usr/lib/mjpg-streamer/output_http.so -p $PORT -w /usr/share/mjpg-streamer/www" >> $RINKHALS_LOGS/app-mjpg-streamer.log 2>&1 &
         wait_for_port $PORT
         PORT=$(($PORT + 1))
     done
@@ -46,7 +46,7 @@ stop() {
     cd /userdata/app/gk
 
     LD_LIBRARY_PATH=/userdata/app/gk:$LD_LIBRARY_PATH \
-        ./gkcam >> $RINKHALS_ROOT/logs/gkcam.log 2>&1 &
+        ./gkcam >> $RINKHALS_LOGS/gkcam.log 2>&1 &
 }
 
 case "$1" in

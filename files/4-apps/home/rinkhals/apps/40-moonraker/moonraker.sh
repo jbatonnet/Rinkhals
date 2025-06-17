@@ -18,4 +18,4 @@ python /opt/rinkhals/scripts/process-cfg.py moonraker.conf > /userdata/app/gk/pr
 
 # Start Klippy
 mkdir -p /useremain/tmp
-TMPDIR=/useremain/tmp HOME=/userdata/app/gk python ./moonraker/moonraker/moonraker.py -c /userdata/app/gk/printer_data/config/moonraker.generated.conf >> $RINKHALS_ROOT/logs/app-moonraker.log 2>&1
+TMPDIR=/useremain/tmp HOME=/userdata/app/gk python ./moonraker/moonraker/moonraker.py -c /userdata/app/gk/printer_data/config/moonraker.generated.conf >> $RINKHALS_LOGS/app-moonraker.log 2>&1

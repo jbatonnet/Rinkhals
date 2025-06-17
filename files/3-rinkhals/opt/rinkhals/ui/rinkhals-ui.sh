@@ -38,6 +38,6 @@ FILTER="$FILTER [1a]; [1:v] ${TRANSPOSE} [1b]; [1b] scale=w=iw*${SCALE}:h=ih*${S
 
 # Start Python UI
 kill_by_name rinkhals-ui.py
-python $RINKHALS_ROOT/opt/rinkhals/ui/rinkhals-ui.py >> $RINKHALS_ROOT/logs/rinkhals-ui.log 2>&1
+python $RINKHALS_ROOT/opt/rinkhals/ui/rinkhals-ui.py >> $RINKHALS_LOGS/rinkhals-ui.log 2>&1
 
 echo "Done!"

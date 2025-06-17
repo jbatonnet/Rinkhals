@@ -16,7 +16,7 @@ start() {
     cd $APP_ROOT
     
     chmod +x ./rinkhals-monitor
-    ./rinkhals-monitor >> $RINKHALS_ROOT/logs/app-monitor.log 2>&1 &
+    ./rinkhals-monitor >> $RINKHALS_LOGS/app-monitor.log 2>&1 &
 }
 stop() {
     kill_by_name rinkhals-monitor

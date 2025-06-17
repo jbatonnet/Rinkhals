@@ -1,7 +1,7 @@
 . $(dirname $(realpath $0))/tools.sh
 
 cd $RINKHALS_ROOT
-mkdir -p ./logs
+mkdir -p $RINKHALS_LOGS
 
 if [ ! -d /useremain/rinkhals/.current ]; then
     echo Rinkhals has not started
