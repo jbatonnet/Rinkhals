@@ -436,6 +436,13 @@ get_app_property() {
     if [ "$VALUE" = "null" ]; then
         VALUE=
     fi
+    if [ "$VALUE" = "" ]; then
+        APP_ROOT=$(get_app_root $APP)
+        VALUE=$(cat $APP_ROOT/app.json 2>/dev/null | jq -r ".properties.$PROPERTY.default")
+        if [ "$VALUE" = "null" ]; then
+            VALUE=
+        fi
+    fi
 
     echo $VALUE
 }
