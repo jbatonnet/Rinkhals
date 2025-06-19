@@ -9,7 +9,7 @@ Check this page to better understand what is Rinkhals and how it works: [How Doe
 
 On the Kobra series of 3D printer, it's possible to sideload .swu files to install or execute things. For example, official updates are provided as .swu files, similar to Rinkhals and other firmwares.
 
-### For the Kobra 3 series printers:
+### For all printers except the Kobra 2 Pro:
 1. Format a USB drive as FAT32 (partition table must be MBR, GPT won’t work)
 2. Create a directory named `aGVscF9zb3Nf` (older versions use another name, not covered here)
 3. Copy your .swu file as `update.swu` in the `aGVscF9zb3Nf` directory
