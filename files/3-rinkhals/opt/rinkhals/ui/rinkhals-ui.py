@@ -39,9 +39,9 @@ lvr.set_debug_rendering(DEBUG_RENDERING)
 
 if USING_SIMULATOR:
     PrinterInfo.simulate(
-        model_code='K3M',
+        model_code='KS1',
         model='Anycubic Kobra',
-        rinkhals_version='20250424_01',
+        rinkhals_version='20250617_01',
         system_version='1.2.3.4',
     )
 
@@ -140,6 +140,8 @@ if os.path.isfile('/useremain/dev/remote_ctrl_mode'):
 
 
 class RinkhalsUiApp(BaseApp):
+    app_update_loop_key = 0
+
     def __init__(self):
         super().__init__()
         
@@ -561,11 +563,7 @@ class RinkhalsUiApp(BaseApp):
         app_name = app_manifest.get('name') if app_manifest else app
         app_description = app_manifest.get('description') if app_manifest else ''
         app_version = app_manifest.get('version') if app_manifest else ''
-        app_status = get_app_status(app)
         app_properties = app_manifest.get('properties', []) if app_manifest else []
-
-        app_enabled = is_app_enabled(app) == '1'
-        app_started = app_status != 'stopped'
 
         self.screen_app.label_title.set_text(ellipsis(app_name, 24))
         self.screen_app.label_version.set_text(f'Version: {app_version}')
@@ -574,44 +572,18 @@ class RinkhalsUiApp(BaseApp):
         self.screen_app.label_disk.set_text('-')
         self.screen_app.label_memory.set_text('-')
         self.screen_app.label_cpu.set_text('-')
-        
-        self.screen_app.button_toggle_enabled.set_text('Disable app' if app_enabled else 'Enable app')
-        self.screen_app.button_toggle_enabled.clear_event_cb()
-        if app_enabled:
-            self.screen_app.button_toggle_enabled.add_event_cb(lambda e, app=app: self.disable_app(app), lv.EVENT_CODE.CLICKED, app)
-        else:
-            self.screen_app.button_toggle_enabled.add_event_cb(lambda e, app=app: self.enable_app(app), lv.EVENT_CODE.CLICKED, app)
-        
-        self.screen_app.button_toggle_started.set_text('Stop app' if app_started else 'Start app')
-        self.screen_app.button_toggle_started.set_style_text_color(lvr.COLOR_DANGER if app_started else lvr.COLOR_TEXT, lv.STATE.DEFAULT)
-        self.screen_app.button_toggle_started.clear_event_cb()
-        if app_started:
-            self.screen_app.button_toggle_started.add_event_cb(lambda e, app=app: self.stop_app(app), lv.EVENT_CODE.CLICKED, app)
-        else:
-            self.screen_app.button_toggle_started.add_event_cb(lambda e, app=app: self.start_app(app), lv.EVENT_CODE.CLICKED, app)
-        
+
         self.screen_app.button_refresh.clear_event_cb()
         self.screen_app.button_refresh.add_event_cb(lambda e, app=app: self.show_app(app), lv.EVENT_CODE.CLICKED, None)
 
+        self.screen_app.button_qrcode.add_flag(lv.OBJ_FLAG.HIDDEN)
+        
         if len(app_properties) == 0:
             self.screen_app.button_settings.add_flag(lv.OBJ_FLAG.HIDDEN)
         else:
             self.screen_app.button_settings.remove_flag(lv.OBJ_FLAG.HIDDEN)
             self.screen_app.button_settings.clear_event_cb()
             self.screen_app.button_settings.add_event_cb(lambda e, app=app: self.show_app_settings(app), lv.EVENT_CODE.CLICKED, None)
-
-        self.screen_app.button_qrcode.add_flag(lv.OBJ_FLAG.HIDDEN)
-
-        qr_properties = [ p for p in app_properties if app_properties[p]['type'] == 'qr' ]
-        if qr_properties:
-             qr_property = qr_properties[0]
-             display = app_properties[qr_property].get('display')
-             content = get_app_property(app, qr_property)
-             if content:
-                self.screen_app.button_qrcode.remove_flag(lv.OBJ_FLAG.HIDDEN)
-
-                self.screen_app.button_qrcode.clear_event_cb()
-                self.screen_app.button_qrcode.add_event_cb(lambda e, content=content: self.show_qr_dialog(content, display), lv.EVENT_CODE.CLICKED, None)
 
         def update_app_size(result):
             lv.lock()
@@ -620,11 +592,56 @@ class RinkhalsUiApp(BaseApp):
         if USING_SHELL:
             shell_async(f"du -sh {app_root} | awk '{{print $1}}'", update_app_size)
             
-        def update_memory():
+        def update_info(app=app):
+            app_enabled = is_app_enabled(app) == '1'
+            app_status = get_app_status(app)
+            app_started = app_status != 'stopped'
+            
+            # Update the enable app button
+            with lvr.lock():
+                self.screen_app.button_toggle_enabled.set_text('Disable app' if app_enabled else 'Enable app')
+                self.screen_app.button_toggle_enabled.clear_event_cb()
+                if app_enabled:
+                    self.screen_app.button_toggle_enabled.add_event_cb(lambda e, app=app: self.disable_app(app), lv.EVENT_CODE.CLICKED, app)
+                else:
+                    self.screen_app.button_toggle_enabled.add_event_cb(lambda e, app=app: self.enable_app(app), lv.EVENT_CODE.CLICKED, app)
+        
+            # Update the start app button
+            with lvr.lock():
+                self.screen_app.button_toggle_started.set_text('Stop app' if app_started else 'Start app')
+                self.screen_app.button_toggle_started.set_style_text_color(lvr.COLOR_DANGER if app_started else lvr.COLOR_TEXT, lv.STATE.DEFAULT)
+                self.screen_app.button_toggle_started.clear_event_cb()
+                if app_started:
+                    self.screen_app.button_toggle_started.add_event_cb(lambda e, app=app: self.stop_app(app), lv.EVENT_CODE.CLICKED, app)
+                else:
+                    self.screen_app.button_toggle_started.add_event_cb(lambda e, app=app: self.start_app(app), lv.EVENT_CODE.CLICKED, app)
+        
+            # Refresh the QR code button if available
+            with lvr.lock():
+                self.screen_app.button_qrcode.add_flag(lv.OBJ_FLAG.HIDDEN)
+
+            with lvr.lock():
+                qr_properties = [ p for p in app_properties if app_properties[p]['type'] == 'qr' ]
+                if qr_properties:
+                    qr_property = qr_properties[0]
+                    display = app_properties[qr_property].get('display')
+                    content = get_app_property(app, qr_property)
+                    if content:
+                        self.screen_app.button_qrcode.remove_flag(lv.OBJ_FLAG.HIDDEN)
+                        self.screen_app.button_qrcode.clear_event_cb()
+                        self.screen_app.button_qrcode.add_event_cb(lambda e, content=content: self.show_qr_dialog(content, display), lv.EVENT_CODE.CLICKED, None)
+                    else:
+                        self.screen_app.button_qrcode.add_flag(lv.OBJ_FLAG.HIDDEN)
+                else:
+                    self.screen_app.button_qrcode.add_flag(lv.OBJ_FLAG.HIDDEN)
+        def update_stats(app=app):
             import psutil
 
             app_pids = get_app_pids(app)
             if not app_pids:
+                with lvr.lock():
+                    self.screen_app.label_memory.set_text('-')
+                    self.screen_app.label_cpu.set_text('-')
                 return
             
             app_pids = app_pids.split(' ')
@@ -632,21 +649,46 @@ class RinkhalsUiApp(BaseApp):
             app_cpu = 0
 
             for pid in app_pids:
-                p = psutil.Process(int(pid))
-                app_memory += p.memory_info().rss / 1024 / 1024
+                try:
+                    p = psutil.Process(int(pid))
+                    app_memory += p.memory_info().rss / 1024 / 1024
+                except:
+                    continue
 
-            lv.lock()
-            self.screen_app.label_memory.set_text(f'{round(app_memory, 1)}M')
-            lv.unlock()
+            if app_memory == 0:
+                with lvr.lock():
+                    self.screen_app.label_memory.set_text('-')
+                    self.screen_app.label_cpu.set_text('-')
+                return
+
+            with lvr.lock():
+                self.screen_app.label_memory.set_text(f'{round(app_memory, 1)}M')
 
             for pid in app_pids:
-                p = psutil.Process(int(pid))
-                app_cpu += p.cpu_percent(interval=1)
+                try:
+                    p = psutil.Process(int(pid))
+                    app_cpu += p.cpu_percent(interval=1)
+                except:
+                    continue
+            with lvr.lock():
+                self.screen_app.label_cpu.set_text(f'{round(app_cpu, 1)}%')
 
-            lv.lock()
-            self.screen_app.label_cpu.set_text(f'{round(app_cpu, 1)}%')
-            lv.unlock()
-        run_async(update_memory)
+        self.app_update_loop_key += 1
+        def update_loop(key=self.app_update_loop_key * 1):
+            while True:
+                update_info()
+
+                time.sleep(2)
+                if self.screen_current != self.screen_app or key != self.app_update_loop_key:
+                    break
+                
+                update_info()
+                update_stats()
+
+                time.sleep(2)
+                if self.screen_current != self.screen_app or key != self.app_update_loop_key:
+                    break
+        run_async(update_loop)
     def show_app_settings(self, app):
         self.show_screen(self.screen_app_settings)
         
@@ -946,19 +988,19 @@ class RinkhalsUiApp(BaseApp):
     def enable_app(self, app):
         logging.info(f'Enabling {app}...')
         enable_app(app)
-        self.layout_app(app)
+        self.show_app(app)
     def disable_app(self, app):
         logging.info(f'Disabling {app}...')
         disable_app(app)
-        self.layout_app(app)
+        self.show_app(app)
     def start_app(self, app):
         logging.info(f'Starting {app}...')
         start_app(app, 5)
-        self.layout_app(app)
+        self.show_app(app)
     def stop_app(self, app):
         logging.info(f'Stopping {app}...')
         stop_app(app)
-        self.layout_app(app)
+        self.show_app(app)
 
     def reboot_printer(self, e=None):
         logging.info('Rebooting printer...')

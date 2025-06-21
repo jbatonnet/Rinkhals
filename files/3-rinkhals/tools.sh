@@ -132,7 +132,7 @@ kill_by_id() {
 }
 
 get_by_name() {
-    ps | grep "$1" | grep -v grep | awk '{print $1}'
+    echo $(ps | grep "$1" | grep -v grep | awk '{print $1}')
 }
 wait_for_name() {
     DELAY=250
@@ -282,7 +282,7 @@ get_app_pids() {
     fi
 
     chmod +x $APP_ROOT/app.sh
-    APP_PIDS=$($APP_ROOT/app.sh status | grep PIDs: | awk '{print $2}')
+    APP_PIDS=$($APP_ROOT/app.sh status | grep PIDs: | awk '{$1=""; print $0}')
 
     echo $APP_PIDS
 }
