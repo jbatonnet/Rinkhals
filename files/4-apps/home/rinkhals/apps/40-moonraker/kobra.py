@@ -436,13 +436,39 @@ class Kobra:
                                 raise self.server.error("Failed to open mesh")
                     elif script.lower().startswith("bed_mesh_calibrate"):
                         logging.info('[Kobra] Injected bed mesh calibration script')
+
+                        bed_temp = 60
+                        extru_temp = 170
+                        extru_end_temp = 140
+
+                        if os.path.isfile('/userdata/app/gk/printer_data/config/printer.generated.cfg'):
+                            with open('/userdata/app/gk/printer_data/config/printer.generated.cfg', 'r') as f:
+                                printer_config = f.read()
+
+                            leviQ3_match = re.search(r'(?:^|\n)\[leviQ3\]((?:.|\n)*?)(?=\n\[|$)', printer_config)
+                            if leviQ3_match:
+                                leviQ3_config = leviQ3_match[0]
+
+                                bed_temp_match = re.search(r'bed_temp\s*:\s*(\d+(?:\.\d+)?)', leviQ3_config)
+                                if bed_temp_match:
+                                    bed_temp = int(bed_temp_match[1])
+                                    logging.info(f'[Kobra] Using leviQ3 bed_temp: {bed_temp}')
+                                extru_temp_match = re.search(r'extru_temp\s*:\s*(\d+(?:\.\d+)?)', leviQ3_config)
+                                if extru_temp_match:
+                                    extru_temp = int(extru_temp_match[1])
+                                    logging.info(f'[Kobra] Using leviQ3 extru_temp: {extru_temp}')
+                                extru_end_temp_match = re.search(r'extru_end_temp\s*:\s*(\d+(?:\.\d+)?)', leviQ3_config)
+                                if extru_end_temp_match:
+                                    extru_end_temp = int(extru_end_temp_match[1])
+                                    logging.info(f'[Kobra] Using leviQ3 extru_end_temp: {extru_end_temp}')
+
                         calibrate_script = [
                             'MOVE_HEAT_POS',
-                            'M140 S60', # Set bed to 60
-                            'M109 S170', # Wait hotend to 170
-                            'M190 S60', # Wait bed to 60
+                            f'M140 S{bed_temp}', # Set bed to 60
+                            f'M109 S{extru_temp}', # Wait hotend to 170
+                            f'M190 S{bed_temp}', # Wait bed to 60
                             'WIPE_NOZZLE',
-                            'M109 S140', # Wait hotend to 140
+                            f'M109 S{extru_end_temp}', # Wait hotend to 140
                             'BED_MESH_CALIBRATE',
                             'TURN_OFF_HEATERS',
                             'M106 S0', # Set fan speed to 0
