@@ -22,68 +22,53 @@ log() {
     fi
 }
 
+FBIMG="/tmp/framebuffer.bmp"
+ICON_GRID="$RINKHALS_ROOT/opt/rinkhals/ui/assets/snake-grid.webp"
+ICON_ERR="$RINKHALS_ROOT/opt/rinkhals/ui/assets/snake-error.webp"
+ICON=${ICON_GRID}
+
 progress() {
-    STATUS=${1}
     case "${KOBRA_MODEL_CODE}" in
         KS1)
-            PBX="16"
-            PBY="16"
-            PBH="32"
-            PBW="(iw-32)"
-            PCX="20"
-            PCY="20"
-            PCH="24"
-            PCW="(iw-40)"
+            SCL=".5"
+            TRANS="hflip,vflip"
+            Y_OFF="(H/3.4)"
+            X_OFF="((W/2)-(w/2))"
+            ERR_X_OFF=""
+            ERR_Y_OFF="-29"
             ;;
         K3M)
-            PBX="(iw-48)"
-            PBY="16"
-            PBW="32"
-            PBH="(ih-32)"
-            PCX="(iw-44)"
-            PCY="20"
-            PCW="24"
-            PCH="(ih-40)"
+            SCL=".25"
+            TRANS="transpose=2"
+            X_OFF="(W-(W/6.8)-(128*${SCL}))"
+            Y_OFF="((H/2)-(h/2))"
+            ERR_X_OFF="-25"
+            ERR_Y_OFF=""
             ;;
         *)
-            PBX="16"
-            PBY="16"
-            PBW="32"
-            PBH="(ih-32)"
-            PCX="20"
-            PCY="20"
-            PCW="24"
-            PCH="(ih-40)"
-        ;;
-    esac
-    case "${STATUS}" in
-        success)
-            STAT_COLOR=green
+            SCL=".25"
+            TRANS="transpose=1"
+            X_OFF="(W/6.8)"
+            Y_OFF="((H/2)-(h/2))"
+            ERR_X_OFF="-15"
+            ERR_Y_OFF=""
             ;;
-        error)
-            STAT_COLOR=red
+    esac
+    case "${1}" in
+        "success")
+            CROP="crop=1024:128:0:(1280*.9)"
+            ;;
+        "error")
+            ICON=${ICON_ERR}
+            CROP="null"
+            X_OFF="${X_OFF}${ERR_X_OFF}"
+            Y_OFF="${Y_OFF}${ERR_Y_OFF}"
             ;;
         *)
-            STAT_COLOR=white
-            if [ "${STATUS}" = "0" ]; then
-              STATUS="0.005"
-            fi
-            case "${KOBRA_MODEL_CODE}" in
-                KS1)
-                    PCX="(${PCX})+((${PCW})-(${PCW})*${STATUS})"
-                    PCW="(${PCW})*${STATUS}"
-                    ;;
-                K3M)
-                    PCY="(${PCY})+((${PCH})-(${PCH})*${STATUS})"
-                    PCH="(${PCH})*${STATUS}"
-                    ;;
-                *)
-                    PCH="(${PCH})*${STATUS}"
-                    ;;
-            esac
+            CROP="crop=1024:128:0:(1280*${1})"
             ;;
     esac
-    fb_draw "drawbox=x=${PBX}:y=${PBY}:w=${PBW}:h=${PBH}:t=fill:color=black,drawbox=x=${PCX}:y=${PCY}:w=${PCW}:h=${PCH}:t=fill:color=${STAT_COLOR}"
+    fb_draw "-i ${ICON} -frames:v 1 -filter_complex [1]${CROP},scale=iw*${SCL}:ih*${SCL},${TRANS}[bar];[0][bar]overlay=x=${X_OFF}:y=${Y_OFF} "
 }
 
 quit() {
@@ -102,17 +87,17 @@ quit() {
 
 fb_capture() {
     if [ -f /ac_lib/lib/third_bin/ffmpeg ]; then
-        /ac_lib/lib/third_bin/ffmpeg -f fbdev -i /dev/fb0 -frames:v 1 -y /tmp/framebuffer.bmp 1>/dev/null 2>/dev/null
+        /ac_lib/lib/third_bin/ffmpeg -f fbdev -i /dev/fb0 -frames:v 1 -y ${FBIMG} 1>/dev/null 2>/dev/null
     fi
 }
 fb_restore() {
     if [ -f /ac_lib/lib/third_bin/ffmpeg ]; then
-        /ac_lib/lib/third_bin/ffmpeg -i /tmp/framebuffer.bmp -f fbdev /dev/fb0 1>/dev/null 2>/dev/null
+        /ac_lib/lib/third_bin/ffmpeg -i ${FBIMG} -f fbdev /dev/fb0 1>/dev/null 2>/dev/null
     fi
 }
 fb_draw() {
     if [ -f /ac_lib/lib/third_bin/ffmpeg ]; then
-        /ac_lib/lib/third_bin/ffmpeg -i /tmp/framebuffer.bmp -vf "${*}" -f fbdev /dev/fb0 1>/dev/null 2>/dev/null
+        /ac_lib/lib/third_bin/ffmpeg -i ${FBIMG} ${*} -pix_fmt bgra -f fbdev /dev/fb0 1>/dev/null 2>/dev/null
     fi
 }
 
@@ -166,7 +151,7 @@ cd $PREVIOUS_WD
 
 
 # Find the right directory target
-progress 0.2
+progress 0.3
 
 RINKHALS_VERSION=$(cat $SOURCE_PATH/.version)
 
@@ -181,7 +166,7 @@ log "Installing Rinkhals version $RINKHALS_VERSION to $TARGET_PATH"
 
 
 # Copy Rinkhals
-progress 0.3
+progress 0.4
 
 log "Copying Rinkhals files"
 
@@ -191,7 +176,7 @@ cp -r $SOURCE_PATH/rinkhals/* $TARGET_PATH
 
 echo $RINKHALS_VERSION > $TARGET_PATH/.version
 
-progress 0.8
+progress 0.7
 
 log "Copying Rinkhals startup files"
 
@@ -203,7 +188,7 @@ rm /useremain/rinkhals/.disable-rinkhals 2> /dev/null
 
 
 # Install Rinkhals loader
-progress 0.9
+progress 0.8
 
 PRESENT=$(cat /userdata/app/gk/start.sh | grep "Rinkhals/begin")
 if [ "$PRESENT" == "" ]; then
