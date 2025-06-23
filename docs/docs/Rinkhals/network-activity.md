@@ -51,7 +51,6 @@ DNS uses 1.1.1.1 (Cloudflare DNS) and 8.8.8.8 (Google DNS) using standard port 5
 - **53/UDP**: To 1.1.1.1
 - **53/UDP**: To 8.8.8.8
 
-
 ### Apps
 
 - [Cloud2LAN bridge](https://github.com/jbatonnet/Rinkhals.apps/tree/master/apps/cloud2lan-bridge)
