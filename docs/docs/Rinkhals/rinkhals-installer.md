@@ -15,7 +15,7 @@ The installer allows you to:
   ![](../assets/rinkhals-installer/installer-main.png){ width="160" }<figcaption>Installer main screen</figcaption>
 </figure>
 
-## Downlaod and use the Rinkhals Installer
+## Download and use the Rinkhals Installer
 
 From the GitHub [Releases](https://github.com/jbatonnet/Rinkhals/releases) page, find the version you want and download the installer.swu matching your printer model.
 As detailed in the [installation](./installation-and-firmware-updates.md) page, copy the .swu file as update.swu on a FAT32 USB drive. Then plug into the printer.
