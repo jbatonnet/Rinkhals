@@ -36,6 +36,21 @@ Anycubic firmware is connecting to them when LAN mode is disabled. Rinkhals Inst
 - ssl://mqtt.anycubic.com:8883: Used for China
 - ssl://mqtt-universe.anycubic.com:8883: Used globally
 
+### NTP
+
+NTP client for syncing time. It will check DHCP lease for an advertised NTP server, and if none is advertised will use pool.ntp.org.
+
+- **123/UDP** to either:
+  - A local NTP server advertised by DHCP from your router
+  - pool.ntp.org
+
+### DNS
+
+DNS uses 1.1.1.1 (Cloudflare DNS) and 8.8.8.8 (Google DNS) using standard port 53/UDP. It does not appear to support DoT or DoH. The stock firmware does not appear to use the DNS servers advertised by DHCP.
+
+- **53/UDP**: To 1.1.1.1
+- **53/UDP**: To 8.8.8.8
+
 ### Apps
 
 - [Cloud2LAN bridge](https://github.com/jbatonnet/Rinkhals.apps/tree/master/apps/cloud2lan-bridge)
