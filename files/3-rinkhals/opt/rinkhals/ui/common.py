@@ -697,9 +697,9 @@ class BaseApp:
                     self.last_screen_check = time.time()
                     brightness = shell('cat /sys/class/backlight/backlight/brightness')
                     if brightness == '0':
-                        shell('echo 255 > /sys/class/backlight/backlight/brightness')
+                        os.system('echo 255 > /sys/class/backlight/backlight/brightness')
 
-            touch.add_event_cb(screen_sleep_cb, lv.EVENT_CODE.CLICKED, None)
+            touch.add_event_cb(screen_sleep_cb, lv.EVENT_CODE.ALL, None)
 
         display.set_dpi(self.screen_info.dpi)
         
