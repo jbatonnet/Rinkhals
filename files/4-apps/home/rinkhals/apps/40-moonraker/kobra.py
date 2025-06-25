@@ -36,6 +36,7 @@ class Kobra:
     _remote_mode_next_check = 0
     _remote_mode = None
     _total_layer = 0
+    _states_cache = []
 
     def __init__(self, config):
         self.server = config.get_server()
@@ -252,6 +253,11 @@ class Kobra:
                         state = 'printing'
                     if state.lower() == 'onpause':
                         state = 'paused'
+
+                    # Ensures same string memory location for Moonraker job_state check (https://github.com/jbatonnet/Rinkhals/issues/118#issuecomment-2980916709)
+                    if state not in self._states_cache:
+                        self._states_cache.append(state)
+                    state = [ s for s in self._states_cache if s == state ][0]
 
                     status['print_stats']['state'] = state
 
