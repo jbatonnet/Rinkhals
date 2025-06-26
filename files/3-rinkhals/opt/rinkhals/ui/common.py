@@ -45,23 +45,13 @@ def shell(command):
     command = command.replace('\\', '\\\\')
     os.environ['LD_LIBRARY_PATH'] = LD_LIBRARY_PATH
 
-    if USING_SIMULATOR:
-        import subprocess
-        result = subprocess.check_output(['sh', '-c', command])
-        result = result.decode().strip()
-    else:
-        os.makedirs('/tmp/rinkhals', exist_ok=True)
-        temp_output = f'/tmp/rinkhals/output-{random.randint(1000, 9999)}'
+    import subprocess
+    process = subprocess.run(['sh', '-c', command], capture_output=True, text=True)
+    result = (process.stdout or '').strip()
 
-        os.system(f'{command} > {temp_output}')
-        if os.path.exists(temp_output):
-            with open(temp_output) as f:
-                result = f.read().strip()
-            os.remove(temp_output)
-        else:
-            result = ''
-
+    command = command.replace('. /useremain/rinkhals/.current/tools.sh && ', '')
     logging.info(f'Shell "{command}" => "{result}"')
+
     os.environ['LD_LIBRARY_PATH'] = ORIGINAL_LD_LIBRARY_PATH
     return result
 def shell_async(command, callback):
