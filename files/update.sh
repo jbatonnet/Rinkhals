@@ -23,8 +23,8 @@ log() {
 }
 
 FBIMG="/tmp/framebuffer.bmp"
-ICON_GRID="$RINKHALS_ROOT/opt/rinkhals/ui/assets/snake-grid.webp"
-ICON_ERR="$RINKHALS_ROOT/opt/rinkhals/ui/assets/snake-error.webp"
+ICON_GRID="$SOURCE_PATH/rinkhals/opt/rinkhals/ui/assets/snake-grid.webp"
+ICON_ERR="$SOURCE_PATH/rinkhals/opt/rinkhals/ui/assets/snake-error.webp"
 ICON=${ICON_GRID}
 
 progress() {
@@ -56,7 +56,7 @@ progress() {
     esac
     case "${1}" in
         "success")
-            CROP="crop=1024:128:0:(1280*.9)"
+            CROP="crop=1024:128:0:(1280*1)"
             ;;
         "error")
             ICON=${ICON_ERR}
@@ -176,7 +176,7 @@ cp -r $SOURCE_PATH/rinkhals/* $TARGET_PATH
 
 echo $RINKHALS_VERSION > $TARGET_PATH/.version
 
-progress 0.7
+progress 0.8
 
 log "Copying Rinkhals startup files"
 
@@ -188,7 +188,7 @@ rm /useremain/rinkhals/.disable-rinkhals 2> /dev/null
 
 
 # Install Rinkhals loader
-progress 0.8
+progress 0.9
 
 PRESENT=$(cat /userdata/app/gk/start.sh | grep "Rinkhals/begin")
 if [ "$PRESENT" == "" ]; then
