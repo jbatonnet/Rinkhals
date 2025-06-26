@@ -24,7 +24,7 @@ log() {
 
 FBIMG="/tmp/framebuffer.bmp"
 ICON_GRID="$SOURCE_PATH/rinkhals/opt/rinkhals/ui/assets/snake-grid.webp"
-ICON_ERR="$SOURCE_PATH/rinkhals//opt/rinkhals/ui/assets/snake-error.webp"
+ICON_ERR="$SOURCE_PATH/rinkhals/opt/rinkhals/ui/assets/snake-error.webp"
 ICON=${ICON_GRID}
 
 progress() {
