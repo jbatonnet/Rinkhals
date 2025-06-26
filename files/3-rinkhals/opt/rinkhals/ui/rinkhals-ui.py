@@ -789,7 +789,7 @@ class RinkhalsUiApp(BaseApp):
                             set_app_property(app, property, option)
                             label_value.set_text(str(option or default))
 
-                        button_edit.add_event_cb(lambda e, options=options: self.show_selection_dialog(options, select_option), lv.EVENT_CODE.CLICKED, None)
+                        button_edit.add_event_cb(lambda e, options=options, select_option=select_option: self.show_selection_dialog(options, select_option), lv.EVENT_CODE.CLICKED, None)
 
             if type == 'report':
                 if value:
