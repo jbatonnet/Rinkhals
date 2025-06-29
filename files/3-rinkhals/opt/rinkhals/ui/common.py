@@ -293,7 +293,7 @@ class Rinkhals:
                         asset_url = None
                         for asset in assets:
                             asset_name = asset.get('name', '').lower()
-                            if 'update' in asset_name and printer_info.model_code.lower() in asset_name:
+                            if 'update' in asset_name and printer_info.model_code.lower().replace('v2', '') in asset_name:
                                 asset_url = asset.get('browser_download_url', '')
                                 break
                         if not asset_url:
@@ -328,6 +328,7 @@ class Firmware:
     repositories = {
         'K2P': 'https://cdn.meowcat285.com/rinkhals/Kobra%202%20Pro/manifest.json',
         'K3': 'https://cdn.meowcat285.com/rinkhals/Kobra%203/manifest.json',
+        'K3V2': 'https://cdn.meowcat285.com/rinkhals/Kobra%203%20V2/manifest.json',
         'KS1': 'https://cdn.meowcat285.com/rinkhals/Kobra%20S1/manifest.json',
         'K3M': 'https://cdn.meowcat285.com/rinkhals/Kobra%203%20Max/manifest.json',
     }
