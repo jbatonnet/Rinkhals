@@ -25,12 +25,14 @@ cd $RINKHALS_ROOT
 rm -rf /useremain/rinkhals/.current 2> /dev/null
 ln -s $RINKHALS_ROOT /useremain/rinkhals/.current
 
-mkdir -p ./logs
+mkdir -p $RINKHALS_ROOT/logs
+mkdir -p $RINKHALS_LOGS
+mkdir -p /tmp/rinkhals
 
-if [ ! -f /tmp/rinkhals-bootid ]; then
-    echo $RANDOM > /tmp/rinkhals-bootid
+if [ ! -f /tmp/rinkhals/bootid ]; then
+    echo $RANDOM > /tmp/rinkhals/bootid
 fi
-BOOT_ID=$(cat /tmp/rinkhals-bootid)
+BOOT_ID=$(cat /tmp/rinkhals/bootid)
 
 log
 log "[$BOOT_ID] Starting Rinkhals..."
@@ -177,7 +179,7 @@ $RINKHALS_ROOT/opt/rinkhals/scripts/ntpclient.sh &
 ################
 log "> Trimming old logs..."
 
-for LOG_FILE in $RINKHALS_ROOT/logs/*.log ; do
+for LOG_FILE in $RINKHALS_LOGS/*.log ; do
     tail -c 1048576 $LOG_FILE > $LOG_FILE.tmp
     cat $LOG_FILE.tmp > $LOG_FILE
     rm $LOG_FILE.tmp
@@ -190,7 +192,7 @@ log "> Starting SSH & ADB..."
 if [ "$(get_by_port 22)" != "" ]; then
     log "/!\ SSH is already running"
 else
-    dropbear -F -E -a -p 22 -P /tmp/dropbear.pid -r /usr/local/etc/dropbear/dropbear_rsa_host_key >> ./logs/dropbear.log 2>&1 &
+    dropbear -F -E -a -p 22 -P /tmp/rinkhals/dropbear.pid -r /usr/local/etc/dropbear/dropbear_rsa_host_key >> $RINKHALS_LOGS/dropbear.log 2>&1 &
     wait_for_port 22 5000 "/!\ SSH did not start properly"
 fi
 
@@ -198,7 +200,7 @@ if [ -f /usr/bin/adbd ]; then
     if [ "$(get_by_port 5555)" != "" ]; then
         log "/!\ ADB is already running"
     else
-        adbd >> ./logs/adbd.log &
+        adbd >> $RINKHALS_LOGS/adbd.log &
         wait_for_port 5555 5000 "/!\ ADB did not start properly"
     fi
 else
@@ -235,10 +237,11 @@ fi
 log "> Restarting Anycubic apps..."
 
 # Generate the printer.cfg file
-sed '/-- SAVE_CONFIG --/,$d' /userdata/app/gk/printer.cfg > /tmp/printer.1.cfg
-sed -n '/-- SAVE_CONFIG --/,$p' /userdata/app/gk/printer.cfg > /tmp/printer.2.cfg
-python /opt/rinkhals/scripts/process-cfg.py /tmp/printer.1.cfg $RINKHALS_ROOT/home/rinkhals/printer_data/config/printer.rinkhals.cfg > /userdata/app/gk/printer_data/config/printer.generated.cfg
-cat /tmp/printer.2.cfg >> /userdata/app/gk/printer_data/config/printer.generated.cfg
+sed '/-- SAVE_CONFIG --/,$d' /userdata/app/gk/printer.cfg > /tmp/rinkhals/printer.1.cfg
+sed -n '/-- SAVE_CONFIG --/,$p' /userdata/app/gk/printer.cfg > /tmp/rinkhals/printer.2.cfg
+python /opt/rinkhals/scripts/process-cfg.py /tmp/rinkhals/printer.1.cfg $RINKHALS_ROOT/home/rinkhals/printer_data/config/printer.rinkhals.cfg > /userdata/app/gk/printer_data/config/printer.generated.cfg
+cat /tmp/rinkhals/printer.2.cfg >> /userdata/app/gk/printer_data/config/printer.generated.cfg
+rm /tmp/rinkhals/printer.1.cfg /tmp/rinkhals/printer.2.cfg
 
 cd /userdata/app/gk
 
@@ -266,20 +269,20 @@ for TARGET in $TARGETS; do
 done
 
 # Tweak processes priority to avoid MCU timing and more generally priting errors. (https://github.com/jbatonnet/Rinkhals/issues/128)
-nice -n -20 ./gklib -a /tmp/unix_uds1 /userdata/app/gk/printer_data/config/printer.generated.cfg >> $RINKHALS_ROOT/logs/gklib.log 2>&1 &
+nice -n -20 ./gklib -a /tmp/unix_uds1 /userdata/app/gk/printer_data/config/printer.generated.cfg >> $RINKHALS_LOGS/gklib.log 2>&1 &
 chrt -p 89 $(get_by_name ksoftirqd/0)
 
 sleep 2
 
-./gkapi >> $RINKHALS_ROOT/logs/gkapi.log 2>&1 &
-./K3SysUi >> $RINKHALS_ROOT/logs/K3SysUi.log 2>&1 &
+./gkapi >> $RINKHALS_LOGS/gkapi.log 2>&1 &
+./K3SysUi >> $RINKHALS_LOGS/K3SysUi.log 2>&1 &
 
 # On the kobra 2 pro this sleep causes that filement extrude does not work and auto leveling crashes. (https://github.com/jbatonnet/Rinkhals/issues/155)
 if [ "$KOBRA_MODEL_CODE" != "K2P" ]; then
  sleep 2
 fi
 
-./gkcam >> $RINKHALS_ROOT/logs/gkcam.log 2>&1 &
+./gkcam >> $RINKHALS_LOGS/gkcam.log 2>&1 &
 
 for TARGET in $TARGETS; do
     if [ -f $TARGET.original ]; then

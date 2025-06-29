@@ -48,7 +48,7 @@ start() {
             ;;
     esac
 
-    drm-vncserver -n Rinkhals -t /dev/input/event0 -c $MIN_X,$MAX_X,$MIN_Y,$MAX_Y -r $ROTATION -F $FPS -w $APP_ROOT/novnc >> $RINKHALS_ROOT/logs/app-drm-vncserver.log 2>&1 &
+    drm-vncserver -n Rinkhals -t /dev/input/event0 -c $MIN_X,$MAX_X,$MIN_Y,$MAX_Y -r $ROTATION -F $FPS -w $APP_ROOT/novnc >> $RINKHALS_LOGS/app-drm-vncserver.log 2>&1 &
     wait_for_port $VNC_PORT
     wait_for_port $WEB_PORT
 }

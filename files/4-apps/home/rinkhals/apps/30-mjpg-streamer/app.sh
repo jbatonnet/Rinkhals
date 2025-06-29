@@ -1,52 +1,46 @@
-source /useremain/rinkhals/.current/tools.sh
+. /useremain/rinkhals/.current/tools.sh
 
-APP_ROOT=$(dirname $(realpath $0))
+export APP_ROOT=$(dirname $(realpath $0))
+export APP_LOG=$RINKHALS_LOGS/app-mjpg-streamer.log
 
 status() {
-    PIDS=$(get_by_name mjpg_streamer)
+    PIDS=$(get_by_name mjpg_monitor)
 
     if [ "$PIDS" = "" ]; then
         report_status $APP_STATUS_STOPPED
     else
+        PIDS=$(get_by_name mjpg_streamer)
         report_status $APP_STATUS_STARTED "$PIDS"
     fi
 }
 start() {
-    kill_by_name mjpg_streamer
+    cd $APP_ROOT
+    echo "Starting mjpg_streamer app" >> $APP_LOG
 
-    CAMERAS=$(ls /dev/v4l/by-id/*-index0 2> /dev/null)
-    if [ "$CAMERAS" = "" ]; then
-        log "No camera found. mjpg-streamer will not start"
-        return
+    PIDS=$(get_by_name mjpg_monitor)
+    if [ "$PIDS" = "" ]; then
+        chmod +x ./mjpg_monitor.sh
+        ./mjpg_monitor.sh >> $APP_LOG 2>&1 &
     fi
+}
+debug() {
+    kill_by_name mjpg_monitor
 
-    kill_by_name gkcam
-    sleep 1
+    cd $APP_ROOT
 
-    RESOLUTION=$(get_app_property 30-mjpg-streamer resolution)
-    if [ "$RESOLUTION" != "" ]; then
-        RESOLUTION="-r $RESOLUTION"
-    else
-        RESOLUTION="-r 1280x720"
-    fi
-
-    PORT=8080
-    for CAMERA in $CAMERAS; do
-        #log "Starting mjpg-streamer for $CAMERA on port $PORT"
-        mjpg_streamer -i "/usr/lib/mjpg-streamer/input_uvc.so -d $CAMERA $RESOLUTION -n" -o "/usr/lib/mjpg-streamer/output_http.so -p $PORT -w /usr/share/mjpg-streamer/www" >> $RINKHALS_ROOT/logs/app-mjpg-streamer.log 2>&1 &
-        wait_for_port $PORT
-        PORT=$(($PORT + 1))
-    done
+    chmod +x ./mjpg_monitor.sh
+    ./mjpg_monitor.sh
 }
 stop() {
     kill_by_name gkcam
     kill_by_name mjpg_streamer
+    kill_by_name mjpg_monitor
     sleep 1
 
     cd /userdata/app/gk
 
     LD_LIBRARY_PATH=/userdata/app/gk:$LD_LIBRARY_PATH \
-        ./gkcam >> $RINKHALS_ROOT/logs/gkcam.log 2>&1 &
+        ./gkcam >> $RINKHALS_LOGS/gkcam.log 2>&1 &
 }
 
 case "$1" in
@@ -55,6 +49,10 @@ case "$1" in
         ;;
     start)
         start
+        ;;
+    debug)
+        shift
+        debug $@
         ;;
     stop)
         stop

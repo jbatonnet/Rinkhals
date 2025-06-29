@@ -125,3 +125,22 @@ title: Anycubic Kobra S1
         "create_date": 1749807350
     }
     ```
+??? quote "2.5.3.8"
+    ```
+    {
+        "id": 140,
+        "model_id": 20025,
+        "machine_version": "1.1.0",
+        "firmware_name": "update.swu",
+        "peripheral_version": "",
+        "firmware_version": "2.5.3.8",
+        "firmware_url": "https://cdn.cloud-universe.anycubic.com/attachment/1934582685294485506_osh5ahty.swu",
+        "firmware_size": 136524498,
+        "firmware_md5": "a2dfa51d7471b9af5f7f6d6febf4fd88",
+        "parent_id": 120,
+        "force_update": true,
+        "time_cost": 100,
+        "update_desc": "1.Fixed PID Calibration issue\n2.Added support for cold bed tem\n3.Fixed printer status issues after tangling\n4.Fixed large file parsing failures",
+        "create_date": 1750075468
+    }
+    ```

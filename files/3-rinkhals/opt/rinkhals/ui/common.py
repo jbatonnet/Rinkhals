@@ -45,23 +45,13 @@ def shell(command):
     command = command.replace('\\', '\\\\')
     os.environ['LD_LIBRARY_PATH'] = LD_LIBRARY_PATH
 
-    if USING_SIMULATOR:
-        import subprocess
-        result = subprocess.check_output(['sh', '-c', command])
-        result = result.decode().strip()
-    else:
-        os.makedirs('/tmp/rinkhals', exist_ok=True)
-        temp_output = f'/tmp/rinkhals/output-{random.randint(1000, 9999)}'
+    import subprocess
+    process = subprocess.run(['sh', '-c', command], capture_output=True, text=True)
+    result = (process.stdout or '').strip()
 
-        os.system(f'{command} > {temp_output}')
-        if os.path.exists(temp_output):
-            with open(temp_output) as f:
-                result = f.read().strip()
-            os.remove(temp_output)
-        else:
-            result = ''
-
+    command = command.replace('. /useremain/rinkhals/.current/tools.sh && ', '')
     logging.info(f'Shell "{command}" => "{result}"')
+
     os.environ['LD_LIBRARY_PATH'] = ORIGINAL_LD_LIBRARY_PATH
     return result
 def shell_async(command, callback):
@@ -110,8 +100,8 @@ SIMULATED_RINKHALS_VERSION = '20250424_01'
 SIMULATED_FIRMWARE_VERSION = '1.2.3.4'
 
 class PrinterInfo:
-    model_code: int
-    model: int
+    model_code: str
+    model: str
 
     def get():
         printer_info = PrinterInfo()
@@ -403,7 +393,13 @@ class Firmware:
 
         try:
             import requests
-            response = requests.get(manifest_url, timeout=5)
+
+            current_version = Rinkhals.get_current_version()
+
+            headers = {
+                'User-Agent': f'Rinkhals/{current_version.version if current_version else "Unknown"} ({printer_info.model_code if printer_info else "Unknown"})'
+            }
+            response = requests.get(manifest_url, timeout=5, headers=headers)
             if response.status_code != 200:
                 logging.warning(f'Failed to fetch firmware manifest: {response.status_code}')
                 return versions
@@ -691,9 +687,9 @@ class BaseApp:
                     self.last_screen_check = time.time()
                     brightness = shell('cat /sys/class/backlight/backlight/brightness')
                     if brightness == '0':
-                        shell('echo 255 > /sys/class/backlight/backlight/brightness')
+                        os.system('echo 255 > /sys/class/backlight/backlight/brightness')
 
-            touch.add_event_cb(screen_sleep_cb, lv.EVENT_CODE.CLICKED, None)
+            touch.add_event_cb(screen_sleep_cb, lv.EVENT_CODE.ALL, None)
 
         display.set_dpi(self.screen_info.dpi)
         
@@ -1762,7 +1758,18 @@ class BaseApp:
                 logging.info(f'Downloading Rinkhals {version.version} from {version.url}...')
 
                 import requests
-                with requests.get(version.url, stream=True) as r:
+
+                printer_info = PrinterInfo.get()
+                current_version = Rinkhals.get_current_version()
+
+                headers = {
+                    'User-Agent': f'Rinkhals/{current_version.version if current_version else "Unknown"} ({printer_info.model_code if printer_info else "Unknown"})'
+                }
+
+                if 'anycubic' in version.url:
+                    headers = {}
+
+                with requests.get(version.url, stream=True, headers=headers) as r:
                     r.raise_for_status()
                     with open(target_path, 'wb') as f:
                         downloaded = 0

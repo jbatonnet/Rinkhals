@@ -1,6 +1,7 @@
 export RINKHALS_ROOT=$(realpath /useremain/rinkhals/.current)
 export RINKHALS_VERSION=$(cat $RINKHALS_ROOT/.version)
 export RINKHALS_HOME=/useremain/home/rinkhals
+export RINKHALS_LOGS=/tmp/rinkhals
 
 export KOBRA_MODEL_ID=$(cat /userdata/app/gk/config/api.cfg | sed -nr 's/.*"modelId"\s*:\s*"([0-9]+)".*/\1/p')
 
@@ -37,8 +38,8 @@ beep() {
 log() {
     echo "${*}"
 
-    mkdir -p $RINKHALS_ROOT/logs
-    echo "$(date): ${*}" >> $RINKHALS_ROOT/logs/rinkhals.log
+    mkdir -p $RINKHALS_LOGS
+    echo "$(date): ${*}" >> $RINKHALS_LOGS/rinkhals.log
 }
 quit() {
     exit 1
@@ -62,7 +63,7 @@ is_verified_firmware() {
             return
         fi
     elif [ "$KOBRA_MODEL_CODE" = "KS1" ]; then
-        if [ "$KOBRA_VERSION" = "2.5.3.1" ] || [ "$KOBRA_VERSION" = "2.5.3.5" ]; then
+        if [ "$KOBRA_VERSION" = "2.5.3.1" ] || [ "$KOBRA_VERSION" = "2.5.3.5" ] || [ "$KOBRA_VERSION" = "2.5.3.8" ]; then
             echo 1
             return
         fi
@@ -131,7 +132,7 @@ kill_by_id() {
 }
 
 get_by_name() {
-    ps | grep "$1" | grep -v grep | awk '{print $1}'
+    echo $(ps | grep "$1" | grep -v grep | awk '{print $1}')
 }
 wait_for_name() {
     DELAY=250
@@ -281,7 +282,7 @@ get_app_pids() {
     fi
 
     chmod +x $APP_ROOT/app.sh
-    APP_PIDS=$($APP_ROOT/app.sh status | grep PIDs: | awk '{print $2}')
+    APP_PIDS=$($APP_ROOT/app.sh status | grep PIDs: | awk '{$1=""; print $0}')
 
     echo $APP_PIDS
 }
@@ -434,6 +435,13 @@ get_app_property() {
     fi
     if [ "$VALUE" = "null" ]; then
         VALUE=
+    fi
+    if [ "$VALUE" = "" ]; then
+        APP_ROOT=$(get_app_root $APP)
+        VALUE=$(cat $APP_ROOT/app.json 2>/dev/null | jq -r ".properties.$PROPERTY.default")
+        if [ "$VALUE" = "null" ]; then
+            VALUE=
+        fi
     fi
 
     echo $VALUE
