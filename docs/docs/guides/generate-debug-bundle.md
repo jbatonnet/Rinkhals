@@ -30,20 +30,21 @@ Once running you'll hear 2 beeps, the first one for the tool startup and the sec
 ## Content
 
 A debug bundle contains:
+
 - Rinkhals
-  - Installation log
-  - Current version
-  - Installation size
-  - For each installed version
-    - Startup log
-    - Anycubic process logs
-    - App logs
+    - Installation log
+    - Current version
+    - Installation size
+    - For each installed version
+        - Startup log
+        - Anycubic process logs
+        - App logs
 - Logs in /tmp if any
 - General printer information (CPU, Memory, Network config, Kernel info, Disk usage, Current processes, Kernel logs)
 - List of installed files, not their content (/userdata, /useremain and static partitions)
 - Printer info
-  - LAN mode
-  - Firmware version
-  - Various printer configuration files
+    - LAN mode
+    - Firmware version
+    - Various printer configuration files
 - Webcam info (List, Resolutions)
 
