@@ -10,6 +10,8 @@ prepare_tgz() {
     cd $UPDATE_DIRECTORY
     tar -cf $SWU_DIR/update_swu/setup.tar --exclude='setup.tar' .
     gzip $SWU_DIR/update_swu/setup.tar
+
+    md5sum $SWU_DIR/update_swu/setup.tar.gz | awk '{ print $1 }' > $SWU_DIR/update_swu/setup.tar.gz.md5
 }
 compress_swu() {
     KOBRA_MODEL_CODE=$1
