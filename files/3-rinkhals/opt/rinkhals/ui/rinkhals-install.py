@@ -29,7 +29,7 @@ lvr.set_debug_rendering(DEBUG_RENDERING)
 
 if USING_SIMULATOR:
     PrinterInfo.simulate(
-        model_code='K3',
+        model_code='K3V2',
         model='Anycubic Kobra',
         #rinkhals_version='20250401_01_test',
         rinkhals_version='20250409_01',

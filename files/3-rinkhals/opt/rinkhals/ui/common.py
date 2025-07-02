@@ -650,9 +650,44 @@ class Diagnostic:
 ################
 # Apps management
 
-appsRepositories = [
-    'https://raw.githubusercontent.com/jbatonnet/Rinkhals.apps/refs/heads/master/manifest.json'
+appRepositories = [
+    #'https://raw.githubusercontent.com/jbatonnet/Rinkhals.apps/refs/heads/master/manifest.json',
+    'https://raw.githubusercontent.com/jbatonnet/Rinkhals.apps/refs/heads/feature/apps-v3/manifest.json'
 ]
+
+class AppVersion:
+    pass
+
+class App:
+    pass
+
+class AppRepository:
+    manifest_url = None
+
+    def __init__(self, manifest_url):
+        self.manifest_url = manifest_url
+
+    def get_repositories():
+        
+        for appRepository in appRepositories:
+
+
+            try:
+                import requests
+                response = requests.get(appRepository, timeout=5)
+                if response.status_code == 200:
+                    manifest = json.loads(response.text)
+                    yield manifest
+                else:
+                    logging.warning(f'Failed to fetch app manifest from {appRepository}: {response.status_code}')
+            except Exception as e:
+                logging.error(f'Error fetching app manifest from {appRepository}: {e}')
+
+        pass
+
+
+    def get_apps(self):
+        pass
 
 
 class BaseApp:
