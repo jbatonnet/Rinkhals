@@ -67,7 +67,7 @@ def run_async(callback):
     t = threading.Thread(target=callback)
     t.start()
 
-def hash(path):
+def hash_md5(path):
     if not os.path.exists(path):
         return None
     
@@ -82,6 +82,21 @@ def hash(path):
             md5.update(data)
 
     return md5.hexdigest()
+def hash_sha256(path):
+    if not os.path.exists(path):
+        return None
+    
+    import hashlib
+    sha256 = hashlib.sha256()
+
+    with open(path, 'rb') as f:
+        while True:
+            data = f.read(8192)
+            if not data:
+                break
+            sha256.update(data)
+
+    return sha256.hexdigest()
 
 
 ################
@@ -208,7 +223,7 @@ class RinkhalsVersion:
     test: bool
     date: int
     changes: str
-    md5: str
+    sha256: str
     url: str
     supported_firmwares: list[str]
 
@@ -291,14 +306,20 @@ class Rinkhals:
                     if assets:
                         # Try to find asset matching current model code
                         asset_url = None
+                        asset_digest = None
+
                         for asset in assets:
                             asset_name = asset.get('name', '').lower()
                             if 'update' in asset_name and printer_info.model_code.lower().replace('v2', '') in asset_name:
                                 asset_url = asset.get('browser_download_url', '')
+                                asset_digest = asset.get('digest', '')
                                 break
                         if not asset_url:
                             continue
+
                         version.url = asset_url
+                        if 'sha256' in asset_digest:
+                            version.sha256 = asset_digest.replace('sha256:', '') if asset_digest else None
 
                     versions.append(version)
                     if len(versions) >= limit:
@@ -478,7 +499,7 @@ class Diagnostic:
                 fix_action=DiagnosticFixes.REINSTALL_FIRMWARE
             )
         else:
-            printer_cfg_hash = hash(printer_cfg_path)
+            printer_cfg_hash = hash_md5(printer_cfg_path)
             supposed_hash = None
 
             firmware_version = Firmware.get_current_version()
@@ -1586,14 +1607,13 @@ class BaseApp:
             self.modal_ota_rinkhals.button_uninstall.add_flag(lv.OBJ_FLAG.HIDDEN)
 
         def download_version():
-            lv.lock()
-            self.modal_ota_rinkhals.button_action.set_state(lv.STATE.DISABLED, True)
-            self.modal_ota_rinkhals.button_uninstall.set_state(lv.STATE.DISABLED, True)
-            self.modal_ota_rinkhals.panel_progress.remove_flag(lv.OBJ_FLAG.HIDDEN)
-            self.modal_ota_rinkhals.obj_progress_bar.set_style_bg_color(lvr.COLOR_PRIMARY, lv.STATE.DEFAULT)
-            self.modal_ota_rinkhals.obj_progress_bar.set_width(lv.pct(0))
-            self.modal_ota_rinkhals.label_progress_text.set_text('Starting...')
-            lv.unlock()
+            with lvr.lock():
+                self.modal_ota_rinkhals.button_action.set_state(lv.STATE.DISABLED, True)
+                self.modal_ota_rinkhals.button_uninstall.set_state(lv.STATE.DISABLED, True)
+                self.modal_ota_rinkhals.panel_progress.remove_flag(lv.OBJ_FLAG.HIDDEN)
+                self.modal_ota_rinkhals.obj_progress_bar.set_style_bg_color(lvr.COLOR_PRIMARY, lv.STATE.DEFAULT)
+                self.modal_ota_rinkhals.obj_progress_bar.set_width(lv.pct(0))
+                self.modal_ota_rinkhals.label_progress_text.set_text('Starting...')
 
             target_directory = f'{RINKHALS_BASE}/tmp'
             os.makedirs(target_directory, exist_ok=True)
@@ -1627,43 +1647,47 @@ class BaseApp:
                                     downloaded_mb = downloaded / (1024 * 1024)
                                     total_mb = total_length / (1024 * 1024)
 
-                                    lv.lock()
-                                    self.modal_ota_rinkhals.obj_progress_bar.set_width(lv.pct(progress))
-                                    self.modal_ota_rinkhals.label_progress_text.set_text(f'{progress}% ({downloaded_mb:.1f}M / {total_mb:.1f}M)')
-                                    lv.unlock()
+                                    with lvr.lock():
+                                        self.modal_ota_rinkhals.obj_progress_bar.set_width(lv.pct(progress))
+                                        self.modal_ota_rinkhals.label_progress_text.set_text(f'{progress}% ({downloaded_mb:.1f}M / {total_mb:.1f}M)')
 
                 logging.info('Download completed.')
 
-                lv.lock()
-                self.modal_ota_rinkhals.obj_progress_bar.set_width(lv.pct(100))
-                self.modal_ota_rinkhals.label_progress_text.set_text('Ready to install')
-                self.modal_ota_rinkhals.button_action.set_text(action_text)
-                self.modal_ota_rinkhals.button_action.set_style_text_color(lvr.COLOR_DANGER if warning_text else lvr.COLOR_TEXT, lv.STATE.DEFAULT)
-                self.modal_ota_rinkhals.button_action.clear_event_cb()
-                self.modal_ota_rinkhals.button_action.add_event_cb(lambda e: run_async(install_version), lv.EVENT_CODE.CLICKED, None)
-                lv.unlock()
+                if version.sha256:
+                    with lvr.lock():
+                        self.modal_ota_rinkhals.label_progress_text.set_text('Checking...')
+
+                    file_sha256 = hash_sha256(target_path)
+                    if file_sha256 != version.sha256:
+                        raise Exception('Hash check failed')
+
+                with lvr.lock():
+                    self.modal_ota_rinkhals.obj_progress_bar.set_width(lv.pct(100))
+                    self.modal_ota_rinkhals.label_progress_text.set_text('Ready to install')
+                    self.modal_ota_rinkhals.button_action.set_text(action_text)
+                    self.modal_ota_rinkhals.button_action.set_style_text_color(lvr.COLOR_DANGER if warning_text else lvr.COLOR_TEXT, lv.STATE.DEFAULT)
+                    self.modal_ota_rinkhals.button_action.clear_event_cb()
+                    self.modal_ota_rinkhals.button_action.add_event_cb(lambda e: run_async(install_version), lv.EVENT_CODE.CLICKED, None)
             except Exception as e:
                 logging.info(f'Download failed. {e}')
 
-                lv.lock()
-                self.modal_ota_rinkhals.obj_progress_bar.set_style_bg_color(lvr.COLOR_DANGER, lv.STATE.DEFAULT)
-                self.modal_ota_rinkhals.label_progress_text.set_text('Failed')
-                lv.unlock()
+                with lvr.lock():
+                    self.modal_ota_rinkhals.obj_progress_bar.set_style_bg_color(lvr.COLOR_DANGER, lv.STATE.DEFAULT)
+                    self.modal_ota_rinkhals.label_progress_text.set_text('Failed')
                 
-            lv.lock()
-            self.modal_ota_rinkhals.button_uninstall.set_state(lv.STATE.DISABLED, False)
-            self.modal_ota_rinkhals.button_action.set_state(lv.STATE.DISABLED, False)
-            lv.unlock()
+            with lvr.lock():
+                self.modal_ota_rinkhals.button_uninstall.set_state(lv.STATE.DISABLED, False)
+                self.modal_ota_rinkhals.button_action.set_state(lv.STATE.DISABLED, False)
         def install_version():
             for i in range(1):
-                lv.lock()
-                self.modal_ota_rinkhals.button_action.set_state(lv.STATE.DISABLED, True)
-                self.modal_ota_rinkhals.button_uninstall.set_state(lv.STATE.DISABLED, True)
-                self.modal_ota_rinkhals.label_progress_text.set_text('Extracting...')
-                self.root_modal.clear_event_cb()
-                lv.unlock()
+                with lvr.lock():
+                    self.modal_ota_rinkhals.button_action.set_state(lv.STATE.DISABLED, True)
+                    self.modal_ota_rinkhals.button_uninstall.set_state(lv.STATE.DISABLED, True)
+                    self.root_modal.clear_event_cb()
 
                 logging.info(f'Extracting Rinkhals update...')
+                with lvr.lock():
+                    self.modal_ota_rinkhals.label_progress_text.set_text('Extracting...')
 
                 if USING_SIMULATOR:
                     time.sleep(1)
@@ -1671,11 +1695,9 @@ class BaseApp:
                     if not self.extract_swu():
                         break
 
-                lv.lock()
-                self.modal_ota_rinkhals.label_progress_text.set_text('Installing...')
-                lv.unlock()
-
                 logging.info('Starting Rinkhals update...')
+                with lvr.lock():
+                    self.modal_ota_rinkhals.label_progress_text.set_text('Installing...')
 
                 if USING_SIMULATOR:
                     time.sleep(1)
@@ -1894,6 +1916,16 @@ class BaseApp:
             return False
         if system('rm /useremain/update.swu') != 0:
             return False
+
+        if os.path.isfile('/useremain/update_swu/setup.tar.gz.md5'):
+            with open('/useremain/update_swu/setup.tar.gz.md5', 'r') as f:
+                theoritical_hash = f.read().strip()
+
+            file_hash = hash_md5('/useremain/update_swu/setup.tar.gz')
+            if file_hash.lower() != theoritical_hash.lower():
+                logging.error('setup.tar.gz md5 doesn\'t match. Failing install.')
+                return False
+
         if system('tar zxf /useremain/update_swu/setup.tar.gz -C /useremain/update_swu') != 0:
             return False
         if system('chmod +x /useremain/update_swu/update.sh') != 0:
