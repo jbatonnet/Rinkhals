@@ -257,217 +257,300 @@ class RinkhalsUiApp(BaseApp):
         #     self.show_fireworks()
 
         self.show_screen(self.screen_main)
-        run_async(self.layout_async)
-    def layout_async(self):
-        with lvr.lock():
-            self.screen_apps = lvr.panel(self.root_screen)
-            if self.screen_apps:
-                self.screen_apps.add_flag(lv.OBJ_FLAG.HIDDEN)
-                self.screen_apps.set_size(lv.pct(100), lv.pct(100))
-                self.screen_apps.set_style_pad_all(0, lv.STATE.DEFAULT)
-                self.screen_apps.set_style_pad_top(lvr.get_title_bar_height(), lv.STATE.DEFAULT)
 
-                title_bar = lvr.title_bar(self.screen_apps)
-                title_bar.set_y(-lvr.get_title_bar_height())
-                
-                title = lvr.title(title_bar)
-                title.set_text('Manage apps')
-                title.center()
+        def layout_async():
+            with lvr.lock():
+                self.layout_apps()
+            with lvr.lock():
+                self.layout_app()
+            with lvr.lock():
+                self.layout_app_settings()
+            with lvr.lock():
+                self.layout_advanced()
+            with lvr.lock():
+                self.layout_ota()
+            with lvr.lock():
+                self.layout_ota_rinkhals()
+            with lvr.lock():
+                self.layout_ota_firmware()
+            with lvr.lock():
+                self.layout_modal_selection()
 
-                icon_back = lvr.button_icon(title_bar)
-                icon_back.set_align(lv.ALIGN.LEFT_MID)
-                icon_back.add_event_cb(lambda e: self.show_screen(self.screen_main), lv.EVENT_CODE.CLICKED, None)
-                icon_back.set_text('')
+        run_async(layout_async)
+    def layout_apps(self):
+        self.screen_apps = lvr.panel(self.root_screen)
 
-                icon_refresh = lvr.button_icon(title_bar)
-                icon_refresh.add_event_cb(lambda e: self.show_screen(self.screen_apps), lv.EVENT_CODE.CLICKED, None)
-                icon_refresh.set_align(lv.ALIGN.RIGHT_MID)
-                icon_refresh.set_text('')
+        self.screen_apps.add_flag(lv.OBJ_FLAG.HIDDEN)
+        self.screen_apps.set_size(lv.pct(100), lv.pct(100))
+        self.screen_apps.set_style_pad_all(0, lv.STATE.DEFAULT)
+        self.screen_apps.set_style_pad_top(lvr.get_title_bar_height() + lv.dpx(60), lv.STATE.DEFAULT)
 
-                self.screen_apps.panel_apps = None
+        title_bar = lvr.title_bar(self.screen_apps)
+        title_bar.set_y(-lvr.get_title_bar_height() - lv.dpx(60))
+        
+        title = lvr.title(title_bar)
+        title.set_text('Manage apps')
+        title.center()
 
-        with lvr.lock():
-            self.screen_app = lvr.panel(self.root_screen)
-            if self.screen_app:
-                self.screen_app.add_flag(lv.OBJ_FLAG.HIDDEN)
-                self.screen_app.set_size(lv.pct(100), lv.pct(100))
-                self.screen_app.set_style_pad_all(0, lv.STATE.DEFAULT)
-                self.screen_app.set_style_pad_top(lvr.get_title_bar_height(), lv.STATE.DEFAULT)
+        icon_back = lvr.button_icon(title_bar)
+        icon_back.set_align(lv.ALIGN.LEFT_MID)
+        icon_back.add_event_cb(lambda e: self.show_screen(self.screen_main), lv.EVENT_CODE.CLICKED, None)
+        icon_back.set_text('')
 
-                title_bar = lvr.title_bar(self.screen_app)
-                title_bar.set_y(-lvr.get_title_bar_height())
-                
-                icon_back = lvr.button_icon(title_bar)
-                icon_back.set_align(lv.ALIGN.LEFT_MID)
-                icon_back.set_text('')
-                icon_back.add_event_cb(lambda e: self.show_screen(self.screen_apps), lv.EVENT_CODE.CLICKED, None)
+        icon_refresh = lvr.button_icon(title_bar)
+        icon_refresh.add_event_cb(lambda e: self.show_screen(self.screen_apps), lv.EVENT_CODE.CLICKED, None)
+        icon_refresh.set_align(lv.ALIGN.RIGHT_MID)
+        icon_refresh.set_text('')
 
-                self.screen_app.button_refresh = lvr.button_icon(title_bar)
-                self.screen_app.button_refresh.set_text('')
-                self.screen_app.button_refresh.set_align(lv.ALIGN.RIGHT_MID)
-                
-                self.screen_app.label_title = lvr.title(title_bar)
-                self.screen_app.label_title.center()
+        self.screen_apps.graph_panel = lvr.panel(self.screen_apps)
+        self.screen_apps.graph_panel.set_style_pad_top(0, lv.STATE.DEFAULT)
+        self.screen_apps.graph_panel.set_size(lv.pct(100), lv.dpx(60))
+        self.screen_apps.graph_panel.set_style_bg_color(lvr.COLOR_DANGER, lv.STATE.DEFAULT)
+        self.screen_apps.graph_panel.set_y(-lv.dpx(60))
+        self.screen_apps.graph_panel.remove_flag(lv.OBJ_FLAG.SCROLLABLE)
 
-                panel_app = lvr.panel(self.screen_app, flex_flow=lv.FLEX_FLOW.COLUMN, flex_align=lv.FLEX_ALIGN.CENTER)
-                panel_app.set_size(lv.pct(100), lv.pct(100))
+        total_memory_bar = lvr.panel(self.screen_apps.graph_panel, flex_flow = lv.FLEX_FLOW.ROW)
+        total_memory_bar.set_size(self.root_screen.get_width() - lv.dpx(32), lv.dpx(16))
+        total_memory_bar.set_style_pad_all(0, lv.STATE.DEFAULT)
+        total_memory_bar.set_style_bg_color(lv.color_make(96, 96, 96), lv.STATE.DEFAULT)
+        total_memory_bar.set_style_bg_opa(lv.OPA.COVER, lv.STATE.DEFAULT)
+        total_memory_bar.set_style_radius(lv.dpx(6), lv.STATE.DEFAULT)
+        total_memory_bar.remove_flag(lv.OBJ_FLAG.SCROLLABLE)
+        total_memory_bar.set_style_clip_corner(True, lv.STATE.DEFAULT)
+        total_memory_bar.set_style_pad_gap(0, lv.STATE.DEFAULT)
 
-                self.screen_app.label_version = lvr.subtitle(panel_app)
-                self.screen_app.label_version.set_text('Version:')
-                self.screen_app.label_version.set_style_margin_ver(-lvr.get_global_margin() - lv.dpx(2), lv.STATE.DEFAULT)
-                
-                self.screen_app.label_path = lvr.subtitle(panel_app)
-                self.screen_app.label_path.set_style_max_width(lv.pct(100), lv.STATE.DEFAULT)
-                
-                self.screen_app.label_description = lvr.subtitle(panel_app)
-                self.screen_app.label_description.set_style_text_color(lvr.COLOR_TEXT, lv.STATE.DEFAULT)
-                self.screen_app.label_description.set_width(lv.pct(100))
-                self.screen_app.label_description.set_long_mode(lv.LABEL_LONG_MODE.WRAP)
-                self.screen_app.label_description.set_style_text_align(lv.TEXT_ALIGN.CENTER, lv.STATE.DEFAULT)
+        self.screen_apps.base_memory_bar = lvr.box(total_memory_bar)
+        self.screen_apps.base_memory_bar.set_size(0, lv.pct(100))
+        self.screen_apps.base_memory_bar.set_style_bg_color(lv.color_make(43, 77, 125), lv.STATE.DEFAULT)
 
-                panel_stats = lvr.panel(panel_app)
-                panel_stats.set_width(lv.pct(100))
-                panel_stats.set_flex_flow(lv.FLEX_FLOW.ROW)
-                panel_stats.set_flex_align(lv.FLEX_ALIGN.CENTER, lv.FLEX_ALIGN.CENTER, lv.FLEX_ALIGN.CENTER)
-                panel_stats.set_style_pad_column(0, lv.STATE.DEFAULT)
-                panel_stats.set_style_pad_hor(0, lv.STATE.DEFAULT)
-                panel_stats.set_style_pad_ver(lv.dpx(15), lv.STATE.DEFAULT)
+        self.screen_apps.reserved_memory_bar = lvr.box(total_memory_bar)
+        self.screen_apps.reserved_memory_bar.set_size(0, lv.pct(100))
+        self.screen_apps.reserved_memory_bar.set_style_bg_color(lv.color_make(120, 47, 47), lv.STATE.DEFAULT)
+        
+        self.screen_apps.apps_memory_bar = lvr.box(total_memory_bar)
+        self.screen_apps.apps_memory_bar.set_size(0, lv.pct(100))
+        self.screen_apps.apps_memory_bar.set_style_bg_color(lv.color_make(34, 177, 76), lv.STATE.DEFAULT)
 
-                panel_disk = lvr.panel(panel_stats, flex_flow=lv.FLEX_FLOW.COLUMN, flex_align=lv.FLEX_ALIGN.CENTER)
-                panel_disk.set_style_pad_row(-lv.dpx(2), lv.STATE.DEFAULT)
-                panel_disk.set_width(lv.pct(30))
-                panel_disk.set_style_pad_all(0, lv.STATE.DEFAULT)
+        base_memory_legend = lvr.box(self.screen_apps.graph_panel)
+        base_memory_legend.set_pos(0, lv.dpx(24))
+        base_memory_legend.set_size(lv.dpx(12), lv.dpx(12))
+        base_memory_legend.set_style_bg_color(lv.color_make(43, 77, 125), lv.STATE.DEFAULT)
+        base_memory_legend.set_style_border_side(lv.BORDER_SIDE.FULL, lv.STATE.DEFAULT)
+        
+        base_memory_label = lvr.label(self.screen_apps.graph_panel)
+        base_memory_label.set_pos(0, lv.dpx(22))
+        base_memory_label.set_style_text_font(lvr.get_font_text_tiny(), lv.STATE.DEFAULT)
+        base_memory_label.set_style_text_color(lvr.COLOR_SUBTITLE, lv.STATE.DEFAULT)
+        base_memory_label.set_text('     System memory')
 
-                label_disk_subtitle = lvr.subtitle(panel_disk)
-                label_disk_subtitle.set_text('Disk')
-                
-                self.screen_app.label_disk = lvr.label(panel_disk)
-                self.screen_app.label_disk.set_text('?')
-                
-                panel_memory = lvr.panel(panel_stats, flex_flow=lv.FLEX_FLOW.COLUMN, flex_align=lv.FLEX_ALIGN.CENTER)
-                panel_memory.set_style_pad_row(-lv.dpx(2), lv.STATE.DEFAULT)
-                panel_memory.set_width(lv.pct(30))
-                panel_memory.set_style_pad_all(0, lv.STATE.DEFAULT)
+        reserved_memory_legend = lvr.box(self.screen_apps.graph_panel)
+        reserved_memory_legend.set_pos(0, lv.dpx(44))
+        reserved_memory_legend.set_size(lv.dpx(12), lv.dpx(12))
+        reserved_memory_legend.set_style_bg_color(lv.color_make(120, 47, 47), lv.STATE.DEFAULT)
+        reserved_memory_legend.set_style_border_side(lv.BORDER_SIDE.FULL, lv.STATE.DEFAULT)
+        
+        reserved_memory_label = lvr.label(self.screen_apps.graph_panel)
+        reserved_memory_label.set_pos(0, lv.dpx(42))
+        reserved_memory_label.set_style_text_font(lvr.get_font_text_tiny(), lv.STATE.DEFAULT)
+        reserved_memory_label.set_style_text_color(lvr.COLOR_SUBTITLE, lv.STATE.DEFAULT)
+        reserved_memory_label.set_text('     Reserved memory')
+        
+        apps_memory_legend = lvr.box(self.screen_apps.graph_panel)
+        apps_memory_legend.set_pos(lv.pct(50), lv.dpx(24))
+        apps_memory_legend.set_size(lv.dpx(12), lv.dpx(12))
+        apps_memory_legend.set_style_bg_color(lv.color_make(34, 177, 76), lv.STATE.DEFAULT)
+        apps_memory_legend.set_style_border_side(lv.BORDER_SIDE.FULL, lv.STATE.DEFAULT)
+        
+        self.screen_apps.apps_memory_label = lvr.label(self.screen_apps.graph_panel)
+        self.screen_apps.apps_memory_label.set_pos(lv.pct(50), lv.dpx(22))
+        self.screen_apps.apps_memory_label.set_style_text_font(lvr.get_font_text_tiny(), lv.STATE.DEFAULT)
+        self.screen_apps.apps_memory_label.set_style_text_color(lvr.COLOR_SUBTITLE, lv.STATE.DEFAULT)
+        self.screen_apps.apps_memory_label.set_text('     Apps (42MB)')
+        
+        free_memory_legend = lvr.box(self.screen_apps.graph_panel)
+        free_memory_legend.set_pos(lv.pct(50), lv.dpx(44))
+        free_memory_legend.set_size(lv.dpx(12), lv.dpx(12))
+        free_memory_legend.set_style_bg_color(lv.color_make(96, 96, 96), lv.STATE.DEFAULT)
+        free_memory_legend.set_style_border_side(lv.BORDER_SIDE.FULL, lv.STATE.DEFAULT)
+        
+        self.screen_apps.free_memory_label = lvr.label(self.screen_apps.graph_panel)
+        self.screen_apps.free_memory_label.set_pos(lv.pct(50), lv.dpx(42))
+        self.screen_apps.free_memory_label.set_style_text_font(lvr.get_font_text_tiny(), lv.STATE.DEFAULT)
+        self.screen_apps.free_memory_label.set_style_text_color(lvr.COLOR_SUBTITLE, lv.STATE.DEFAULT)
+        self.screen_apps.free_memory_label.set_text('     Free (42MB)')
 
-                label_memory_subtitle = lvr.subtitle(panel_memory)
-                label_memory_subtitle.set_text('Memory')
-                
-                self.screen_app.label_memory = lvr.label(panel_memory)
-                self.screen_app.label_memory.set_text('?')
-                
-                panel_cpu = lvr.panel(panel_stats, flex_flow=lv.FLEX_FLOW.COLUMN, flex_align=lv.FLEX_ALIGN.CENTER)
-                panel_cpu.set_style_pad_row(-lv.dpx(2), lv.STATE.DEFAULT)
-                panel_cpu.set_width(lv.pct(30))
-                panel_cpu.set_style_pad_all(0, lv.STATE.DEFAULT)
+        self.screen_apps.panel_apps = None
+    def layout_app(self):
+        self.screen_app = lvr.panel(self.root_screen)
 
-                label_cpu_subtitle = lvr.subtitle(panel_cpu)
-                label_cpu_subtitle.set_text('CPU')
-                
-                self.screen_app.label_cpu = lvr.label(panel_cpu)
-                self.screen_app.label_cpu.set_text('?')
-                
-                panel_actions = lvr.panel(panel_app)
-                panel_actions.set_height(lv.SIZE_CONTENT)
-                panel_actions.set_width(lv.pct(100))
-                panel_actions.set_flex_flow(lv.FLEX_FLOW.ROW_REVERSE)
-                panel_actions.set_flex_align(lv.FLEX_ALIGN.START, lv.FLEX_ALIGN.CENTER, lv.FLEX_ALIGN.CENTER)
-                panel_actions.set_style_pad_column(lvr.get_global_margin(), lv.STATE.DEFAULT)
-                panel_actions.set_style_pad_all(0, lv.STATE.DEFAULT)
-                
-                self.screen_app.button_qrcode = lvr.button(panel_actions)
-                self.screen_app.button_qrcode.set_icon('')
-                
-                self.screen_app.button_settings = lvr.button(panel_actions)
-                self.screen_app.button_settings.set_icon('')
+        self.screen_app.add_flag(lv.OBJ_FLAG.HIDDEN)
+        self.screen_app.set_size(lv.pct(100), lv.pct(100))
+        self.screen_app.set_style_pad_all(0, lv.STATE.DEFAULT)
+        self.screen_app.set_style_pad_top(lvr.get_title_bar_height(), lv.STATE.DEFAULT)
 
-                self.screen_app.button_toggle_enabled = lvr.button(panel_actions)
-                self.screen_app.button_toggle_enabled.set_text('Enable/Disable app')
-                self.screen_app.button_toggle_enabled.set_flex_grow(1)
-                
-                self.screen_app.button_toggle_started = lvr.button(panel_app)
-                self.screen_app.button_toggle_started.set_text('Start/Stop app')
-                self.screen_app.button_toggle_started.set_width(lv.pct(100))
+        title_bar = lvr.title_bar(self.screen_app)
+        title_bar.set_y(-lvr.get_title_bar_height())
+        
+        icon_back = lvr.button_icon(title_bar)
+        icon_back.set_align(lv.ALIGN.LEFT_MID)
+        icon_back.set_text('')
+        icon_back.add_event_cb(lambda e: self.show_screen(self.screen_apps), lv.EVENT_CODE.CLICKED, None)
 
-        with lvr.lock():
-            self.screen_app_settings = lvr.panel(self.root_screen)
-            if self.screen_app_settings:
-                self.screen_app_settings.add_flag(lv.OBJ_FLAG.HIDDEN)
-                self.screen_app_settings.set_size(lv.pct(100), lv.pct(100))
-                self.screen_app_settings.set_style_pad_all(0, lv.STATE.DEFAULT)
-                self.screen_app_settings.set_style_pad_top(lvr.get_title_bar_height(), lv.STATE.DEFAULT)
+        self.screen_app.button_refresh = lvr.button_icon(title_bar)
+        self.screen_app.button_refresh.set_text('')
+        self.screen_app.button_refresh.set_align(lv.ALIGN.RIGHT_MID)
+        
+        self.screen_app.label_title = lvr.title(title_bar)
+        self.screen_app.label_title.center()
 
-                title_bar = lvr.title_bar(self.screen_app_settings)
-                title_bar.set_y(-lvr.get_title_bar_height())
-                
-                self.screen_app_settings.label_title = lvr.title(title_bar)
-                self.screen_app_settings.label_title.center()
+        panel_app = lvr.panel(self.screen_app, flex_flow=lv.FLEX_FLOW.COLUMN, flex_align=lv.FLEX_ALIGN.CENTER)
+        panel_app.set_size(lv.pct(100), lv.pct(100))
 
-                self.screen_app_settings.button_back = lvr.button_icon(title_bar)
-                self.screen_app_settings.button_back.set_align(lv.ALIGN.LEFT_MID)
-                self.screen_app_settings.button_back.set_text('')
+        self.screen_app.label_version = lvr.subtitle(panel_app)
+        self.screen_app.label_version.set_text('Version:')
+        self.screen_app.label_version.set_style_margin_ver(-lvr.get_global_margin() - lv.dpx(2), lv.STATE.DEFAULT)
+        
+        self.screen_app.label_path = lvr.subtitle(panel_app)
+        self.screen_app.label_path.set_style_max_width(lv.pct(100), lv.STATE.DEFAULT)
+        
+        self.screen_app.label_description = lvr.subtitle(panel_app)
+        self.screen_app.label_description.set_style_text_color(lvr.COLOR_TEXT, lv.STATE.DEFAULT)
+        self.screen_app.label_description.set_width(lv.pct(100))
+        self.screen_app.label_description.set_long_mode(lv.LABEL_LONG_MODE.WRAP)
+        self.screen_app.label_description.set_style_text_align(lv.TEXT_ALIGN.CENTER, lv.STATE.DEFAULT)
 
-                self.screen_app_settings.button_refresh = lvr.button_icon(title_bar)
-                self.screen_app_settings.button_refresh.set_align(lv.ALIGN.RIGHT_MID)
-                self.screen_app_settings.button_refresh.set_text('')
+        panel_stats = lvr.panel(panel_app)
+        panel_stats.set_width(lv.pct(100))
+        panel_stats.set_flex_flow(lv.FLEX_FLOW.ROW)
+        panel_stats.set_flex_align(lv.FLEX_ALIGN.CENTER, lv.FLEX_ALIGN.CENTER, lv.FLEX_ALIGN.CENTER)
+        panel_stats.set_style_pad_column(0, lv.STATE.DEFAULT)
+        panel_stats.set_style_pad_hor(0, lv.STATE.DEFAULT)
+        panel_stats.set_style_pad_ver(lv.dpx(15), lv.STATE.DEFAULT)
 
-                self.screen_app_settings.panel_properties = None
+        panel_disk = lvr.panel(panel_stats, flex_flow=lv.FLEX_FLOW.COLUMN, flex_align=lv.FLEX_ALIGN.CENTER)
+        panel_disk.set_style_pad_row(-lv.dpx(2), lv.STATE.DEFAULT)
+        panel_disk.set_width(lv.pct(30))
+        panel_disk.set_style_pad_all(0, lv.STATE.DEFAULT)
 
-        with lvr.lock():
-            self.screen_advanced = lvr.panel(self.root_screen)
-            if self.screen_advanced:
-                self.screen_advanced.add_flag(lv.OBJ_FLAG.HIDDEN)
-                self.screen_advanced.set_size(lv.pct(100), lv.pct(100))
-                self.screen_advanced.set_style_pad_hor(0, lv.STATE.DEFAULT)
-                self.screen_advanced.set_style_pad_top(lvr.get_title_bar_height(), lv.STATE.DEFAULT)
-                
-                title_bar = lvr.title_bar(self.screen_advanced)
-                title_bar.add_flag(lv.OBJ_FLAG.IGNORE_LAYOUT)
-                title_bar.set_y(-lvr.get_title_bar_height())
+        label_disk_subtitle = lvr.subtitle(panel_disk)
+        label_disk_subtitle.set_text('Disk')
+        
+        self.screen_app.label_disk = lvr.label(panel_disk)
+        self.screen_app.label_disk.set_text('?')
+        
+        panel_memory = lvr.panel(panel_stats, flex_flow=lv.FLEX_FLOW.COLUMN, flex_align=lv.FLEX_ALIGN.CENTER)
+        panel_memory.set_style_pad_row(-lv.dpx(2), lv.STATE.DEFAULT)
+        panel_memory.set_width(lv.pct(30))
+        panel_memory.set_style_pad_all(0, lv.STATE.DEFAULT)
 
-                icon_back = lvr.button_icon(title_bar)
-                icon_back.set_align(lv.ALIGN.LEFT_MID)
-                icon_back.set_text('')
-                icon_back.add_event_cb(lambda e: self.show_screen(self.screen_main), lv.EVENT_CODE.CLICKED, None)
-                
-                title = lvr.title(title_bar)
-                title.set_text('Advanced settings')
-                title.center()
+        label_memory_subtitle = lvr.subtitle(panel_memory)
+        label_memory_subtitle.set_text('Memory')
+        
+        self.screen_app.label_memory = lvr.label(panel_memory)
+        self.screen_app.label_memory.set_text('?')
+        
+        panel_cpu = lvr.panel(panel_stats, flex_flow=lv.FLEX_FLOW.COLUMN, flex_align=lv.FLEX_ALIGN.CENTER)
+        panel_cpu.set_style_pad_row(-lv.dpx(2), lv.STATE.DEFAULT)
+        panel_cpu.set_width(lv.pct(30))
+        panel_cpu.set_style_pad_all(0, lv.STATE.DEFAULT)
 
-                panel_buttons = lvr.panel(self.screen_advanced, flex_flow=lv.FLEX_FLOW.COLUMN)
-                panel_buttons.set_size(lv.pct(100), lv.pct(100))
-                
-                button_reboot = lvr.button(panel_buttons)
-                button_reboot.set_width(lv.pct(100))
-                button_reboot.set_text('Reboot printer')
-                button_reboot.add_event_cb(lambda e: self.show_text_dialog('Are you sure you want\nto reboot your printer?', action='Yes', callback=lambda: self.reboot_printer()), lv.EVENT_CODE.CLICKED, None)
-                
-                button_restart = lvr.button(panel_buttons)
-                button_restart.set_width(lv.pct(100))
-                button_restart.set_text('Restart Rinkhals')
-                button_restart.add_event_cb(lambda e: self.show_text_dialog('Are you sure you want\nto restart Rinkhals?', action='Yes', callback=lambda: self.restart_rinkhals()), lv.EVENT_CODE.CLICKED, None)
-                
-                button_stock = lvr.button(panel_buttons)
-                button_stock.set_width(lv.pct(100))
-                button_stock.set_text('Switch to stock')
-                button_stock.add_event_cb(lambda e: self.show_text_dialog('Are you sure you want\nto switch to stock firmware?\n\nYou can reboot your printer\nto start Rinkhals again', action='Yes', callback=lambda: self.stop_rinkhals()), lv.EVENT_CODE.CLICKED, None)
+        label_cpu_subtitle = lvr.subtitle(panel_cpu)
+        label_cpu_subtitle.set_text('CPU')
+        
+        self.screen_app.label_cpu = lvr.label(panel_cpu)
+        self.screen_app.label_cpu.set_text('?')
+        
+        panel_actions = lvr.panel(panel_app)
+        panel_actions.set_height(lv.SIZE_CONTENT)
+        panel_actions.set_width(lv.pct(100))
+        panel_actions.set_flex_flow(lv.FLEX_FLOW.ROW_REVERSE)
+        panel_actions.set_flex_align(lv.FLEX_ALIGN.START, lv.FLEX_ALIGN.CENTER, lv.FLEX_ALIGN.CENTER)
+        panel_actions.set_style_pad_column(lvr.get_global_margin(), lv.STATE.DEFAULT)
+        panel_actions.set_style_pad_all(0, lv.STATE.DEFAULT)
+        
+        self.screen_app.button_qrcode = lvr.button(panel_actions)
+        self.screen_app.button_qrcode.set_icon('')
+        
+        self.screen_app.button_settings = lvr.button(panel_actions)
+        self.screen_app.button_settings.set_icon('')
 
-                button_disable = lvr.button(panel_buttons)
-                button_disable.set_width(lv.pct(100))
-                button_disable.set_style_text_color(lvr.COLOR_DANGER, lv.STATE.DEFAULT)
-                button_disable.set_text('Disable Rinkhals')
-                button_disable.add_event_cb(lambda e: self.show_text_dialog('Are you sure you want\nto disable Rinkhals?\n\nYou will need to reinstall\nRinkhals to start it again', action='Yes', action_color=lvr.COLOR_DANGER, callback=lambda: self.disable_rinkhals()), lv.EVENT_CODE.CLICKED, None)
+        self.screen_app.button_toggle_enabled = lvr.button(panel_actions)
+        self.screen_app.button_toggle_enabled.set_text('Enable/Disable app')
+        self.screen_app.button_toggle_enabled.set_flex_grow(1)
+        
+        self.screen_app.button_toggle_started = lvr.button(panel_app)
+        self.screen_app.button_toggle_started.set_text('Start/Stop app')
+        self.screen_app.button_toggle_started.set_width(lv.pct(100))
+    def layout_app_settings(self):
+        self.screen_app_settings = lvr.panel(self.root_screen)
 
-        with lvr.lock():
-            self.layout_ota()
-        with lvr.lock():
-            self.layout_ota_rinkhals()
-        with lvr.lock():
-            self.layout_ota_firmware()
+        self.screen_app_settings.add_flag(lv.OBJ_FLAG.HIDDEN)
+        self.screen_app_settings.set_size(lv.pct(100), lv.pct(100))
+        self.screen_app_settings.set_style_pad_all(0, lv.STATE.DEFAULT)
+        self.screen_app_settings.set_style_pad_top(lvr.get_title_bar_height(), lv.STATE.DEFAULT)
 
-        with lvr.lock():
-            self.modal_selection = lvr.modal(self.root_modal)
-            if self.modal_selection:
-                self.modal_selection.panel_selection = None
+        title_bar = lvr.title_bar(self.screen_app_settings)
+        title_bar.set_y(-lvr.get_title_bar_height())
+        
+        self.screen_app_settings.label_title = lvr.title(title_bar)
+        self.screen_app_settings.label_title.center()
+
+        self.screen_app_settings.button_back = lvr.button_icon(title_bar)
+        self.screen_app_settings.button_back.set_align(lv.ALIGN.LEFT_MID)
+        self.screen_app_settings.button_back.set_text('')
+
+        self.screen_app_settings.button_refresh = lvr.button_icon(title_bar)
+        self.screen_app_settings.button_refresh.set_align(lv.ALIGN.RIGHT_MID)
+        self.screen_app_settings.button_refresh.set_text('')
+
+        self.screen_app_settings.panel_properties = None
+    def layout_advanced(self):
+        self.screen_advanced = lvr.panel(self.root_screen)
+
+        self.screen_advanced.add_flag(lv.OBJ_FLAG.HIDDEN)
+        self.screen_advanced.set_size(lv.pct(100), lv.pct(100))
+        self.screen_advanced.set_style_pad_hor(0, lv.STATE.DEFAULT)
+        self.screen_advanced.set_style_pad_top(lvr.get_title_bar_height(), lv.STATE.DEFAULT)
+        
+        title_bar = lvr.title_bar(self.screen_advanced)
+        title_bar.add_flag(lv.OBJ_FLAG.IGNORE_LAYOUT)
+        title_bar.set_y(-lvr.get_title_bar_height())
+
+        icon_back = lvr.button_icon(title_bar)
+        icon_back.set_align(lv.ALIGN.LEFT_MID)
+        icon_back.set_text('')
+        icon_back.add_event_cb(lambda e: self.show_screen(self.screen_main), lv.EVENT_CODE.CLICKED, None)
+        
+        title = lvr.title(title_bar)
+        title.set_text('Advanced settings')
+        title.center()
+
+        panel_buttons = lvr.panel(self.screen_advanced, flex_flow=lv.FLEX_FLOW.COLUMN)
+        panel_buttons.set_size(lv.pct(100), lv.pct(100))
+        
+        button_reboot = lvr.button(panel_buttons)
+        button_reboot.set_width(lv.pct(100))
+        button_reboot.set_text('Reboot printer')
+        button_reboot.add_event_cb(lambda e: self.show_text_dialog('Are you sure you want\nto reboot your printer?', action='Yes', callback=lambda: self.reboot_printer()), lv.EVENT_CODE.CLICKED, None)
+        
+        button_restart = lvr.button(panel_buttons)
+        button_restart.set_width(lv.pct(100))
+        button_restart.set_text('Restart Rinkhals')
+        button_restart.add_event_cb(lambda e: self.show_text_dialog('Are you sure you want\nto restart Rinkhals?', action='Yes', callback=lambda: self.restart_rinkhals()), lv.EVENT_CODE.CLICKED, None)
+        
+        button_stock = lvr.button(panel_buttons)
+        button_stock.set_width(lv.pct(100))
+        button_stock.set_text('Switch to stock')
+        button_stock.add_event_cb(lambda e: self.show_text_dialog('Are you sure you want\nto switch to stock firmware?\n\nYou can reboot your printer\nto start Rinkhals again', action='Yes', callback=lambda: self.stop_rinkhals()), lv.EVENT_CODE.CLICKED, None)
+
+        button_disable = lvr.button(panel_buttons)
+        button_disable.set_width(lv.pct(100))
+        button_disable.set_style_text_color(lvr.COLOR_DANGER, lv.STATE.DEFAULT)
+        button_disable.set_text('Disable Rinkhals')
+        button_disable.add_event_cb(lambda e: self.show_text_dialog('Are you sure you want\nto disable Rinkhals?\n\nYou will need to reinstall\nRinkhals to start it again', action='Yes', action_color=lvr.COLOR_DANGER, callback=lambda: self.disable_rinkhals()), lv.EVENT_CODE.CLICKED, None)
+    def layout_modal_selection(self):
+        self.modal_selection = lvr.modal(self.root_modal)
+        self.modal_selection.panel_selection = None
 
     def show_screen(self, screen):
         super().show_screen(screen)
@@ -504,6 +587,15 @@ class RinkhalsUiApp(BaseApp):
 
             self.app_checkboxes[app].set_checked(is_app_enabled(app) == '1')
             
+        total_memory = 220
+        base_memory = 80
+        reserved_memory = 40
+        apps_memory = 60
+
+        self.screen_apps.base_memory_bar.set_width(lv.pct(int(base_memory * 100 / total_memory)))
+        self.screen_apps.reserved_memory_bar.set_width(lv.pct(int(reserved_memory * 100 / total_memory)))
+        self.screen_apps.apps_memory_bar.set_width(lv.pct(int(apps_memory * 100 / total_memory)))
+
         if self.screen_apps.panel_apps:
             self.screen_apps.panel_apps.delete()
         self.screen_apps.panel_apps = lvr.panel(self.screen_apps, flex_flow=lv.FLEX_FLOW.COLUMN)
@@ -789,7 +881,7 @@ class RinkhalsUiApp(BaseApp):
                             set_app_property(app, property, option)
                             label_value.set_text(str(option or default))
 
-                        button_edit.add_event_cb(lambda e, options=options, select_option=select_option: self.show_selection_dialog(options, select_option), lv.EVENT_CODE.CLICKED, None)
+                        button_edit.add_event_cb(lambda e, options=options, select_option=select_option: self.show_modal_selection(options, select_option), lv.EVENT_CODE.CLICKED, None)
 
             if type == 'report':
                 if value:
@@ -817,7 +909,7 @@ class RinkhalsUiApp(BaseApp):
         button_reset.set_width(lv.pct(100))
         button_reset.set_text('Reset to default')
         button_reset.add_event_cb(lambda e: reset_default(), lv.EVENT_CODE.CLICKED, None)
-    def show_selection_dialog(self, options, select_callback=None):
+    def show_modal_selection(self, options, select_callback=None):
         if self.modal_selection.panel_selection:
             self.modal_selection.panel_selection.delete()
 

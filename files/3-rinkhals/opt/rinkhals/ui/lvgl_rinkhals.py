@@ -32,6 +32,8 @@ if gradient_background:
 
 # Fonts
 def get_font_text(): return lv.tiny_ttf_create_file(ASSETS_PATH + '/AlibabaSans-Regular.ttf', int(lv.dpx(19)))
+def get_font_text_small(): return lv.tiny_ttf_create_file(ASSETS_PATH + '/AlibabaSans-Regular.ttf', int(lv.dpx(16)))
+def get_font_text_tiny(): return lv.tiny_ttf_create_file(ASSETS_PATH + '/AlibabaSans-Regular.ttf', int(lv.dpx(12)))
 def get_font_title(): return lv.tiny_ttf_create_file(ASSETS_PATH + '/AlibabaSans-Regular.ttf', int(lv.dpx(22)))
 def get_font_subtitle(): return lv.tiny_ttf_create_file(ASSETS_PATH + '/AlibabaSans-Regular.ttf', int(lv.dpx(16)))
 def get_font_icon(): return lv.tiny_ttf_create_file(ASSETS_PATH + '/MaterialIcons-Regular.ttf', int(lv.dpx(32)))
@@ -70,6 +72,20 @@ def get_style_panel():
     style_panel.set_border_color(lv.color_lighten(COLOR_BACKGROUND, 32))
     style_panel.set_border_opa(lv.OPA.COVER)
     return style_panel
+def get_style_box():
+    style_box = lv.style()
+    style_box.set_bg_opa(lv.OPA.COVER)
+    style_box.set_text_font(get_font_text())
+    style_box.set_text_color(COLOR_TEXT)
+    style_box.set_pad_all(0)
+    style_box.set_radius(0)
+    style_box.set_size(lv.SIZE_CONTENT, lv.SIZE_CONTENT)
+    style_box.set_border_side(lv.BORDER_SIDE.NONE)
+    style_box.set_border_width(1)
+    style_box.set_border_color(lv.color_lighten(COLOR_BACKGROUND, 32))
+    style_box.set_border_opa(lv.OPA.COVER)
+    style_box.set_clip_corner(True)
+    return style_box
 def get_style_panel_pressed():
     style_panel_pressed = lv.style()
     style_panel_pressed.set_bg_color(lv.color_white())
@@ -208,6 +224,15 @@ def panel(parent, flex_flow=None, flex_align=lv.FLEX_ALIGN.START, tag=None):
     result.clear_event_cb = clear_event_cb
 
     _obj_add_debug_label(result)
+    return result
+
+def box(parent):
+    result = lv.obj(parent)
+    result.tag = tag
+    result.add_style(get_style_box(), lv.STATE.DEFAULT)
+    result.add_style(get_style_debug(), lv.STATE.DEFAULT)
+    result.set_state(lv.STATE.DISABLED, True)
+    result.remove_flag(lv.OBJ_FLAG.SCROLLABLE)
     return result
 
 def modal(parent, tag=None):
