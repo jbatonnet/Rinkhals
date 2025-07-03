@@ -1,0 +1,125 @@
+#!/bin/sh
+
+. /useremain/rinkhals/.current/tools.sh
+
+
+################
+# Decode query string
+
+urldecode() {
+  # Input URL encoded string
+  _encoded_url="$1"
+
+  # Replace '+' with spaces first
+  _decoded_url=""
+  _c=''
+  _i=0
+  _len=${#_encoded_url} # This is a Bashism/Zshism. For pure ASH, need a loop for length.
+
+  # ASH compatible way to replace '+' with spaces:
+  # Using sed for portability
+  _temp_url=$(echo "$_encoded_url" | sed 's/\+/ /g')
+
+  _final_decoded=""
+  _buffer=""
+  _hex_char=""
+
+  # Process character by character
+  _len_temp=$(echo "$_temp_url" | wc -c) # Approx length for loop
+  _j=0
+
+  # Loop through the string, character by character
+  while [ "$_j" -lt "$_len_temp" ]; do
+    _char=$(echo "$_temp_url" | cut -c $((_j+1)))
+    
+    if [ "$_char" = "%" ]; then
+      # Expecting two hex digits
+      _hex_val=$(echo "$_temp_url" | cut -c $((_j+2))-$((_j+3)))
+      # Convert hex to decimal, then decimal to char using printf
+      # This is the tricky part without printf %b directly
+      # A simple way is to use awk's printf for this, or a lookup table.
+      # For a pure ASH shell without awk or perl, it's very hard directly.
+      # Let's rely on a common trick: hex to char conversion via printf.
+      # This still depends on printf interpreting \x, which might not be universal for all ash, but is common.
+      _converted_char=$(printf '\\x%s' "$_hex_val")
+      _final_decoded="${_final_decoded}$(printf '%b' "$_converted_char")" # This printf %b is the hurdle.
+      _j=$((_j+2)) # Skip two hex digits
+    else
+      _final_decoded="${_final_decoded}${_char}"
+    fi
+    _j=$((_j+1))
+  done
+
+  echo "$_final_decoded"
+}
+
+IFS='&' 
+for pair in $QUERY_STRING; do
+  key=$(printf '%s' "$pair" | cut -d= -f1 | tr '[:lower:]' '[:upper:]')
+  value=$(printf '%s' "$pair" | cut -d= -f2-)
+  export $(echo "QUERY_STRING_$key")="$value"
+done
+unset IFS
+
+#set
+
+################
+# Actions
+
+execute() {
+    command=$(urldecode $QUERY_STRING_COMMAND)
+
+    echo "Content-Type: application/json"
+    echo
+
+    if [ -z "$command" ]; then
+        printf '{"status":"error","message":"Command not provided"}\n'
+        return 1
+    fi
+
+    stdout_file=$(mktemp)
+    stderr_file=$(mktemp)
+
+    eval "$command" > "$stdout_file" 2> "$stderr_file"
+    exit_status=$?
+
+    stdout_content=$(cat "$stdout_file")
+    stderr_content=$(cat "$stderr_file")
+
+    rm "$stdout_file" "$stderr_file"
+
+    # Base64 encode the content
+    # Use -w 0 for no line breaks (GNU base64 extension)
+    # If -w 0 is not supported, remove it, but be aware of potential issues with long lines.
+    encoded_stdout=$(printf '%s' "$stdout_content" | base64 -w 0)
+    encoded_stderr=$(printf '%s' "$stderr_content" | base64 -w 0)
+
+    # Determine status based on exit code
+    if [ "$exit_status" -eq 0 ]; then
+        status="success"
+    else
+        status="error"
+    fi
+
+    # Construct and print the JSON response
+    printf '{"status":"%s","exit_code":%d,"stdout":"%s","stderr":"%s"}\n' \
+        "$status" \
+        "$exit_status" \
+        "$encoded_stdout" \
+        "$encoded_stderr"
+}
+
+
+################
+# Process the action
+
+case "${QUERY_STRING_ACTION:-x}" in
+    "execute")
+        execute
+        ;;
+    *)
+        echo "Content-Type: application/json"
+        echo
+        printf '{"status":"error","message":"Unknown or missing action: %s"}\n' "$QUERY_STRING_ACTION"
+        ;;
+esac

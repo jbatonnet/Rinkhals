@@ -1,216 +1,224 @@
-#!/bin/ash
+#!/bin/sh
 
-# --- Configuration ---
-# Name for the screen session (persistent terminal)
-SCREEN_SESSION_NAME="printer_term_busybox_v2" # Changed name slightly for clarity if old one exists
 
-# Directory for temporary files (hardcopy, logs).
-# MUST be writable by the web server user (e.g., http, www-data, or root in minimal setups).
-# /tmp is usually a safe bet on embedded systems.
-WORK_DIR="/tmp"
-HARDCOPY_FILE="${WORK_DIR}/${SCREEN_SESSION_NAME}_hardcopy.txt"
+################
+# Decode query string
 
-# Optional log file for debugging the CGI script itself.
-# To enable, uncomment the relevant 'echo' line in log_cgi_message().
-# Ensure the web server user can write to this file.
-CGI_LOG_FILE="${WORK_DIR}/${SCREEN_SESSION_NAME}_cgi.log"
-
-# Shell or command to run inside screen.
-# /bin/ash -i provides an interactive ash shell.
-# If you have a specific command-line tool for your 3D printer, use its full path.
-# Example: PRINTER_COMMAND="/usr/local/bin/printer_control_cli"
-PRINTER_COMMAND="/bin/ash -i"
-
-# --- Helper Functions ---
-
-# Basic logging for debugging CGI script issues.
-# Appends messages to $CGI_LOG_FILE if enabled.
-log_cgi_message() {
-    # To enable logging, uncomment the following line:
-    # echo "$(date '+%Y-%m-%d %H:%M:%S') - CGI: $1" >> "$CGI_LOG_FILE"
-    return 0
-}
-
-# URL Decode function for ash/BusyBox.
-# Handles '+' to space and %HH to character using sed and printf %b.
 urldecode() {
-    local data_esc_plus
-    local data_esc_percent
+  # Input URL encoded string
+  _encoded_url="$1"
 
-    # Replace '+' with space globally.
-    data_esc_plus=$(echo "$1" | sed 's/\+/ /g')
-    # Replace %HH with \xHH for printf to interpret.
-    data_esc_percent=$(echo "$data_esc_plus" | sed 's/%/\\x/g')
-    printf '%b' "$data_esc_percent"
-}
+  # Replace '+' with spaces first
+  _decoded_url=""
+  _c=''
+  _i=0
+  _len=${#_encoded_url} # This is a Bashism/Zshism. For pure ASH, need a loop for length.
 
-# Function to capture and output screen content.
-# It tells 'screen' to dump its current buffer to a file, then reads that file.
-get_screen_content() {
-    log_cgi_message "Attempting to get screen content for '$SCREEN_SESSION_NAME'."
-    # Request a hardcopy from screen.
-    # The '-h' flag includes the scrollback buffer. Omit for only the visible screen.
-    screen -S "$SCREEN_SESSION_NAME" -X hardcopy -h "$HARDCOPY_FILE"
+  # ASH compatible way to replace '+' with spaces:
+  # Using sed for portability
+  _temp_url=$(echo "$_encoded_url" | sed 's/\+/ /g')
 
-    # Brief pause for screen to write the file. This is a heuristic.
-    # Adjust (0.1s to 0.5s) if output seems truncated or delayed, especially for slow commands.
-    sleep 0.2
+  _final_decoded=""
+  _buffer=""
+  _hex_char=""
 
-    if [ -f "$HARDCOPY_FILE" ]; then
-        cat "$HARDCOPY_FILE"
-        log_cgi_message "Successfully read hardcopy file '$HARDCOPY_FILE'."
-        # The hardcopy file is overwritten by screen on each call, so no need to manually clear.
+  # Process character by character
+  _len_temp=$(echo "$_temp_url" | wc -c) # Approx length for loop
+  _j=0
+
+  # Loop through the string, character by character
+  while [ "$_j" -lt "$_len_temp" ]; do
+    _char=$(echo "$_temp_url" | cut -c $((_j+1)))
+    
+    if [ "$_char" = "%" ]; then
+      # Expecting two hex digits
+      _hex_val=$(echo "$_temp_url" | cut -c $((_j+2))-$((_j+3)))
+      # Convert hex to decimal, then decimal to char using printf
+      # This is the tricky part without printf %b directly
+      # A simple way is to use awk's printf for this, or a lookup table.
+      # For a pure ASH shell without awk or perl, it's very hard directly.
+      # Let's rely on a common trick: hex to char conversion via printf.
+      # This still depends on printf interpreting \x, which might not be universal for all ash, but is common.
+      _converted_char=$(printf '\\x%s' "$_hex_val")
+      _final_decoded="${_final_decoded}$(printf '%b' "$_converted_char")" # This printf %b is the hurdle.
+      _j=$((_j+2)) # Skip two hex digits
     else
-        # Output error directly to the client if hardcopy fails.
-        echo "Error: Could not capture screen output from session '$SCREEN_SESSION_NAME'."
-        echo "Debug: Hardcopy file '$HARDCOPY_FILE' was not found or not created."
-        log_cgi_message "Error: Hardcopy file '$HARDCOPY_FILE' not found during get_screen_content."
+      _final_decoded="${_final_decoded}${_char}"
+    fi
+    _j=$((_j+1))
+  done
+
+  echo "$_final_decoded"
+}
+
+urldecode_base64() {
+    _encoded_b64="$1"
+    _decoded_b64=$(echo "$_encoded_b64" | sed 's/%2B/+/g; s/%2F/\//g; s/%3D/=/g; s/%25/%/g')
+
+    echo "$_decoded_b64"
+}
+
+IFS='&' 
+for pair in $QUERY_STRING; do
+  key=$(printf '%s' "$pair" | cut -d= -f1 | tr '[:lower:]' '[:upper:]')
+  value=$(printf '%s' "$pair" | cut -d= -f2-)
+  export $(echo "QUERY_STRING_$key")="$value"
+done
+unset IFS
+
+#set
+
+
+################
+# Actions
+
+create() {
+    terminal_id=$(head -c 6 /dev/urandom | xxd -p | head -c 8)
+
+    screen -dmS "$terminal_id" > /dev/null 2> /dev/null
+    screen_status=$?
+
+    echo "Content-Type: application/json"
+    echo
+
+    if [ $screen_status -eq 0 ]; then
+        printf '{"status":"success","id":"%s"}\n' "$terminal_id"
+    else
+        printf '{"status":"error","message":"Failed to create screen session"}\n'
+        return 1 # Indicate failure
     fi
 }
 
-# --- Main CGI Logic ---
+delete() {
+    terminal_id="$QUERY_STRING_ID"
 
-log_cgi_message "Request Start. METHOD=$REQUEST_METHOD, QUERY_STRING=$QUERY_STRING, CONTENT_LENGTH=$CONTENT_LENGTH"
+    echo "Content-Type: application/json"
+    echo
 
-# Store a literal newline character for use with screen's 'stuff' command.
-# Using printf is a portable way to do this in ash.
-NL=$(printf '\n')
-
-# Parse CGI parameters (supports GET and POST with application/x-www-form-urlencoded).
-RAW_PARAMS=""
-if [ "$REQUEST_METHOD" = "POST" ]; then
-    # CONTENT_LENGTH must be checked as 'read' might block otherwise.
-    if [ -n "$CONTENT_LENGTH" ] && [ "$CONTENT_LENGTH" -gt 0 ]; then
-        read -n "$CONTENT_LENGTH" RAW_PARAMS
+    if [ -z "$terminal_id" ]; then
+        printf '{"status":"error","message":"Terminal name not provided"}\n'
+        return 1
     fi
-elif [ "$REQUEST_METHOD" = "GET" ]; then
-    RAW_PARAMS="$QUERY_STRING"
-fi
-log_cgi_message "Raw parameters received: '$RAW_PARAMS'"
 
-# Extract 'action' and 'cmd' values using sed.
-# Example query: action=send&cmd=ls%20-l
-# sed captures the value between '=' and '&' (or end of string) for 'action' and 'cmd'.
-ACTION=$(echo "$RAW_PARAMS" | sed -n 's/.*action=\([^&]*\).*/\1/p')
-CMD_RAW=$(echo "$RAW_PARAMS" | sed -n 's/.*cmd=\([^&]*\).*/\1/p') # Command is still URL-encoded.
-CMD="" # Initialize CMD to empty.
-
-if [ -n "$CMD_RAW" ]; then
-    CMD=$(urldecode "$CMD_RAW")
-fi
-log_cgi_message "Parsed Action: '$ACTION', Decoded CMD: '$CMD'"
-
-# --- HTTP Headers ---
-# BusyBox httpd usually adds Date and Server headers automatically.
-# We must provide Content-Type. Standard CRLF line endings for HTTP headers.
-printf "Content-Type: text/plain; charset=utf-8\r\n"
-printf "Cache-Control: no-cache, no-store, must-revalidate\r\n" # Advise no caching
-printf "Pragma: no-cache\r\n"
-printf "Expires: 0\r\n"
-printf "\r\n" # Empty line signifies the end of HTTP headers.
-
-# --- Pre-flight Checks ---
-# Check if 'screen' command is available using 'type' (common in BusyBox).
-# 'type' is a shell builtin, more reliable than 'which' in minimal environments.
-if ! type screen >/dev/null 2>&1; then
-    echo "Critical Error: The 'screen' command is not installed or not in the web server's PATH."
-    log_cgi_message "Critical Error: 'screen' command not found. Aborting."
-    exit 1
-fi
-
-# --- Action Handling ---
-SESSION_EXISTS=false
-# Check if the screen session already exists.
-# `grep -w` for whole word match to avoid partial matches (e.g. "term" matching "other_term").
-# If BusyBox grep doesn't support -w, a more specific pattern might be needed,
-# e.g., grep "[[:space:]]${SCREEN_SESSION_NAME}[[:space:]](" if `screen -list` shows PIDs.
-# A simpler `grep "$SCREEN_SESSION_NAME"` might suffice if names are unique enough.
-if screen -list | grep -q -w "$SCREEN_SESSION_NAME"; then
-    SESSION_EXISTS=true
-fi
-log_cgi_message "Screen session '$SCREEN_SESSION_NAME' exists: $SESSION_EXISTS"
-
-case "$ACTION" in
-    init)
-        log_cgi_message "Action: init"
-        if ! $SESSION_EXISTS; then
-            log_cgi_message "Session not found, creating '$SCREEN_SESSION_NAME' with command: $PRINTER_COMMAND"
-            # Start a detached screen session (-d -m) and name it (-S).
-            screen -dmS "$SCREEN_SESSION_NAME" $PRINTER_COMMAND
-            sleep 0.2 # Give screen a moment to initialize fully.
-
-            # Verify session creation.
-            if screen -list | grep -q -w "$SCREEN_SESSION_NAME"; then
-                log_cgi_message "Screen session '$SCREEN_SESSION_NAME' successfully created."
-                # Send a welcome message or initial prompt into the new screen session.
-                screen -S "$SCREEN_SESSION_NAME" -p 0 -X stuff "echo 'Welcome! Terminal session initialized: $SCREEN_SESSION_NAME at $(date)'"
-                screen -S "$SCREEN_SESSION_NAME" -p 0 -X stuff "$NL" # Send newline to execute the echo.
-                sleep 0.2 # Allow welcome message to appear in hardcopy.
-            else
-                echo "Error: Failed to create or verify screen session '$SCREEN_SESSION_NAME' after attempting start."
-                log_cgi_message "Error: Failed to create/verify screen session '$SCREEN_SESSION_NAME'."
-                exit 1 # Exit if session couldn't be reliably started.
-            fi
+    # Check if the screen session exists before trying to kill it
+    if screen -list | grep -q "$terminal_id"; then
+        screen -X -S "$terminal_id" quit
+        if [ $? -eq 0 ]; then
+            printf '{"status":"success"}\n'
         else
-            log_cgi_message "Screen session '$SCREEN_SESSION_NAME' already exists for init action."
-            # Optionally, send a "reconnected" message if the session already existed.
-            # screen -S "$SCREEN_SESSION_NAME" -p 0 -X stuff "echo 'Reconnected to session $SCREEN_SESSION_NAME at $(date)'"
-            # screen -S "$SCREEN_SESSION_NAME" -p 0 -X stuff "$NL"
-            # sleep 0.1
+            printf '{"status":"error","message":"Failed to quit screen session %s"}\n' "$terminal_id"
         fi
-        get_screen_content
+    else
+        printf '{"status":"error","message":"Screen session %s not found"}\n' "$terminal_id"
+    fi
+}
+
+resize() {
+    terminal_id="$QUERY_STRING_ID"
+    rows="$QUERY_STRING_ROWS"
+    cols="$QUERY_STRING_COLS"
+
+    echo "Content-Type: application/json"
+    echo
+
+    if [ -z "$terminal_id" ] || [ -z "$rows" ] || [ -z "$cols" ]; then
+        printf '{"status":"error","message":"Terminal ID, rows, or columns not provided"}\n'
+        return 1
+    fi
+
+    # Validate rows and cols are numbers (basic check)
+    if ! echo "$rows" | grep -q '^[0-9]\+$' || ! echo "$cols" | grep -q '^[0-9]\+$'; then
+        printf '{"status":"error","message":"Rows and columns must be valid numbers"}\n'
+        return 1
+    fi
+
+    # Check if the screen session exists before trying to resize it
+    if ! screen -list | grep -q "$terminal_id"; then
+        printf '{"status":"error","message":"Screen session %s not found"}\n' "$terminal_id"
+        return 1
+    fi
+
+    screen -S "$terminal_id" -X resize "$rows" "$cols" > /dev/null 2>&1
+    
+    if [ $? -eq 0 ]; then
+        printf '{"status":"success","id":"%s","rows":%s,"cols":%s}\n' "$terminal_id" "$rows" "$cols"
+    else
+        printf '{"status":"error","message":"Failed to resize screen session %s to %sx%s"}\n' "$terminal_id" "$rows" "$cols"
+    fi
+}
+
+buffer() {
+    terminal_id="$QUERY_STRING_ID"
+    temp_file=/tmp/rinkhals/web/rinkhals_terminal_${terminal_id}.tmp
+
+    echo "Content-Type: application/json"
+    echo
+
+    screen -S "$terminal_id" -X hardcopy "$temp_file" > /dev/null 2>&1
+    if [ $? -ne 0 ]; then
+        printf '{"status":"error","message":"Failed to get hardcopy from screen session %s"}\n' "$terminal_id"
+        return 1
+    fi
+
+    escaped_content=$(cat "$temp_file" | base64 -w 0)
+    printf '{"status":"success","content":"%s"}\n' "$escaped_content"
+}
+
+send() {
+    terminal_id="$QUERY_STRING_ID"
+    keys=$(urldecode_base64 "$QUERY_STRING_KEYS" | base64 -d)
+
+    if [ -z "$terminal_id" ]; then
+        echo "Content-Type: application/json"
+        echo
+        printf '{"status":"error","message":"Terminal ID not provided"}\n'
+        return 1
+    fi
+    if [ -z "$keys" ]; then
+        echo "Content-Type: application/json"
+        echo
+        printf '{"status":"error","message":"Keys to send not provided"}\n'
+        return 1
+    fi
+    # if ! screen -list | grep -q "$terminal_id"; then
+    #     printf '{"status":"error","message":"Screen session %s not found"}\n' "$terminal_id"
+    #     return 1
+    # fi
+
+    screen -S "$terminal_id" -X stuff "$keys" > /dev/null 2>&1
+    
+    if [ $? -eq 0 ]; then
+        buffer
+    else
+        echo "Content-Type: application/json"
+        echo
+        printf '{"status":"error","message":"Failed to send keys to screen session %s"}\n' "$terminal_id"
+    fi
+}
+
+
+################
+# Process the action
+
+case "${QUERY_STRING_ACTION:-x}" in
+    "create")
+        create
         ;;
-
-    send)
-        log_cgi_message "Action: send"
-        if ! $SESSION_EXISTS; then
-            echo "Error: Screen session '$SCREEN_SESSION_NAME' is not running. Please initialize it first (action=init)."
-            log_cgi_message "Error (send): Session '$SCREEN_SESSION_NAME' not found. Command not sent."
-            # Optionally, one could attempt to auto-initialize it here, similar to the 'init' block.
-            # However, explicit init is often cleaner for the client to manage.
-        else
-            if [ -n "$CMD" ]; then
-                # Send the decoded command to window 0 (-p 0) of the screen session.
-                # 'stuff' simulates typing. $CMD contains the command line.
-                log_cgi_message "Sending to screen: '$CMD'"
-                screen -S "$SCREEN_SESSION_NAME" -p 0 -X stuff "$CMD"
-                # Send a newline character ($NL) to execute the command.
-                screen -S "$SCREEN_SESSION_NAME" -p 0 -X stuff "$NL"
-
-                # CRITICAL: Adjust this sleep duration based on typical command execution time.
-                # Longer sleep (e.g., 0.3s - 1s) = more robust capture of output, but slower UI response.
-                # Shorter sleep (e.g., 0.1s - 0.2s) = faster UI response, but output might be incomplete for slow commands.
-                # For very slow printer commands, the client might need to poll (action=read) after sending.
-                sleep 0.3
-            else
-                # No command provided, but action is 'send'. Could be treated as a refresh trigger.
-                log_cgi_message "Send action called with no CMD. Interpreting as refresh."
-                sleep 0.1 # Minimal delay for screen to update if anything was pending.
-            fi
-            get_screen_content
-        fi
+    "delete")
+        delete
         ;;
-
-    read) # Dedicated action to refresh/read current terminal content.
-        log_cgi_message "Action: read"
-        if ! $SESSION_EXISTS; then
-            echo "Error: Screen session '$SCREEN_SESSION_NAME' is not running. Cannot read."
-            log_cgi_message "Error (read): Session '$SCREEN_SESSION_NAME' not found."
-        else
-            log_cgi_message "Fetching current screen content."
-            get_screen_content
-        fi
+    "resize")
+        resize
         ;;
-
-    *) # Handle invalid or missing actions.
-        log_cgi_message "Error: Invalid action ('$ACTION') or no action specified."
-        echo "Error: Invalid action ('$ACTION') or no action specified."
-        echo "Supported actions: init, send, read"
-        echo "Usage (example): yourscript.cgi?action=init"
-        echo "Usage (example): yourscript.cgi?action=send&cmd=your_command_here_url_encoded"
-        echo "Usage (example): yourscript.cgi?action=read"
+    "buffer")
+        buffer
+        ;;
+    "send")
+        send
+        ;;
+    *)
+        echo "Content-Type: application/json"
+        echo
+        printf '{"status":"error","message":"Unknown or missing action: %s"}\n' "$QUERY_STRING_ACTION"
         ;;
 esac
-
-log_cgi_message "Request processing finished."
-exit 0

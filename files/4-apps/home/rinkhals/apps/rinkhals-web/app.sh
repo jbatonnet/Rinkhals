@@ -21,6 +21,9 @@ start() {
     stop
 
     mkdir -p /useremain/tmp
+    mkdir -p /tmp/rinkhals/web
+
+    chmod +x $APP_ROOT/cgi/*
     
     sed "s#\./#$APP_ROOT/#g" $APP_ROOT/lighttpd.conf > $APP_ROOT/lighttpd.conf.tmp
     lighttpd -D -f $APP_ROOT/lighttpd.conf.tmp &> /dev/null &
@@ -33,6 +36,7 @@ debug() {
     stop
 
     mkdir -p /useremain/tmp
+    mkdir -p /tmp/rinkhals/web
     
     sed "s#\./#$APP_ROOT/#g" $APP_ROOT/lighttpd.conf > $APP_ROOT/lighttpd.conf.tmp
     DEBUG=True lighttpd -D -f $APP_ROOT/lighttpd.conf.tmp

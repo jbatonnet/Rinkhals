@@ -129,7 +129,7 @@ delete() {
 
 
 ################
-# Interpret the action
+# Process the action
 
 QUERY_STRING_ACTION=$(echo "$QUERY_STRING_ACTION" | tr '[:upper:]' '[:lower:]')
 
