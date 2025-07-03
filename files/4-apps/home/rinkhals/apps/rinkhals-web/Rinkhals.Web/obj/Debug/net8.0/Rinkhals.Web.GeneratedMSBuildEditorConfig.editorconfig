@@ -1,0 +1,81 @@
+is_global = true
+build_property.EnableAotAnalyzer = 
+build_property.EnableSingleFileAnalyzer = 
+build_property.EnableTrimAnalyzer = false
+build_property.IncludeAllContentForSelfExtract = 
+build_property.TargetFramework = net8.0
+build_property.TargetPlatformMinVersion = 
+build_property.UsingMicrosoftNETSdkWeb = 
+build_property.ProjectTypeGuids = 
+build_property.InvariantGlobalization = false
+build_property.PlatformNeutralAssembly = 
+build_property.EnforceExtendedAnalyzerRules = 
+build_property._SupportedPlatformList = browser
+build_property.RootNamespace = Rinkhals.Web
+build_property.RootNamespace = Rinkhals.Web
+build_property.ProjectDir = C:\Projects\Git\jbatonnet\Rinkhals\files\4-apps\home\rinkhals\apps\rinkhals-web\Rinkhals.Web\
+build_property.EnableComHosting = 
+build_property.EnableGeneratedComInterfaceComImportInterop = false
+build_property.RazorLangVersion = 8.0
+build_property.SupportLocalizedComponentNames = 
+build_property.GenerateRazorMetadataSourceChecksumAttributes = 
+build_property.MSBuildProjectDirectory = C:\Projects\Git\jbatonnet\Rinkhals\files\4-apps\home\rinkhals\apps\rinkhals-web\Rinkhals.Web
+build_property._RazorSourceGeneratorDebug = 
+build_property.EffectiveAnalysisLevelStyle = 8.0
+build_property.EnableCodeStyleSeverity = 
+
+[C:/Projects/Git/jbatonnet/Rinkhals/files/4-apps/home/rinkhals/apps/rinkhals-web/Rinkhals.Web/App.razor]
+build_metadata.AdditionalFiles.TargetPath = QXBwLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Projects/Git/jbatonnet/Rinkhals/files/4-apps/home/rinkhals/apps/rinkhals-web/Rinkhals.Web/Components/AppManagementTab.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xBcHBNYW5hZ2VtZW50VGFiLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Projects/Git/jbatonnet/Rinkhals/files/4-apps/home/rinkhals/apps/rinkhals-web/Rinkhals.Web/Components/BaseTab.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xCYXNlVGFiLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Projects/Git/jbatonnet/Rinkhals/files/4-apps/home/rinkhals/apps/rinkhals-web/Rinkhals.Web/Components/FileBrowserTab.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xGaWxlQnJvd3NlclRhYi5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Projects/Git/jbatonnet/Rinkhals/files/4-apps/home/rinkhals/apps/rinkhals-web/Rinkhals.Web/Components/RemoteDisplayTab.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xSZW1vdGVEaXNwbGF5VGFiLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Projects/Git/jbatonnet/Rinkhals/files/4-apps/home/rinkhals/apps/rinkhals-web/Rinkhals.Web/Components/SettingsTab.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xTZXR0aW5nc1RhYi5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Projects/Git/jbatonnet/Rinkhals/files/4-apps/home/rinkhals/apps/rinkhals-web/Rinkhals.Web/Components/TerminalTab.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xUZXJtaW5hbFRhYi5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Projects/Git/jbatonnet/Rinkhals/files/4-apps/home/rinkhals/apps/rinkhals-web/Rinkhals.Web/Components/UpdatesTab.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xVcGRhdGVzVGFiLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Projects/Git/jbatonnet/Rinkhals/files/4-apps/home/rinkhals/apps/rinkhals-web/Rinkhals.Web/Pages/Counter.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQ291bnRlci5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Projects/Git/jbatonnet/Rinkhals/files/4-apps/home/rinkhals/apps/rinkhals-web/Rinkhals.Web/Pages/Home.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcSG9tZS5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Projects/Git/jbatonnet/Rinkhals/files/4-apps/home/rinkhals/apps/rinkhals-web/Rinkhals.Web/Pages/Weather.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcV2VhdGhlci5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Projects/Git/jbatonnet/Rinkhals/files/4-apps/home/rinkhals/apps/rinkhals-web/Rinkhals.Web/_Imports.razor]
+build_metadata.AdditionalFiles.TargetPath = X0ltcG9ydHMucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Projects/Git/jbatonnet/Rinkhals/files/4-apps/home/rinkhals/apps/rinkhals-web/Rinkhals.Web/Layout/MainLayout.razor]
+build_metadata.AdditionalFiles.TargetPath = TGF5b3V0XE1haW5MYXlvdXQucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = b-r9bzt62zxm
+
+[C:/Projects/Git/jbatonnet/Rinkhals/files/4-apps/home/rinkhals/apps/rinkhals-web/Rinkhals.Web/Layout/NavMenu.razor]
+build_metadata.AdditionalFiles.TargetPath = TGF5b3V0XE5hdk1lbnUucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = b-yu96o9vvry

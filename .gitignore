@@ -19,3 +19,4 @@ files/3-rinkhals/opt/rinkhals/patches/cache_*.json
 
 # App specific
 files/4-apps/home/rinkhals/apps/40-moonraker/bin
+.vs
