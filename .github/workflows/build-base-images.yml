@@ -1,13 +1,17 @@
-name: Auto release on tag
+name: Build base images
 
 on:
+  workflow_dispatch:
   push:
-    tags:
-      - '*'
+    branches:
+      - master
+    paths:
+      - build/1-buildroot/**
+      - build/1-luckfox/**
 
 jobs:
-  build:
 
+  build:
     runs-on: ubuntu-latest
 
     steps:
@@ -26,8 +30,6 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
 
-
-
     - name: "Buildroot: Build"
       uses: docker/build-push-action@v6
       with:
@@ -37,6 +39,7 @@ jobs:
         tags: ghcr.io/${{ github.repository }}/buildroot-builder:${{ github.sha::7 }}
 
     - name: "Buildroot: Extract rootfs"
+      working-directory: ./docs
       run: docker run --rm -it -v .\tmp:/tmp -v .\build:/build ghcr.io/${{ github.repository }}/buildroot-builder:${{ github.sha::7 }} /build/1-buildroot/extract-rootfs.sh
 
     - name: "Buildroot: Prepare image"
@@ -44,7 +47,7 @@ jobs:
       with:
         file: build/1-buildroot/Dockerfile
         push: true
-        tags: ghcr.io/${{ github.repository }}/buildroot-base:${{ github.sha::7 }}
+        tags: ghcr.io/${{ github.repository }}/buildroot-base
 
     - name: "Luckfox: Build"
       uses: docker/build-push-action@v6
@@ -55,6 +58,7 @@ jobs:
         tags: ghcr.io/${{ github.repository }}/luckfox-builder:${{ github.sha::7 }}
 
     - name: "Luckfox: Extract rootfs"
+      working-directory: ./docs
       run: docker run --rm -it -v .\tmp:/tmp -v .\build:/build ghcr.io/${{ github.repository }}/luckfox-builder:${{ github.sha::7 }} /build/1-luckfox/extract-rootfs.sh
 
     - name: "Luckfox: Prepare image"
@@ -62,26 +66,4 @@ jobs:
       with:
         file: build/1-luckfox/Dockerfile
         push: true
-        tags: ghcr.io/${{ github.repository }}/luckfox-base:${{ github.sha::7 }}
-
-    - name: "Rinkhals: Build"
-      uses: docker/build-push-action@v6
-      with:
-        build-args: BUILDROOT_BASE=ghcr.io/${{ github.repository }}/buildroot-base:${{ github.sha::7 }},LUCKFOX_BASE=ghcr.io/${{ github.repository }}/luckfox-base:${{ github.sha::7 }},RINKHALS_VERSION=${{ github.ref_name }}
-        pull: true
-        outputs: type=local,dest=./build/dist
-        cache-from: type=registry,ref=ghcr.io/${{ github.repository }}:buildcache
-        cache-to: type=registry,ref=ghcr.io/${{ github.repository }}:buildcache,mode=max
-
-    - name: Create release
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        tag: ${{ github.ref_name }}
-      run: |
-        gh release create "$tag" \
-            --repo="$GITHUB_REPOSITORY" \
-            --title="${GITHUB_REPOSITORY#*/} ${tag}" \
-            --generate-notes \
-            --draft \
-            build/dist/*.swu \
-            build/dist/*.zip
+        tags: ghcr.io/${{ github.repository }}/luckfox-base

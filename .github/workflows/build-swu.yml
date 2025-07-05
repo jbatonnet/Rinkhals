@@ -11,28 +11,70 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Set up QEMU
+    - name: "Docker: Setup QEMU"
       uses: docker/setup-qemu-action@v3
 
-    - name: Set up Docker Buildx
+    - name: "Docker: Setup Buildx"
       uses: docker/setup-buildx-action@v3
 
-    - name: Login to GitHub Container Registry
+    - name: "Docker: Login to GitHub Container Registry"
       uses: docker/login-action@v3
       with:
         registry: ghcr.io
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Build and export
+    - name: "Buildroot: Extract rootfs"
+      run: |
+        docker pull ghcr.io/${{ github.repository }}/buildroot-builder:${{ github.sha::7 }}
+        docker pull ghcr.io/${{ github.repository }}/buildroot-base:${{ github.sha::7 }}
+        docker pull ghcr.io/${{ github.repository }}/luckfox-builder:${{ github.sha::7 }}
+        docker pull ghcr.io/${{ github.repository }}/luckfox-base:${{ github.sha::7 }}
+
+    - name: "Buildroot: Build"
       uses: docker/build-push-action@v6
       with:
-        push: false
-        context: .
-        build-args: version=${{ github.sha }}
+        file: build/1-buildroot/builder.Dockerfile
+        pull: true
+        push: true
+        tags: ghcr.io/${{ github.repository }}/buildroot-builder:${{ github.sha::7 }}
+
+    - name: "Buildroot: Extract rootfs"
+      run: docker run --rm -it -v .\tmp:/tmp -v .\build:/build ghcr.io/${{ github.repository }}/buildroot-builder:${{ github.sha::7 }} /build/1-buildroot/extract-rootfs.sh
+
+    - name: "Buildroot: Prepare image"
+      uses: docker/build-push-action@v6
+      with:
+        file: build/1-buildroot/Dockerfile
+        push: true
+        tags: ghcr.io/${{ github.repository }}/buildroot-base:${{ github.sha::7 }}
+
+    - name: "Luckfox: Build"
+      uses: docker/build-push-action@v6
+      with:
+        file: build/1-luckfox/builder.Dockerfile
+        pull: true
+        push: true
+        tags: ghcr.io/${{ github.repository }}/luckfox-builder:${{ github.sha::7 }}
+
+    - name: "Luckfox: Extract rootfs"
+      run: docker run --rm -it -v .\tmp:/tmp -v .\build:/build ghcr.io/${{ github.repository }}/luckfox-builder:${{ github.sha::7 }} /build/1-luckfox/extract-rootfs.sh
+
+    - name: "Luckfox: Prepare image"
+      uses: docker/build-push-action@v6
+      with:
+        file: build/1-luckfox/Dockerfile
+        push: true
+        tags: ghcr.io/${{ github.repository }}/luckfox-base:${{ github.sha::7 }}
+
+    - name: "Rinkhals: Build"
+      uses: docker/build-push-action@v6
+      with:
+        build-args: BUILDROOT_BASE=ghcr.io/${{ github.repository }}/buildroot-base:${{ github.sha::7 }},LUCKFOX_BASE=ghcr.io/${{ github.repository }}/luckfox-base:${{ github.sha::7 }},RINKHALS_VERSION=${{ github.sha }}
+        pull: true
         outputs: type=local,dest=./build/dist
-        cache-from: type=registry,ref=ghcr.io/${{ github.repository_owner }}/rinkhals:buildcache
-        cache-to: type=registry,ref=ghcr.io/${{ github.repository_owner }}/rinkhals:buildcache,mode=max
+        cache-from: type=registry,ref=ghcr.io/${{ github.repository }}:buildcache
+        cache-to: type=registry,ref=ghcr.io/${{ github.repository }}:buildcache,mode=max
 
     - name: Upload artifact for K2P, K3
       uses: actions/upload-artifact@v4
