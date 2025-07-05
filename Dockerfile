@@ -11,7 +11,7 @@
 # - docker build --output type=local,dest=./build/dist .
 #
 # Building a release:
-# - docker build --build-arg version=yyyymmdd_nn --output type=local,dest=./build/dist .
+# - docker build --build-arg RINKHALS_VERSION=yyyymmdd_nn --output type=local,dest=./build/dist .
 #
 # Making quick changes to buildroot during development:
 # - Copy `.config`, `busybox.config`, `external/` from `/build/1-buildroot` to `/build/1-buildroot/rebuild`
@@ -42,91 +42,80 @@
 # Linux (Github), run the build from the WSL filesystem (i.e. `/home` not `/mnt/c`).
 #
 
-###############################################################
-# buildroot prepares the buildroot environment
-FROM debian:12.10 AS buildroot
-ENV DEBIAN_FRONTEND=noninteractive
 
-# Install buildroot dependencies
-# https://buildroot.org/downloads/manual/manual.html#requirement
-RUN --mount=type=cache,sharing=locked,target=/var/cache/apt \
-    apt-get update && \
-    apt-get install -y --no-install-recommends \
-        which sed make binutils build-essential diffutils gcc g++ bash patch gzip bzip2 perl tar cpio unzip rsync file bc findutils wget \
-        python3 libncurses5 git mercurial ca-certificates \
-        locales whois vim bison flex \
-        libncurses5-dev libdevmapper-dev libsystemd-dev libssl-dev libfdt-dev libvncserver-dev libdrm-dev && \
-    rm -rf /var/lib/apt/lists/*
+ARG BASE_IMAGE=debian:12.11
 
-# Sometimes Buildroot needs proper locale, e.g. when using a toolchain based on glibc
-RUN locale-gen en_US.utf8
-
-ADD https://gitlab.com/buildroot.org/buildroot.git#2023.02.6 /buildroot
-WORKDIR /buildroot
-
-# Apply global patches to Buildroot environment
-COPY ./build/1-buildroot/*.patch /buildroot/
-RUN git apply ./*.patch
-
-COPY ./build/1-buildroot/.config /buildroot/.config
-COPY ./build/1-buildroot/busybox.config /buildroot/busybox.config
-COPY ./build/1-buildroot/external/ /external/
-COPY ./build/1-buildroot/prepare-final.sh /buildroot/
-
-FROM buildroot AS buildroot-build
-# Remove downloads and output after build to reduce layer size
-ARG clean_buildroot=1
-
-# Make Buildroot using provided config and external tree
-ENV KCONFIG_NOSILENTUPDATE=1
-RUN --mount=type=cache,target=/buildroot/dl \
-<<EOT
-    set -e
-    make BR2_EXTERNAL=/external
-    chmod +x /buildroot/prepare-final.sh
-    /buildroot/prepare-final.sh
-    if [ ${clean_buildroot} -eq 1 ]; then
-        make clean
-    fi
-EOT
 
 ###############################################################
-# buildroot-build builds the root filesystem and core packages
-FROM buildroot-build AS buildroot-rebuild
+# buildroot-base and luckfox-base are built by separate pipelines
+# By default they are sourced from ghcr.io, but the can be built locally using BASE_REPOSITORY=rinkhals
 
-# Use files from rebuild/ (if it exists) to rebuild without invalidating the base image
-# Note: pattern matching 'rebuil[d]' is a trick to copy-if-exists
-COPY ./build/1-buildroot/rebuil[d]/.config /buildroot/
-COPY ./build/1-buildroot/rebuil[d]/busybox.config /buildroot/
-COPY ./build/1-buildroot/rebuil[d]/external/ /external/
+ARG BUILDROOT_BASE=ghcr.io/jbatonnet/rinkhals/buildroot-base:latest
+ARG LUCKFOX_BASE=ghcr.io/jbatonnet/rinkhals/luckfox-base:latest
 
-# Perform dirclean and rebuild for selected packages
-# https://buildroot.org/downloads/manual/manual.html#rebuild-pkg
-ENV KCONFIG_NOSILENTUPDATE=1
-ARG clean_buildroot=1
-ARG rebuild=""
-RUN --mount=type=cache,target=/buildroot/dl \
-<<EOT
+FROM ${BUILDROOT_BASE} AS buildroot-base
+FROM ${LUCKFOX_BASE} AS luckfox-base
+
+
+###############################################################
+# rinkhals-base is the base for Rinkhals overlay fs
+# It combines mostly the root fs from Buildroot and some additional drivers from luckfox
+
+FROM ${BASE_IMAGE} AS rinkhals-base
+
+# Copy part of rootfs from Buildroot
+COPY --from=buildroot-base /bin /files/1-buildroot/bin
+COPY --from=buildroot-base /etc /files/1-buildroot/etc
+COPY --from=buildroot-base /lib /files/1-buildroot/lib
+COPY --from=buildroot-base /sbin /files/1-buildroot/sbin
+COPY --from=buildroot-base /usr /files/1-buildroot/usr
+
+# Rename busybox (to avoid conflict with stock) and update all symlinks
+RUN <<EOT
     set -e
-    if [ $clean_buildroot -eq 1 ] && [ -n "$rebuild" ]; then
-        echo "Unable to rebuild because Buildroot stage was cleaned"
-        exit 1
-    fi
-    if [ -n "$rebuild" ]; then
-        echo "Rebuilding packages: $rebuild"
-        echo $rebuild | tr ',' ' ' | while read -r p; do
-            make ${p}-dirclean
-            make ${p}-rebuild
-        done;
-        chmod +x /buildroot/prepare-final.sh
-        /buildroot/prepare-final.sh
-    else
-        echo "No packages to rebuild";
-    fi
+    mv /bundle/rinkhals/bin/busybox /bundle/rinkhals/bin/busybox.rinkhals
+    find /bundle/ -type l -exec sh -c '
+        for link; do
+            target=$(readlink "$link")
+            if [ "$(basename "$target")" = "busybox" ]; then
+                dir=$(dirname "$target")
+                newtarget="$dir/busybox.rinkhals"
+                newtarget="${newtarget#./}"
+                ln -snf "$newtarget" "$link"
+            fi
+        done
+        ' sh {} +
 EOT
+
+# Clean /etc except for ssl
+RUN <<EOT
+    for dir in /files/1-buildroot/etc/*; do
+        [ "$dir" = "/files/1-buildroot/etc/ssl" ] && continue
+        rm -rf "$dir"
+    done
+EOT
+
+# Create certificate bundle
+RUN cat /files/1-buildroot/etc/ssl/certs/*.pem > /files/1-buildroot/etc/ssl/cert.pem
+
+# Clean GCC copies
+RUN rm -rf /files/1-buildroot/usr/bin/arm-buildroot-linux-uclibcgnueabihf-*
+
+# Clean linux modules
+RUN rm -rf /files/1-buildroot/lib/modules
+
+# Clean python files
+RUN rm -rf /files/1-buildroot/usr/lib/python3.11/site-packages/*
+RUN rm -rf /files/1-buildroot/usr/lib/python3.*/site-packages/*
+RUN find /files/1-buildroot/usr/lib/python3.* -name '*.pyc' -type f -delete
+
+# Copy additional drivers from Luckfox
+COPY --from=luckfox-base /etc/ko /files/1-buildroot/etc/ko
+
 
 ###############################################################
 # build-python-armv7 builds Python dependencies that require ARMv7 compilation
+
 FROM --platform=linux/arm/v7 ghcr.io/jbatonnet/armv7-uclibc:rinkhals AS build-python-armv7
 
 COPY ./build/2-python/get-packages.sh /build/2-python/get-packages.sh
@@ -134,9 +123,12 @@ RUN --mount=type=cache,sharing=locked,target=/root/.cache/pip \
     chmod +x /build/2-python/get-packages.sh && \
     /build/2-python/get-packages.sh
 
+
 ###############################################################
 # build-base provides the basis for common build steps
-FROM debian:12.10 AS build-base
+
+FROM ${BASE_IMAGE} AS build-base
+
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Install common utilities
@@ -146,32 +138,43 @@ RUN --mount=type=cache,sharing=locked,target=/var/cache/apt \
         wget sed rsync zip unzip ca-certificates && \
     rm -rf /var/lib/apt/lists/*
 
+
 ###############################################################
 # app-mainsail prepares Mainsail app files
+
 FROM build-base AS app-mainsail
+
 COPY ./build/4-apps/25-mainsail/* /build/
 COPY ./files/4-apps/home/rinkhals/apps/25-mainsail/app.json /files/4-apps/home/rinkhals/apps/25-mainsail/app.json
 RUN chmod +x /build/get-mainsail.sh && \
     /build/get-mainsail.sh
 
+
 ###############################################################
 # app-fluidd prepares Fluidd app files
+
 FROM build-base AS app-fluidd
+
 COPY ./build/4-apps/26-fluidd/* /build/
 COPY ./files/4-apps/home/rinkhals/apps/26-fluidd/app.json /files/4-apps/home/rinkhals/apps/26-fluidd/app.json
 RUN chmod +x /build/get-fluidd.sh && \
     /build/get-fluidd.sh
 
+
 ###############################################################
 # app-moonraker prepares Moonraker app files
+
 FROM build-base AS app-moonraker
+
 COPY ./build/4-apps/40-moonraker/* /build/
 COPY ./files/4-apps/home/rinkhals/apps/40-moonraker/app.json /files/4-apps/home/rinkhals/apps/40-moonraker/app.json
 RUN chmod +x /build/get-moonraker.sh && \
     /build/get-moonraker.sh
 
+
 ###############################################################
 # app-moonraker-armv7 builds Moonraker dependencies that require ARMv7 compilation
+
 FROM --platform=linux/arm/v7 ghcr.io/jbatonnet/armv7-uclibc:rinkhals AS app-moonraker-armv7
 
 COPY --from=app-moonraker /files/4-apps/ /files/4-apps/
@@ -181,21 +184,27 @@ RUN --mount=type=cache,sharing=locked,target=/root/.cache/pip \
     chmod +x /build/4-apps/40-moonraker/get-packages.sh && \
     /build/4-apps/40-moonraker/get-packages.sh
 
+
 ###############################################################
 # app-remote-display prepares Remote Display app files
+
 FROM build-base AS app-remote-display
+
 COPY ./build/4-apps/50-remote-display/* /build/
 COPY ./files/4-apps/home/rinkhals/apps/50-remote-display/index.vnc /files/4-apps/home/rinkhals/apps/50-remote-display/index.vnc
 COPY ./files/4-apps/home/rinkhals/apps/50-remote-display/app.json /files/4-apps/home/rinkhals/apps/50-remote-display/app.json
 RUN chmod +x /build/get-novnc.sh && \
     /build/get-novnc.sh
 
+
 ###############################################################
 # build-swu-installer builds the Installer tool SWU files
+
 FROM build-base AS build-swu-installer
+
 COPY ./build/swu-tools/installer/ /build/swu-tools/installer/
 COPY ./build/*.* /build/
-COPY --from=buildroot-rebuild /files/1-buildroot/ /files/1-buildroot/
+COPY --from=rinkhals-base /files/1-buildroot/ /files/1-buildroot/
 COPY --from=build-python-armv7 /files/2-python/ /files/2-python/
 COPY ./files/3-rinkhals/ /files/3-rinkhals/
 COPY ./files/*.* /files/
@@ -205,12 +214,15 @@ RUN KOBRA_MODEL_CODE=K3 /build/swu-tools/installer/build-swu.sh /swu/installer-k
 RUN KOBRA_MODEL_CODE=K3M /build/swu-tools/installer/build-swu.sh /swu/installer-k3m.swu
 RUN KOBRA_MODEL_CODE=KS1 /build/swu-tools/installer/build-swu.sh /swu/installer-ks1.swu
 
+
 ###############################################################
 # build-swu-tools builds the tools SWU files
+
 FROM build-base AS build-swu-tools
+
 COPY ./build/swu-tools/ /build/swu-tools/
 COPY ./build/*.* /build/
-COPY --from=buildroot-rebuild /files/1-buildroot/ /files/1-buildroot/
+COPY --from=rinkhals-base /files/1-buildroot/ /files/1-buildroot/
 COPY --from=build-python-armv7 /files/2-python/ /files/2-python/
 COPY ./files/3-rinkhals/ /files/3-rinkhals/
 COPY ./files/*.* /files/
@@ -235,9 +247,10 @@ EOT
 
 ###############################################################
 # prepare-bundle collects all files and prepares a bundle
+
 FROM build-base AS prepare-bundle
 
-COPY --from=buildroot-rebuild /files/1-buildroot/ /bundle/rinkhals/
+COPY --from=rinkhals-base /files/1-buildroot/ /bundle/rinkhals/
 COPY --from=build-python-armv7 /files/2-python/ /bundle/rinkhals/
 COPY --from=app-mainsail /files/4-apps/ /bundle/rinkhals/
 COPY --from=app-fluidd /files/4-apps/ /bundle/rinkhals/
@@ -251,51 +264,40 @@ COPY ./files/*.* /bundle/
 # Remove everything but shell patches
 RUN find /bundle/rinkhals/opt/rinkhals/patches -type f ! -name "*.sh" -exec rm {} +
 
-# Rename busybox (to avoid conflict with stock) and update all symlinks
-RUN <<EOT
-    set -e
-    mv /bundle/rinkhals/bin/busybox /bundle/rinkhals/bin/busybox.rinkhals
-    find /bundle/ -type l -exec sh -c '
-        for link; do
-            target=$(readlink "$link")
-            if [ "$(basename "$target")" = "busybox" ]; then
-                dir=$(dirname "$target")
-                newtarget="$dir/busybox.rinkhals"
-                newtarget="${newtarget#./}"
-                ln -snf "$newtarget" "$link"
-            fi
-        done
-        ' sh {} +
-EOT
-
 # Validate and set Rinkhals version
-ARG version="dev"
+ARG RINKHALS_VERSION="dev"
 RUN <<EOT
     set -e
-    if [ -z "$version" ] || {
-        [ "$version" != "dev" ] &&
-        ! echo "$version" | grep -Eq '^[0-9]{8}_[0-9]{2}(_[a-z0-9_-]+)?$' &&
-        ! echo "$version" | grep -Eq '^[0-9a-f]{40}$'
+    if [ -z "$RINKHALS_VERSION" ] || {
+        [ "$RINKHALS_VERSION" != "dev" ] &&
+        ! echo "$RINKHALS_VERSION" | grep -Eq '^[0-9]{8}_[0-9]{2}(_[a-z0-9_-]+)?$' &&
+        ! echo "$RINKHALS_VERSION" | grep -Eq '^[0-9a-f]{40}$'
     } || {
-        echo "$version" | grep -Eq '^[0-9]{8}_[0-9]{2}(_[a-z0-9_-]+)?$' &&
-        ! date -d "$(echo "$version" | cut -d'_' -f1)" +"%Y%m%d" >/dev/null 2>&1
+        echo "$RINKHALS_VERSION" | grep -Eq '^[0-9]{8}_[0-9]{2}(_[a-z0-9_-]+)?$' &&
+        ! date -d "$(echo "$RINKHALS_VERSION" | cut -d'_' -f1)" +"%Y%m%d" >/dev/null 2>&1
     }; then
-        echo "Invalid version (must be 'yyyymmdd_nn', 'yyyymmdd_nn_tag', Git commit ID, or 'dev'): $version"
+        echo "Invalid version (must be 'yyyymmdd_nn', 'yyyymmdd_nn_tag', Git commit ID, or 'dev'): $RINKHALS_VERSION"
         exit 1
     else
-        echo "$version" > /bundle/.version
-        echo "$version" > /bundle/rinkhals/.version
+        echo "$RINKHALS_VERSION" > /bundle/.version
+        echo "$RINKHALS_VERSION" > /bundle/rinkhals/.version
     fi
 EOT
 
+
 ###############################################################
 # files-export creates the files export image
+
 FROM scratch AS files-export
+
 COPY --from=prepare-bundle /bundle/ /
+
 
 ###############################################################
 # build-swu builds the main firmware SWU files
+
 FROM prepare-bundle AS build-swu
+
 COPY ./build/tools.sh /
 RUN <<EOT
     set -e
@@ -308,9 +310,12 @@ RUN <<EOT
     wait $(jobs -p)
 EOT
 
+
 ###############################################################
 # swu-export creates the SWU build export image
+
 FROM scratch AS swu-export
+
 COPY --from=build-swu-installer /swu/ /
 COPY --from=build-swu-tools /swu/*.zip /
 COPY --from=build-swu /swu/ /
