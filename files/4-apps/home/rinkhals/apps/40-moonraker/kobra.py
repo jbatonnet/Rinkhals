@@ -507,9 +507,12 @@ class Kobra:
                 if self.is_goklipper_running():
                     if 'objects' in args and ('bed_mesh' in args['objects'] or 'bed_mesh default' in args['objects'] or 'bed_mesh \"default\"' in args['objects']):
                         want_bed_mesh = True
-                        del args['objects']['bed_mesh']
-                        del args['objects']['bed_mesh default']
-                        del args['objects']['bed_mesh \"default\"']
+                        if 'bed_mesh' in args['objects']:
+                            del args['objects']['bed_mesh']
+                        if 'bed_mesh default' in args['objects']:
+                            del args['objects']['bed_mesh default']
+                        if 'bed_mesh \"default\"' in args['objects']:
+                            del args['objects']['bed_mesh \"default\"']
 
                 result = await original__request_standard(me, web_request, timeout)
 
