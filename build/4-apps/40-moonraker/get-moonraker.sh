@@ -7,7 +7,7 @@ set -e
 mkdir /work
 cd /work
 
-MOONRAKER_COMMIT=ebaa6645b2bcaa593d99e863530c52a84c69b470
+MOONRAKER_COMMIT=3c1f31874ac0beba35747059637583e5d2c383c0
 MOONRAKER_DIRECTORY=/files/4-apps/home/rinkhals/apps/40-moonraker
 
 echo "Downloading Moonraker..."
