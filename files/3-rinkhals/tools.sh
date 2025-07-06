@@ -83,7 +83,7 @@ is_verified_firmware() {
 }
 
 install_swu() {
-    SWU_FILE=$1
+    SWU_FILE=$(realpath $1)
     shift
 
     echo "> Extracting $SWU_FILE ..."
