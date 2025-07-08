@@ -473,6 +473,7 @@ class Kobra:
                             f'M140 S{bed_temp}', # Set bed to 60
                             f'M109 S{extru_temp}', # Wait hotend to 170
                             f'M190 S{bed_temp}', # Wait bed to 60
+                            'WIPE_ENTER',
                             'WIPE_NOZZLE',
                             f'M109 S{extru_end_temp}', # Wait hotend to 140
                             'BED_MESH_CALIBRATE',
