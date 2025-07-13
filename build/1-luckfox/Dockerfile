@@ -1,3 +1,6 @@
+# docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+# docker build -t rinkhals/luckfox -f build/1-luckfox/Dockerfile .
+
 ###############################################################
 # luckfox prepares the luckfox SDK environment
 FROM debian:12.11 AS luckfox
@@ -39,7 +42,6 @@ RUN git apply ./*.patch
 COPY ./build/1-buildroot/.config /buildroot/.config
 COPY ./build/1-buildroot/busybox.config /buildroot/busybox.config
 COPY ./build/1-buildroot/external/ /external/
-COPY ./build/1-buildroot/prepare-final.sh /buildroot/
 
 WORKDIR /luckfox
 
@@ -56,8 +58,6 @@ RUN --mount=type=cache,target=/buildroot/dl \
     #./build.sh rootfs
     cd /luckfox/sysdrv/source/buildroot/buildroot-2023.02.6
     make BR2_EXTERNAL=/external
-    chmod +x /buildroot/prepare-final.sh
-    /buildroot/prepare-final.sh
     if [ ${clean_buildroot} -eq 1 ]; then
         ./build.sh clean
     fi
@@ -91,8 +91,6 @@ RUN --mount=type=cache,target=/buildroot/dl \
             make ${p}-dirclean
             make ${p}-rebuild
         done;
-        chmod +x /buildroot/prepare-final.sh
-        /buildroot/prepare-final.sh
     else
         echo "No packages to rebuild";
     fi

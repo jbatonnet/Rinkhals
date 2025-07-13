@@ -1,3 +1,6 @@
+# docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+# docker build -t rinkhals/buildroot -f build/1-buildroot/Dockerfile .
+
 ###############################################################
 # buildroot prepares the buildroot environment
 FROM debian:12.10 AS buildroot
@@ -27,7 +30,6 @@ RUN git apply ./*.patch
 COPY ./build/1-buildroot/.config /buildroot/.config
 COPY ./build/1-buildroot/busybox.config /buildroot/busybox.config
 COPY ./build/1-buildroot/external/ /external/
-COPY ./build/1-buildroot/prepare-final.sh /buildroot/
 
 FROM buildroot AS buildroot-build
 # Remove downloads and output after build to reduce layer size
@@ -39,8 +41,6 @@ RUN --mount=type=cache,target=/buildroot/dl \
 <<EOT
     set -e
     make BR2_EXTERNAL=/external
-    chmod +x /buildroot/prepare-final.sh
-    /buildroot/prepare-final.sh
     if [ ${clean_buildroot} -eq 1 ]; then
         make clean
     fi
@@ -74,9 +74,36 @@ RUN --mount=type=cache,target=/buildroot/dl \
             make ${p}-dirclean
             make ${p}-rebuild
         done;
-        chmod +x /buildroot/prepare-final.sh
-        /buildroot/prepare-final.sh
     else
         echo "No packages to rebuild";
     fi
 EOT
+
+
+
+#FROM --platform=linux/arm/v7 scratch
+FROM buildroot-rebuild
+
+#COPY --from=build-swu-installer /swu/ /
+#ADD --from=buildroot-rebuild /buildroot/rootfs.tar.gz /
+
+#RUN ls -al /buildroot/dl
+RUN ls -al /buildroot/output/images
+#RUN --mount=type=bind,from=buildroot-rebuild,source=/buildroot/output/images/rootfs.tar.gz,target=/rootfs.tar.gz tar -xvf /rootfs.tar.gz
+
+# RUN python -m ensurepip
+# RUN python -m pip install --upgrade pip
+
+# ENV TZ=UTC
+# ENV LD_LIBRARY_PATH=/lib:/usr/lib:$LD_LIBRARY_PATH
+# ENV PATH=/bin:/usr/bin:/usr/libexec/gcc/arm-buildroot-linux-uclibcgnueabihf/11.4.0:$PATH
+# ENV CC=/usr/bin/gcc
+# ENV CXX=/usr/bin/g++
+# ENV AR=/usr/bin/ar
+# ENV PYTHONPATH=
+
+# ENV CMAKE_MAKE_PROGRAM=/usr/bin/make
+# ENV CMAKE_C_COMPILER=/usr/bin/gcc
+# ENV CMAKE_CXX_COMPILER=/usr/bin/g++
+
+# CMD ["/bin/sh"]
