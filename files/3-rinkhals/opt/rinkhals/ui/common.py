@@ -713,6 +713,8 @@ class BaseApp:
                     brightness = shell('cat /sys/class/backlight/backlight/brightness')
                     if brightness == '0':
                         os.system('echo 255 > /sys/class/backlight/backlight/brightness')
+                        time.sleep(1)
+                        lv.screen_active().invalidate()
 
             touch.add_event_cb(screen_sleep_cb, lv.EVENT_CODE.ALL, None)
 
