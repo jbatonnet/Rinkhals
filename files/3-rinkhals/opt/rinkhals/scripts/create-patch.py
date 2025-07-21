@@ -1,12 +1,14 @@
 # From a Windows machine:
-#   docker run --rm -it -v .\files:/files ghcr.io/jbatonnet/rinkhals/build python3 /files/3-rinkhals/opt/rinkhals/patches/create-patches.py
+#   docker run --rm -it -v .\files:/files -w /files/3-rinkhals/opt/rinkhals/patches ghcr.io/jbatonnet/rinkhals/build python3 ../scripts/create-patch.py .
 
 import os
 import json
 import subprocess
 import base64
+import re
+import sys
 
-from pwn import *
+from pwn import context, ELF, asm, p32, util, enhex, u32
 
 
 def read32(binary, address):
@@ -59,7 +61,7 @@ def patch_K3SysUi(binaryPath, modelCode, version):
     if os.path.isfile(f'{binaryPath}.patch'):
         return
         
-    k3sysui = ELF(binaryPath)
+    k3sysui = ELF(binaryPath, checksec=False)
 
 
     ################
@@ -115,6 +117,10 @@ def patch_K3SysUi(binaryPath, modelCode, version):
         buttonCallback = k3sysui.symbols['_ZZN10MainWindow19AcSettingPageUiInitEvENKUlvE_clEv']
         patchJumpAddress = 0xfef8c
         patchReturnAddress = 0xfefbc
+    elif (modelCode == 'K3' and version == '2.4.1.9') or (modelCode == 'K3M' and version == '2.4.8.4') or (modelCode == 'K3V2' and version == '1.0.7.3'):
+        buttonCallback = k3sysui.symbols['_ZZN10MainWindow19AcSettingPageUiInitEvENKUlvE_clEv']
+        patchJumpAddress = 0xecc30
+        patchReturnAddress = 0xecc5c
 
     # KS1 - Settings > General > Service Support (4th button)
     
@@ -338,7 +344,7 @@ def patch_gkapi(binaryPath, modelCode, version):
     if os.path.isfile(f'{binaryPath}.patch'):
         return
 
-    gkapi = ELF(binaryPath)
+    gkapi = ELF(binaryPath, checksec=False)
 
     functionsByAddress = getGoFunctions(gkapi)
     functionsByName = { f: int(a) for a, f in functionsByAddress.items() }
@@ -425,6 +431,9 @@ def patch_gkapi(binaryPath, modelCode, version):
 
 def create_patch_script(beforePath, afterPath, scriptPath):
 
+    if os.path.isfile(scriptPath):
+        return
+        
     beforeMd5 = util.hashes.md5file(beforePath)
     beforeMd5 = enhex(beforeMd5)
     afterMd5 = util.hashes.md5file(afterPath)
@@ -486,31 +495,73 @@ def create_patch_script(beforePath, afterPath, scriptPath):
         f.write('rm $PATCH_FILE\n')
         
 
+# Entrypoint to process a single file
+def main_file(path, model, version):
+    fileName = os.path.basename(path)
+    print(f'Patching {fileName} for {model} {version}')
 
-def main():
+    # if 'gkapi' in fileName:
+    #     patch_gkapi(path, model, version)
+    #     create_patch_script(path, f'{path}.patch', f'{path}.sh')
+    if 'K3SysUi' in fileName:
+        patch_K3SysUi(path, model, version)
+        create_patch_script(path, f'{path}.patch', f'{path}.sh')
 
-    context.update(arch='arm', bits=32, endian='little')
-
-    RINKHALS_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))))
-    patchesPath = f'{RINKHALS_ROOT}/opt/rinkhals/patches'
-
-    # Patch gkapi for different printers
-    files = os.listdir(patchesPath)
+# Entrypoint to process a directory of binaries
+def main_directory(path):
+    files = os.listdir(path)
     for file in files:
         match = re.search('^([a-zA-Z0-9]+)\.(K[A-Z0-9]+)_([0-9.]+)$', file)
         if not match:
             continue
 
-        name = match.group(1)
         model = match.group(2)
         version = match.group(3)
 
-        # if name == 'gkapi':
-        #     patch_gkapi(f'{patchesPath}/{file}', model, version)
-        #     create_patch_script(f'{patchesPath}/{file}', f'{patchesPath}/{file}.patch', f'{patchesPath}/{file}.sh')
-        if name == 'K3SysUi':
-            patch_K3SysUi(f'{patchesPath}/{file}', model, version)
-            create_patch_script(f'{patchesPath}/{file}', f'{patchesPath}/{file}.patch', f'{patchesPath}/{file}.sh')
-         
+        main_file(f'{path}/{file}', model, version)
+
+# Main entrypoint
+def main():
+    context.update(arch='arm', bits=32, endian='little')
+
+    def noop(me):
+        pass
+
+    #ELF._populate_got = noop
+    #ELF._populate_plt = noop
+
+    if len(sys.argv) > 1:
+        path = sys.argv[1]
+
+        if os.path.isdir(path):
+            main_directory(path)
+            return
+        
+        if os.path.isfile(path):
+            model = os.getenv('KOBRA_MODEL_CODE')
+            version = os.getenv('KOBRA_VERSION')
+
+            match = re.search('^([a-zA-Z0-9]+)\.(K[A-Z0-9]+)_([0-9.]+)$', os.path.basename(path))
+            if match:
+                model = match.group(2)
+                version = match.group(3)
+
+            if len(sys.argv) == 4:
+                model = sys.argv[2]
+                version = sys.argv[3]
+
+            if not model or not version:
+                sys.exit(1)
+
+            main_file(path, model, version)
+            return
+
+    print("Usage:")
+    print(f"  {sys.argv[0]} <directory_path>")
+    print(f"  {sys.argv[0]} <file_path> # Extracts model/version from filename")
+    print(f"  {sys.argv[0]} <file_path> <model> <version>")
+    print(f"  {sys.argv[0]} # Process default directory")
+    sys.exit(1)
+
 if __name__ == "__main__":
     main()

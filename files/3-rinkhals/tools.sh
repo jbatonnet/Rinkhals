@@ -58,7 +58,7 @@ is_verified_firmware() {
             return
         fi
     elif [ "$KOBRA_MODEL_CODE" = "K3" ]; then
-        if [ "$KOBRA_VERSION" = "2.4.0" ] || [ "$KOBRA_VERSION" = "2.4.0.4" ]; then
+        if [ "$KOBRA_VERSION" = "2.4.0" ] || [ "$KOBRA_VERSION" = "2.4.0.4" ] || [ "$KOBRA_VERSION" = "2.4.1.9" ]; then
             echo 1
             return
         fi
@@ -68,12 +68,12 @@ is_verified_firmware() {
             return
         fi
     elif [ "$KOBRA_MODEL_CODE" = "K3M" ]; then
-        if [ "$KOBRA_VERSION" = "2.4.6" ] || [ "$KOBRA_VERSION" = "2.4.6.5" ]; then
+        if [ "$KOBRA_VERSION" = "2.4.6.5" ] || [ "$KOBRA_VERSION" = "2.4.8.4" ]; then
             echo 1
             return
         fi
     elif [ "$KOBRA_MODEL_CODE" = "K3V2" ]; then
-        if [ "$KOBRA_VERSION" = "1.0.5.8" ]; then
+        if [ "$KOBRA_VERSION" = "1.0.5.8" ] || [ "$KOBRA_VERSION" = "1.0.7.3" ]; then
             echo 1
             return
         fi

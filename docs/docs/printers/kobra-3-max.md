@@ -122,3 +122,22 @@ title: Anycubic Kobra 3 Max
         "create_date": 1748257700
     }
     ```
+??? quote "2.4.8.4"
+    ```
+    {
+        "id": 143,
+        "model_id": 20026,
+        "machine_version": "1.1.0",
+        "firmware_name": "update.swu",
+        "peripheral_version": "",
+        "firmware_version": "2.4.8.4",
+        "firmware_url": "https://cdn.cloud-universe.anycubic.com/attachment/1947136334247845890_rlea45nr.swu",
+        "firmware_size": 141703075,
+        "firmware_md5": "006533f52610c9742bfa5ff10b32b5a4",
+        "parent_id": 0,
+        "force_update": false,
+        "time_cost": 10,
+        "update_desc": "1.New: Adjustable AI detection sensitivity\n2.New: Type-based filament mapping\n3.Fixed: Large file parsing failures\n",
+        "create_date": 1753068483
+    }
+    ```

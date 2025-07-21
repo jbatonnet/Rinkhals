@@ -31,3 +31,22 @@ title: Anycubic Kobra 3 V2
         "create_date": 1748258053
     }
     ```
+??? quote "1.0.7.3"
+    ```
+    {
+        "id": 145,
+        "model_id": 20027,
+        "machine_version": "1.1.0",
+        "firmware_name": "update.swu",
+        "peripheral_version": "",
+        "firmware_version": "1.0.7.3",
+        "firmware_url": "https://cdn.cloud-universe.anycubic.com/attachment/1947184412124340226_niwd8xzv.swu",
+        "firmware_size": 175240478,
+        "firmware_md5": "4c1c70ceec7e989c927add1b4b3f605d",
+        "parent_id": 0,
+        "force_update": false,
+        "time_cost": 10,
+        "update_desc": "1.New: Adjustable AI detection sensitivity\n2.New: Type-based filament mapping\n3.New: support for cold bed tem\n4.Fixed: Large file parsing failures\n",
+        "create_date": 1753079957
+    }
+    ```
