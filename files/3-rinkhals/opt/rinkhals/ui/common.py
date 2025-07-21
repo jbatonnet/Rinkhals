@@ -318,7 +318,7 @@ class Rinkhals:
                             continue
 
                         version.url = asset_url
-                        if 'sha256' in asset_digest:
+                        if asset_digest and 'sha256' in asset_digest:
                             version.sha256 = asset_digest.replace('sha256:', '') if asset_digest else None
 
                     versions.append(version)
