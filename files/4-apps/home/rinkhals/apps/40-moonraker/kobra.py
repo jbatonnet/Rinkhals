@@ -475,8 +475,9 @@ class Kobra:
                             f'M190 S{bed_temp}', # Wait bed to 60
                             'WIPE_ENTER', # Move to wiping position
                             'WIPE_NOZZLE', # Wipe nozzle
-                            'WIPE_EXIT', # Exit wiping position
+                            'WIPE_STOP', # Move to stop position (to prevent leaks while cooling)
                             f'M109 S{extru_end_temp}', # Wait hotend to 140
+                            'WIPE_EXIT' # Exit from wipe position
                             'BED_MESH_CALIBRATE',
                             'TURN_OFF_HEATERS',
                             'M106 S0', # Set fan speed to 0
@@ -486,6 +487,7 @@ class Kobra:
                         if self.KOBRA_MODEL_CODE != 'KS1':
                             calibrate_script.remove('WIPE_ENTER')
                             calibrate_script.remove('WIPE_EXIT')
+                            calibrate_script.remove('WIPE_STOP')
 
                         web_request.get_args()["script"] = '\n'.join(calibrate_script)
                     elif script.lower().startswith('bed_mesh_profile'):
