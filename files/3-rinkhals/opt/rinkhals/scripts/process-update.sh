@@ -14,8 +14,8 @@ SCRIPT_DIRECTORY=$(dirname $0)
 
 
 # 0x1F628E70311F52D934E851D232F66DA3
-UPDATE_FILE=/mnt/d/Sync/Julien/Projects/Kobra/K3/Firmwares/K3_2.4.1.9.swu
-UPDATE_PASSWORD="U2FsdGVkX19deTfqpXHZnB5GeyQ/dtlbHjkUnwgCi+w="
+UPDATE_FILE=/mnt/d/Sync/Julien/Projects/Kobra/KS1/Firmwares/KS1_2.5.6.0.swu
+UPDATE_PASSWORD="U2FsdGVkX1+lG6cHmshPLI/LaQr9cZCjA8HZt6Y8qmbB7riY"
 
 # 0x1F628E70311F52D934E851D232F66DA3
 #UPDATE_FILE=/mnt/d/Sync/Julien/Projects/Kobra/K3M/Firmwares/K3M_2.4.8.4.swu
