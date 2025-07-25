@@ -144,3 +144,22 @@ title: Anycubic Kobra S1
         "create_date": 1750075468
     }
     ```
+??? quote "2.5.6.0"
+    ```
+    {
+        "id": 146,
+        "model_id": 20025,
+        "machine_version": "1.1.0",
+        "firmware_name": "update.swu",
+        "peripheral_version": "",
+        "firmware_version": "2.5.6.0",
+        "firmware_url": "https://cdn.cloud-universe.anycubic.com/attachment/1947959750282534914_uiumdtxi.swu",
+        "firmware_size": 137122419,
+        "firmware_md5": "a652a5125ab3a332cce3b90b4930087a",
+        "parent_id": 120,
+        "force_update": false,
+        "time_cost": 10,
+        "update_desc": "1.New: Foreign object detection\n2.New: Adjustable AI detection sensitivity\n3.New: Type-based filament mapping\n4.Fixed: Extruder feeding issues from high-tem. filament residue\n",
+        "create_date": 1753264867
+    }
+    ```

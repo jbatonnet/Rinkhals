@@ -69,14 +69,18 @@ def main():
         for key, value in sectionContent:
             #if key.lstrip().startswith('#'):
             #    continue
+            
+            # normalize key by stripping leading/trailing whitespace to avoid
+            # duplicates caused by spacing before the colon
+            key = key.strip()
 
             if key.startswith('!'):
-                key = key[1:]
+                key = key[1:].strip()
                 if key in resolvedSections[sectionName]:
                     resolvedSections[sectionName].pop(key)
                 continue
 
-            resolvedSections[sectionName][key.lstrip()] = value
+            resolvedSections[sectionName][key] = value
 
     # Write resolved sections to destination file
     print('# This file is generated automatically on every Rinkhals startup')
