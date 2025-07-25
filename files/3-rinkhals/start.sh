@@ -66,7 +66,7 @@ echo
 
 touch /useremain/rinkhals/.disable-rinkhals
 
-VERIFIED_FIRMWARE=$(is_verified_firmware)
+VERIFIED_FIRMWARE=$(is_supported_firmware)
 if [ "$VERIFIED_FIRMWARE" != "1" ] && [ ! -f /mnt/udisk/.enable-rinkhals ] && [ ! -f /useremain/rinkhals/.enable-rinkhals ]; then
     log "Unsupported firmware version, use .enable-rinkhals file to force startup"
     exit 1
@@ -96,7 +96,7 @@ if [ -f /ac_lib/lib/third_bin/ffmpeg ]; then
     FILTER="[0:v] drawbox=x=0:y=0:w=iw:h=ih:t=fill:c=black"
     FILTER="$FILTER [1a]; [1:v] scale=w=iw*${SCALE}:h=ih*${SCALE} [1b]; [1a][1b] overlay=(main_w-overlay_w)/2:(main_h-overlay_h)/2"
     
-    VERIFIED_FIRMWARE=$(is_verified_firmware)
+    VERIFIED_FIRMWARE=$(is_supported_firmware)
     if [ "$VERIFIED_FIRMWARE" != "1" ]; then
         FILTER="$FILTER [2a]; [2:v] scale=w=iw*${SCALE}:h=ih*${SCALE} [2b]; [2a][2b] overlay=(main_w-overlay_w)/2:(main_h-overlay_h)/2+72"
     fi

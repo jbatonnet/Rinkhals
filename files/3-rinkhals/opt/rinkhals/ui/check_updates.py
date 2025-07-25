@@ -46,8 +46,17 @@ class CheckUpdateProgram:
         self.api_config = self.get_api_config()
 
     def get_cloud_config(self):
+        cloud_config_content = None
+
+        if os.path.exists('/userdata/app/gk/config/device.ini'):
+            with open('/userdata/app/gk/config/device.ini', 'r') as f:
+                cloud_config_content = f.read()
+
+        if 'CERTS_DEVICE_INI' in os.environ:
+            cloud_config_content = os.environ['CERTS_DEVICE_INI']
+
         config = configparser.ConfigParser()
-        config.read('/userdata/app/gk/config/device.ini')
+        config.read_string(cloud_config_content)
 
         environment = config['device']['env']
         zone = config['device']['zone']
@@ -60,10 +69,13 @@ class CheckUpdateProgram:
         cloud_config = config[section_name]
         return cloud_config
     def get_api_config(self):
+        if not os.path.exists('/userdata/app/gk/config/api.cfg'):
+            return None
         with open('/userdata/app/gk/config/api.cfg', 'r') as f:
             return json.loads(f.read())
     def get_ssl_context(self) -> ssl.SSLContext:
         cert_path = self.cloud_config['certPath']
+
         cert_file = f'{cert_path}/deviceCrt'
         key_file = f'{cert_path}/devicePk'
         ca_file = f'{cert_path}/caCrt'
@@ -79,6 +91,8 @@ class CheckUpdateProgram:
 
         return ssl_context
     def get_firmware_version(self) -> str:
+        if not os.path.exists('/useremain/dev/version'):
+            return None
         with open('/useremain/dev/version', 'r') as f:
             return f.read().strip()
     def get_cloud_mqtt_credentials(self):
@@ -102,8 +116,21 @@ class CheckUpdateProgram:
 
     def get_latest_update(self, model_code=None, current_version=None):
         self.firmware_version = self.get_firmware_version()
-        self.model_id = self.api_config['cloud']['modelId']
+        self.model_id = self.api_config['cloud']['modelId'] if self.api_config else None
         self.cloud_device_id = self.cloud_config['deviceUnionId']
+
+        if 'CERTS_CACRT' in os.environ and 'CERTS_DEVICECRT' in os.environ and 'CERTS_DEVICEPK' in os.environ:
+            cert_path = '/tmp/rinkhals/certs'
+
+            os.makedirs(cert_path)
+            self.cloud_config['certPath'] = cert_path
+
+            with open(f'{cert_path}/caCrt', 'w') as f:
+                f.write(os.environ['CERTS_CACRT'])
+            with open(f'{cert_path}/deviceCrt', 'w') as f:
+                f.write(os.environ['CERTS_DEVICECRT'])
+            with open(f'{cert_path}/devicePk', 'w') as f:
+                f.write(os.environ['CERTS_DEVICEPK'])
 
         if model_code:
             if model_code == 'K2P':
@@ -186,8 +213,8 @@ class CheckUpdateProgram:
         return (self.mqtt_result, self.mqtt_error)
         
     def main(self):
-        model_code = None
-        current_version = None
+        model_code = os.environ.get('MODEL_CODE')
+        current_version = os.environ.get('CURRENT_VERSION')
 
         args = sys.argv
         if len(args) > 1:
