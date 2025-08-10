@@ -12,11 +12,11 @@
 
     // Remote repositories
     "firmware_repositories": {
-        "K2P": "https://cdn.meowcat285.com/rinkhals/Kobra%202%20Pro/manifest.json",
-        "K3": "https://cdn.meowcat285.com/rinkhals/Kobra%203/manifest.json",
-        "K3V2": "https://cdn.meowcat285.com/rinkhals/Kobra%203%20V2/manifest.json",
-        "KS1": "https://cdn.meowcat285.com/rinkhals/Kobra%20S1/manifest.json",
-        "K3M": "https://cdn.meowcat285.com/rinkhals/Kobra%203%20Max/manifest.json"
+        "K2P": "https://raw.githubusercontent.com/jbatonnet/Rinkhals.Firmwares/refs/heads/main/manifests/manifest-k2p.json",
+        "K3": "https://raw.githubusercontent.com/jbatonnet/Rinkhals.Firmwares/refs/heads/main/manifests/manifest-k3.json",
+        "K3V2": "https://raw.githubusercontent.com/jbatonnet/Rinkhals.Firmwares/refs/heads/main/manifests/manifest-k3v2.json",
+        "KS1": "https://raw.githubusercontent.com/jbatonnet/Rinkhals.Firmwares/refs/heads/main/manifests/manifest-ks1.json",
+        "K3M": "https://raw.githubusercontent.com/jbatonnet/Rinkhals.Firmwares/refs/heads/main/manifests/manifest-k3m.json"
     },
     "rinkhals_repository": "jbatonnet/Rinkhals",
     "trusted_app_repositories": [

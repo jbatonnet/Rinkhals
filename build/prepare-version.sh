@@ -72,15 +72,21 @@ for PRINTER_MODEL_CODE in $PRINTER_MODEL_CODES; do
         fi
 
         VERSION_DIRECTORY=${TMP_VERSION_DIRECTORY}/${PRINTER_MODEL_CODE}_${SUPPORTED_VERSION}
-        unzip -o -P "$PRINTER_SWU_PASSWORD" $VERSION_PATH -d $VERSION_DIRECTORY
-        tar zxf $VERSION_DIRECTORY/update_swu/setup.tar.gz -C $VERSION_DIRECTORY/update_swu
+        if [ ! -f $VERSION_DIRECTORY/update_swu/.complete ]; then
+            unzip -o -P "$PRINTER_SWU_PASSWORD" $VERSION_PATH -d $VERSION_DIRECTORY
+            tar zxf $VERSION_DIRECTORY/update_swu/setup.tar.gz -C $VERSION_DIRECTORY/update_swu
+            touch $VERSION_DIRECTORY/update_swu/.complete
+        fi
 
+        # Patch K3SysUi
         DEST_K3SYSUI_PATH=$BASE_DIRECTORY/files/3-rinkhals/opt/rinkhals/patches/K3SysUi.${PRINTER_MODEL_CODE}_${SUPPORTED_VERSION}
         if [ ! -f $DEST_K3SYSUI_PATH ]; then
             cp -f $VERSION_DIRECTORY/update_swu/app/K3SysUi $DEST_K3SYSUI_PATH
         fi
 
+        python $BASE_DIRECTORY/files/3-rinkhals/opt/rinkhals/scripts/create-patch.py $DEST_K3SYSUI_PATH
         
+        # TODO: Hash printer.cfg
 
     done
 
