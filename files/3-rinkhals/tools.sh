@@ -53,8 +53,8 @@ check_compatibility() {
 }
 is_supported_firmware() {
     SUPPORTED=0
+    [ "$KOBRA_MODEL_CODE" = "KS1" ] && [ "$KOBRA_VERSION" = "2.5.6.4" ] && SUPPORTED=1
     [ "$KOBRA_MODEL_CODE" = "KS1" ] && [ "$KOBRA_VERSION" = "2.5.6.0" ] && SUPPORTED=1
-    [ "$KOBRA_MODEL_CODE" = "KS1" ] && [ "$KOBRA_VERSION" = "2.5.3.8" ] && SUPPORTED=1
     [ "$KOBRA_MODEL_CODE" = "K3V2" ] && [ "$KOBRA_VERSION" = "1.0.7.3" ] && SUPPORTED=1
     [ "$KOBRA_MODEL_CODE" = "K3V2" ] && [ "$KOBRA_VERSION" = "1.0.5.8" ] && SUPPORTED=1
     [ "$KOBRA_MODEL_CODE" = "K3M" ] && [ "$KOBRA_VERSION" = "2.4.8.4" ] && SUPPORTED=1
