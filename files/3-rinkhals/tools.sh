@@ -51,35 +51,19 @@ check_compatibility() {
         quit
     fi
 }
-is_verified_firmware() {
-    if [ "$KOBRA_MODEL_CODE" = "K2P" ]; then
-        if [ "$KOBRA_VERSION" = "3.1.2.3" ]; then
-            echo 1
-            return
-        fi
-    elif [ "$KOBRA_MODEL_CODE" = "K3" ]; then
-        if [ "$KOBRA_VERSION" = "2.4.0" ] || [ "$KOBRA_VERSION" = "2.4.0.4" ] || [ "$KOBRA_VERSION" = "2.4.1.9" ]; then
-            echo 1
-            return
-        fi
-    elif [ "$KOBRA_MODEL_CODE" = "KS1" ]; then
-        if [ "$KOBRA_VERSION" = "2.5.3.8" ] || [ "$KOBRA_VERSION" = "2.5.6.0" ]; then
-            echo 1
-            return
-        fi
-    elif [ "$KOBRA_MODEL_CODE" = "K3M" ]; then
-        if [ "$KOBRA_VERSION" = "2.4.6.5" ] || [ "$KOBRA_VERSION" = "2.4.8.4" ]; then
-            echo 1
-            return
-        fi
-    elif [ "$KOBRA_MODEL_CODE" = "K3V2" ]; then
-        if [ "$KOBRA_VERSION" = "1.0.5.8" ] || [ "$KOBRA_VERSION" = "1.0.7.3" ]; then
-            echo 1
-            return
-        fi
-    fi
-
-    echo 0
+is_supported_firmware() {
+    SUPPORTED=0
+    [ "$KOBRA_MODEL_CODE" = "KS1" ] && [ "$KOBRA_VERSION" = "2.5.6.4" ] && SUPPORTED=1
+    [ "$KOBRA_MODEL_CODE" = "KS1" ] && [ "$KOBRA_VERSION" = "2.5.6.0" ] && SUPPORTED=1
+    [ "$KOBRA_MODEL_CODE" = "K3V2" ] && [ "$KOBRA_VERSION" = "1.0.7.3" ] && SUPPORTED=1
+    [ "$KOBRA_MODEL_CODE" = "K3V2" ] && [ "$KOBRA_VERSION" = "1.0.5.8" ] && SUPPORTED=1
+    [ "$KOBRA_MODEL_CODE" = "K3M" ] && [ "$KOBRA_VERSION" = "2.4.8.4" ] && SUPPORTED=1
+    [ "$KOBRA_MODEL_CODE" = "K3M" ] && [ "$KOBRA_VERSION" = "2.4.6.5" ] && SUPPORTED=1
+    [ "$KOBRA_MODEL_CODE" = "K3" ] && [ "$KOBRA_VERSION" = "2.4.1.9" ] && SUPPORTED=1
+    [ "$KOBRA_MODEL_CODE" = "K3" ] && [ "$KOBRA_VERSION" = "2.4.0.4" ] && SUPPORTED=1
+    [ "$KOBRA_MODEL_CODE" = "K3" ] && [ "$KOBRA_VERSION" = "2.4.0" ] && SUPPORTED=1
+    [ "$KOBRA_MODEL_CODE" = "K2P" ] && [ "$KOBRA_VERSION" = "3.1.2.3" ] && SUPPORTED=1
+    echo $SUPPORTED
 }
 
 install_swu() {

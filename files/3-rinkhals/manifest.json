@@ -1,0 +1,25 @@
+{
+    // Firmware versions
+    "version": "dev",
+    "changes": null,
+    "supported_models": {
+        "K2P": [ "3.1.2.3" ],
+        "K3": [ "2.4.0", "2.4.0.4", "2.4.1.9" ],
+        "K3M": [ "2.4.6.5", "2.4.8.4" ],
+        "K3V2": [ "1.0.5.8", "1.0.7.3" ],
+        "KS1": [ "2.5.6.0", "2.5.6.4" ]
+    },
+
+    // Remote repositories
+    "firmware_repositories": {
+        "K2P": "https://raw.githubusercontent.com/jbatonnet/Rinkhals.Firmwares/refs/heads/main/manifests/manifest-k2p.json",
+        "K3": "https://raw.githubusercontent.com/jbatonnet/Rinkhals.Firmwares/refs/heads/main/manifests/manifest-k3.json",
+        "K3V2": "https://raw.githubusercontent.com/jbatonnet/Rinkhals.Firmwares/refs/heads/main/manifests/manifest-k3v2.json",
+        "KS1": "https://raw.githubusercontent.com/jbatonnet/Rinkhals.Firmwares/refs/heads/main/manifests/manifest-ks1.json",
+        "K3M": "https://raw.githubusercontent.com/jbatonnet/Rinkhals.Firmwares/refs/heads/main/manifests/manifest-k3m.json"
+    },
+    "rinkhals_repository": "jbatonnet/Rinkhals",
+    "trusted_app_repositories": [
+        "https://raw.githubusercontent.com/jbatonnet/Rinkhals.apps/refs/heads/master/manifest.json"
+    ]
+}

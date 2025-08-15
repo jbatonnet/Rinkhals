@@ -163,3 +163,22 @@ title: Anycubic Kobra S1
         "create_date": 1753264867
     }
     ```
+??? quote "2.5.6.4"
+    ```
+    {
+        "id": 147,
+        "model_id": 20025,
+        "machine_version": "1.1.0",
+        "firmware_name": "update.swu",
+        "peripheral_version": "",
+        "firmware_version": "2.5.6.4",
+        "firmware_url": "https://cdn.cloud-universe.anycubic.com/attachment/1950837731350896642_qx01r0gs.swu",
+        "firmware_size": 137126707,
+        "firmware_md5": "cc28f5ec0147dc921be4efda1f7b07f0",
+        "parent_id": 120,
+        "force_update": false,
+        "time_cost": 10,
+        "update_desc": "Fixed: Occasional print progress loss",
+        "create_date": 1753950960
+    }
+    ```
