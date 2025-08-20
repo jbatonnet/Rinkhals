@@ -54,7 +54,7 @@ There are two options to install Rinkhals:
 
 Either way, you'll need to:
 - Download the release / file you want from the [Releases](https://github.com/jbatonnet/Rinkhals/releases) page
-- Rename the downlaoded SWU file as **update.swu**
+- Rename the downloaded SWU file as **update.swu**
 - Copy it in a directory named **aGVscF9zb3Nf** (or **update** for the Kobra 2 Pro in certain conditions) on a FAT32 USB drive (MBR, GPT is not supported)
 - Plug the USB drive in your printer
 
