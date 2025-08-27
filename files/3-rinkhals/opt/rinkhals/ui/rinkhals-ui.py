@@ -271,8 +271,9 @@ class RinkhalsUiApp(BaseApp):
                 title_bar.set_y(-lvr.get_title_bar_height())
                 
                 title = lvr.title(title_bar)
-                title.set_text('Manage apps')
-                title.center()
+                title.set_text('Apps')
+                title.align(lv.ALIGN.CENTER, -lv.dpx(32), 0)
+                #title.center()
 
                 icon_back = lvr.button_icon(title_bar)
                 icon_back.set_align(lv.ALIGN.LEFT_MID)
@@ -283,8 +284,41 @@ class RinkhalsUiApp(BaseApp):
                 icon_refresh.add_event_cb(lambda e: self.show_screen(self.screen_apps), lv.EVENT_CODE.CLICKED, None)
                 icon_refresh.set_align(lv.ALIGN.RIGHT_MID)
                 icon_refresh.set_text('')
+                
+                icon_add = lvr.button_icon(title_bar)
+                icon_add.add_event_cb(lambda e: self.show_screen(self.screen_app_updates), lv.EVENT_CODE.CLICKED, None)
+                icon_add.set_align(lv.ALIGN.RIGHT_MID)
+                icon_add.align(lv.ALIGN.RIGHT_MID, -lv.dpx(64), 0)
+                icon_add.set_text('')
 
                 self.screen_apps.panel_apps = None
+
+        with lvr.lock():
+            self.screen_app_updates = lvr.panel(self.root_screen)
+            if self.screen_app_updates:
+                self.screen_app_updates.add_flag(lv.OBJ_FLAG.HIDDEN)
+                self.screen_app_updates.set_size(lv.pct(100), lv.pct(100))
+                self.screen_app_updates.set_style_pad_all(0, lv.STATE.DEFAULT)
+                self.screen_app_updates.set_style_pad_top(lvr.get_title_bar_height(), lv.STATE.DEFAULT)
+
+                title_bar = lvr.title_bar(self.screen_app_updates)
+                title_bar.set_y(-lvr.get_title_bar_height())
+                
+                title = lvr.title(title_bar)
+                title.set_text('Install apps')
+                title.center()
+
+                icon_back = lvr.button_icon(title_bar)
+                icon_back.set_align(lv.ALIGN.LEFT_MID)
+                icon_back.add_event_cb(lambda e: self.show_screen(self.screen_apps), lv.EVENT_CODE.CLICKED, None)
+                icon_back.set_text('')
+
+                icon_refresh = lvr.button_icon(title_bar)
+                icon_refresh.add_event_cb(lambda e: self.show_screen(self.screen_app_updates), lv.EVENT_CODE.CLICKED, None)
+                icon_refresh.set_align(lv.ALIGN.RIGHT_MID)
+                icon_refresh.set_text('')
+
+                self.screen_app_updates.panel_apps = None
 
         with lvr.lock():
             self.screen_app = lvr.panel(self.root_screen)
@@ -508,6 +542,7 @@ class RinkhalsUiApp(BaseApp):
             self.screen_apps.panel_apps.delete()
         self.screen_apps.panel_apps = lvr.panel(self.screen_apps, flex_flow=lv.FLEX_FLOW.COLUMN)
         self.screen_apps.panel_apps.set_size(lv.pct(100), lv.pct(100))
+        self.screen_apps.panel_apps.set_style_pad_row(0, lv.STATE.DEFAULT)
 
         self.app_checkboxes = {}
 
@@ -518,24 +553,26 @@ class RinkhalsUiApp(BaseApp):
             for app in apps:
                 enabled = apps_enabled[app] == '1'
 
-                lv.lock()
-                panel_app = lvr.panel(self.screen_apps.panel_apps)
-                panel_app.set_style_pad_all(0, lv.STATE.DEFAULT)
-                panel_app.set_width(lv.pct(100))
+                with lvr.lock():
+                    panel_app = lvr.panel(self.screen_apps.panel_apps)
+                    panel_app.set_size(lv.pct(100), lv.dpx(70))
+                    panel_app.set_style_border_side(lv.BORDER_SIDE.BOTTOM, lv.STATE.DEFAULT)
+                    panel_app.add_event_cb(lambda e, app=app: self.show_app(app), lv.EVENT_CODE.CLICKED, None)
+                    panel_app.set_state(lv.STATE.DISABLED, False)
+                    panel_app.remove_flag(lv.OBJ_FLAG.SCROLLABLE)
 
-                button_app = lvr.button(panel_app)
-                button_app.set_width(lv.pct(100))
-                button_app.set_text(app)
-                button_app.set_style_pad_left(lv.dpx(15), lv.STATE.DEFAULT)
-                button_app.set_style_pad_right(lv.dpx(4), lv.STATE.DEFAULT)
-                button_app.set_style_text_align(lv.TEXT_ALIGN.LEFT, lv.STATE.DEFAULT)
-                button_app.add_event_cb(lambda e, app=app: self.show_app(app), lv.EVENT_CODE.CLICKED, None)
+                    label_version = lvr.label(panel_app)
+                    label_version.align(lv.ALIGN.TOP_LEFT, 0, 0)
+                    label_version.set_text(app)
 
-                checkbox_app = lvr.checkbox(panel_app)
-                checkbox_app.align(lv.ALIGN.RIGHT_MID, -lv.dpx(5), 0)
-                checkbox_app.add_event_cb(lambda e, app=app, enabled=enabled: toggle_app(app, not enabled), lv.EVENT_CODE.CLICKED, None)
-                checkbox_app.set_checked(enabled)
-                lv.unlock()
+                    label_source = lvr.subtitle(panel_app)
+                    label_source.align(lv.ALIGN.BOTTOM_LEFT, 0, 0)
+                    label_source.set_text(f'System')
+
+                    checkbox_app = lvr.checkbox(panel_app)
+                    checkbox_app.align(lv.ALIGN.RIGHT_MID, 0, 0)
+                    checkbox_app.add_event_cb(lambda e, app=app, enabled=enabled: toggle_app(app, not enabled), lv.EVENT_CODE.CLICKED, None)
+                    checkbox_app.set_checked(enabled)
 
                 self.app_checkboxes[app] = checkbox_app
 
