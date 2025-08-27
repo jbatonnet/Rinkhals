@@ -18,7 +18,7 @@ To quickly start using Rinkhals, check the [quick start guide](guides/rinkhals-q
 If you prefer a video, [Kanrog](https://www.youtube.com/@kanrogcreations) on Discord made a video explaining how to install Rinkhals:
 
 <p align="center">
-    <iframe width="480" height="270" src="https://www.youtube.com/embed/q7c-C_i0SBs?si=xoxS0yGHmW9JDjuS" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+    <iframe width="480" height="270" src="https://www.youtube.com/embed/2CfgHLggjOA?si=uppWjupqwzUq7hmm" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
     <iframe width="480" height="270" src="https://www.youtube.com/embed/1VpJGZLuQyI?si=lekaw1rFgSfZ6vvT" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 </p>
