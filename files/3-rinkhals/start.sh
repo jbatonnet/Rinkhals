@@ -76,10 +76,11 @@ fi
 ################
 log "> Stopping Anycubic apps..."
 
+kill_by_name appCheck.sh
 kill_by_name K3SysUi
 kill_by_name gkcam
 kill_by_name gkapi
-kill_by_name gklib 15 # SIGTERM to be softer ok gklib
+kill_by_name gklib 15 # SIGTERM to be softer on gklib
 
 if [ -f /ac_lib/lib/third_bin/ffmpeg ]; then
     if [ "$KOBRA_MODEL_CODE" = "KS1" ]; then
