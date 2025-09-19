@@ -36,7 +36,7 @@ This guide provides step-by-step instructions for installing **Rinkhals**, a cus
 - **Failure**: If the progress bar turns red and you hear **three beeps**, the installation failed. However, the printer should still function normally. You can check for more details in the `aGVscF9zb3Nf/install.log` file on the USB drive.
 
 ## 4. Enable SimplyPrint Service
-To enable **SimplyPrint**, follow the official [SimplyPrint setup guide](https://simplyprint.io/setup-guide).
+To enable **SimplyPrint**, follow the official [SimplyPrint setup guide](https://simplyprint.io/setup-guide#klipper:3).
 
 ## Conclusion
 [//]: # (Writers note: Also needs to be updated)
