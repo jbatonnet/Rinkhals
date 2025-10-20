@@ -347,11 +347,11 @@ class FirmwareVersion:
 
 class Firmware:
     repositories = {
-        'K2P': 'https://cdn.meowcat285.com/rinkhals/Kobra%202%20Pro/manifest.json',
-        'K3': 'https://cdn.meowcat285.com/rinkhals/Kobra%203/manifest.json',
-        'K3V2': 'https://cdn.meowcat285.com/rinkhals/Kobra%203%20V2/manifest.json',
-        'KS1': 'https://cdn.meowcat285.com/rinkhals/Kobra%20S1/manifest.json',
-        'K3M': 'https://cdn.meowcat285.com/rinkhals/Kobra%203%20Max/manifest.json',
+        'K2P': 'https://rinkhals.thedju.net/Kobra%202%20Pro/manifest.json',
+        'K3': 'https://rinkhals.thedju.net/Kobra%203/manifest.json',
+        'K3V2': 'https://rinkhals.thedju.net/Kobra%203%20V2/manifest.json',
+        'KS1': 'https://rinkhals.thedju.net/Kobra%20S1/manifest.json',
+        'K3M': 'https://rinkhals.thedju.net/Kobra%203%20Max/manifest.json',
     }
 
     def get_current_version():

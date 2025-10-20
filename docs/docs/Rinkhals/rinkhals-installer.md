@@ -29,7 +29,7 @@ The main screen will show you some diagnostics results. You can tap on those to 
 
 ![](../assets/rinkhals-installer/installer-updates.png){ width="160", align=left }
 
-From this view you'll be able to quickly see what Rinkhals and system version are installed right now on your printer and see the last available versions from GitHub and [https://rinkhals.meowcat285.com](https://rinkhals.meowcat285.com)
+From this view you'll be able to quickly see what Rinkhals and system version are installed right now on your printer and see the last available versions from GitHub and [https://rinkhals.thedju.net](https://rinkhals.thedju.net)
 
 
 <div style="clear: both;"></div>
@@ -65,7 +65,7 @@ The version will be downloaded, extracted and then installed on your printer. Th
 ![](../assets/rinkhals-installer/installer-updates-system-install.png){ width="160", align=right }
 ![](../assets/rinkhals-installer/installer-updates-system.png){ width="160", align=right }
 
-This screen shows the installed system firmware and all available firmware versions from a mirror server: [https://rinkhals.meowcat285.com](https://rinkhals.meowcat285.com)
+This screen shows the installed system firmware and all available firmware versions from a mirror server: [https://rinkhals.thedju.net](https://rinkhals.thedju.net)
 
 The installer will also check directly with Anycubic servers if a new version not yet mirrored is available.
 
