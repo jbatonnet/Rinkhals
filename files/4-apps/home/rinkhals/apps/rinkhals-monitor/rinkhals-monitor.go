@@ -99,7 +99,7 @@ func main() {
     log.SetFlags(log.Ldate | log.Ltime)
 
 	// Load environment variables from .env file
-    err := godotenv.Load()
+    err := godotenv.Load(".env", "/useremain/home/rinkhals/apps/rinkhals-monitor/.env")
     if err == nil {
         log.Println("Loading environment from .env file")
     }

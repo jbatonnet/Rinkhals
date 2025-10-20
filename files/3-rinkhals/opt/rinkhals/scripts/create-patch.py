@@ -121,6 +121,10 @@ def patch_K3SysUi(binaryPath, modelCode, version):
         buttonCallback = k3sysui.symbols['_ZZN10MainWindow19AcSettingPageUiInitEvENKUlvE_clEv']
         patchJumpAddress = 0xecc30
         patchReturnAddress = 0xecc5c
+    elif (modelCode == 'K3' and version == '2.4.4.3') or (modelCode == 'K3M' and version == '2.5.0.9') or (modelCode == 'K3V2' and version == '1.0.9.7'):
+        buttonCallback = k3sysui.symbols['_ZZN10MainWindow19AcSettingPageUiInitEvENKUlvE_clEv']
+        patchJumpAddress = 0xf1c98
+        patchReturnAddress = 0xf1cc4
 
     # KS1 - Settings > General > Service Support (4th button)
     
@@ -155,6 +159,10 @@ def patch_K3SysUi(binaryPath, modelCode, version):
         buttonCallback = k3sysui.symbols['_ZZN10MainWindow26AcSettingGeneralPageUiInitEvENKUlRK11QModelIndexE0_clES2_']
         patchJumpAddress = 0x121dd4
         patchReturnAddress = 0x121ddc
+    elif modelCode == 'KS1' and version == '2.5.8.8':
+        buttonCallback = k3sysui.symbols['_ZZN10MainWindow26AcSettingGeneralPageUiInitEvENKUlRK11QModelIndexE0_clES2_']
+        patchJumpAddress = 0x12b04c
+        patchReturnAddress = 0x12b054
 
     else:
         raise Exception('Unsupported model and version')
