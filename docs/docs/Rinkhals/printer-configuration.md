@@ -15,7 +15,7 @@ Before starting, here is a link to known stock printer configurations: [https://
 
 And here is a link to stock firmwares you can flash to restore your printer:
 
-[https://rinkhals.meowcat285.com/](https://rinkhals.meowcat285.com/)
+[https://rinkhals.thedju.net/](https://rinkhals.thedju.net/)
 
 ## Stock firmware configuration
 

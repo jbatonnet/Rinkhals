@@ -60,7 +60,7 @@ If you’re running stock firmware or any other, you’ll need to use the SSH SW
 
 1. Download the right SWU tools for your printer
     - [https://github.com/jbatonnet/Rinkhals/actions/workflows/build-swu-tools.yml](https://github.com/jbatonnet/Rinkhals/actions/workflows/build-swu-tools.yml)
-    - [https://rinkhals.meowcat285.com/#SWU tools/](https://rinkhals.meowcat285.com/#SWU tools/)
+    - [https://rinkhals.thedju.net/#SWU tools/](https://rinkhals.thedju.net/#SWU tools/)
 2. Extract and get the SSH tool
 3. Copy the tool as `update.swu` on a FAT32 USB drive in a `aGVscF9zb3Nf` directory (same as during Rinkhals installation)
 4. Use any SSH client to connect to your printer IP on port 2222
