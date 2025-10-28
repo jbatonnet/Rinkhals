@@ -24,6 +24,10 @@ Create a `.env` file with the following environment variables:
 MQTT_IP=x.x.x.x
 MQTT_PORT=1883
 DEVICE_ID=[NAME_OF_DEVICE_IN_HOME_ASSISTANT]
+
+# In case your MQTT Server requires authentication add and uncomment below lines.
+# MQTT_USER=my-user
+# MQTT_PASSWORD=super-secret-password
 ```
 
 You'll end up with this kind of graph:
