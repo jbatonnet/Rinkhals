@@ -338,6 +338,12 @@ class Rinkhals:
 ################
 # Firmware update management
 
+firmwareRepositories = {
+    #'https://rinkhals.thedju.net/manifest.json',
+    'https://raw.githubusercontent.com/jbatonnet/Rinkhals.Firmwares/refs/heads/main/manifests-mirror/manifest.json',
+    'https://raw.githubusercontent.com/jbatonnet/Rinkhals.Firmwares/refs/heads/main/manifests-anycubic/manifest.json'
+}
+
 class FirmwareVersion:
     version: str
     date: int
@@ -447,6 +453,12 @@ class Firmware:
         except Exception as e:
             logging.error(f'Error fetching firmware versions: {e}')
             return []
+
+class FirmwareRepository:
+    manifest_url = None
+
+    def __init__(self, manifest_url):
+        self.manifest_url = manifest_url
 
 
 ################
