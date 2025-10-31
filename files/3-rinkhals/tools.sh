@@ -307,6 +307,18 @@ get_app_root() {
         echo "$BUILTIN_APP_ROOT"
     fi
 }
+is_user_app() {
+    APP=$1
+    
+    USER_APP_ROOT=$USER_APP_PATH/$APP
+    BUILTIN_APP_ROOT=$BUILTIN_APP_PATH/$APP
+
+    if [ -e "$USER_APP_ROOT" ]; then
+        echo 1
+    else
+        echo 0
+    fi
+}
 is_app_enabled() {
     app=$1
     app_root=$(get_app_root $app)

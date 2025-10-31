@@ -79,6 +79,7 @@ if USING_SIMULATOR:
         if os.path.exists(f'{RINKHALS_HOME}/apps/{app}'): return f'{RINKHALS_HOME}/apps/{app}'
         if os.path.exists(f'{RINKHALS_ROOT}/../../../Rinkhals.apps/apps/{app}'): return f'{RINKHALS_ROOT}/../../../Rinkhals.apps/apps/{app}'
         return ''
+    def is_user_app(app): return '0'
     def is_app_enabled(app): return '1' if os.path.exists(f'{RINKHALS_HOME}/apps/{app}/.enabled') else '0'
     def get_app_status(app): return 'started' if is_app_enabled(app) == '1' else 'stopped'
     def get_app_pids(app): return str(os.getpid()) if get_app_status(app) == 'started' else ''
@@ -113,6 +114,7 @@ else:
 
     list_apps = load_tool_function('list_apps')
     get_app_root = load_tool_function('get_app_root')
+    is_user_app = load_tool_function('is_user_app')
     get_app_status = load_tool_function('get_app_status')
     get_app_pids = load_tool_function('get_app_pids')
     is_app_enabled = load_tool_function('is_app_enabled')
@@ -348,7 +350,7 @@ class RinkhalsUiApp(BaseApp):
         base_memory_label.set_pos(0, lv.dpx(22))
         base_memory_label.set_style_text_font(lvr.get_font_text_tiny(), lv.STATE.DEFAULT)
         base_memory_label.set_style_text_color(lvr.COLOR_SUBTITLE, lv.STATE.DEFAULT)
-        base_memory_label.set_text('     System memory')
+        base_memory_label.set_text('     System (80MB)')
 
         reserved_memory_legend = lvr.box(self.screen_apps.graph_panel)
         reserved_memory_legend.set_pos(0, lv.dpx(44))
@@ -360,7 +362,7 @@ class RinkhalsUiApp(BaseApp):
         reserved_memory_label.set_pos(0, lv.dpx(42))
         reserved_memory_label.set_style_text_font(lvr.get_font_text_tiny(), lv.STATE.DEFAULT)
         reserved_memory_label.set_style_text_color(lvr.COLOR_SUBTITLE, lv.STATE.DEFAULT)
-        reserved_memory_label.set_text('     Reserved memory')
+        reserved_memory_label.set_text('     Reserved (40MB)')
         
         apps_memory_legend = lvr.box(self.screen_apps.graph_panel)
         apps_memory_legend.set_pos(lv.pct(50), lv.dpx(24))
@@ -593,11 +595,11 @@ class RinkhalsUiApp(BaseApp):
                     stop_app(app)
 
             self.app_checkboxes[app].set_checked(is_app_enabled(app) == '1')
-            
+
         total_memory = 220
         base_memory = 80
         reserved_memory = 40
-        apps_memory = 60
+        apps_memory = 0
 
         self.screen_apps.base_memory_bar.set_width(lv.pct(int(base_memory * 100 / total_memory)))
         self.screen_apps.reserved_memory_bar.set_width(lv.pct(int(reserved_memory * 100 / total_memory)))
@@ -617,6 +619,7 @@ class RinkhalsUiApp(BaseApp):
 
             for app in apps:
                 enabled = apps_enabled[app] == '1'
+                app_user = is_user_app(app)
 
                 with lvr.lock():
                     panel_app = lvr.panel(self.screen_apps.panel_apps)
@@ -632,7 +635,7 @@ class RinkhalsUiApp(BaseApp):
 
                     label_source = lvr.subtitle(panel_app)
                     label_source.align(lv.ALIGN.BOTTOM_LEFT, 0, 0)
-                    label_source.set_text(f'System')
+                    label_source.set_text('System' if app_user else 'User')
 
                     checkbox_app = lvr.checkbox(panel_app)
                     checkbox_app.align(lv.ALIGN.RIGHT_MID, 0, 0)
@@ -640,8 +643,39 @@ class RinkhalsUiApp(BaseApp):
                     checkbox_app.set_checked(enabled)
 
                 self.app_checkboxes[app] = checkbox_app
+        def refresh_apps_memory():
+            apps_memory = 0
+            with lvr.lock():
+                self.screen_apps.apps_memory_bar.set_width(lv.pct(int(apps_memory * 100 / total_memory)))
+
+            apps = list_apps().split(' ')
+            apps_enabled = are_apps_enabled()
+            
+            for app in apps:
+                enabled = apps_enabled[app] == '1'
+                if not enabled:
+                    continue
+                
+                app_root = get_app_root(app)
+
+                app_manifest = None
+                if os.path.exists(f'{app_root}/app.json'):
+                    try:
+                        with open(f'{app_root}/app.json', 'r') as f:
+                            app_manifest = json.loads(f.read(), cls = JSONWithCommentsDecoder)
+                    except Exception as e:
+                        pass
+
+                app_requirements = app_manifest.get('requirements') if app_manifest else None
+                app_memory = app_requirements.get('memory') if app_requirements else None
+
+                if app_memory:
+                    apps_memory = apps_memory + app_memory + 10
+                    with lvr.lock():
+                        self.screen_apps.apps_memory_bar.set_width(lv.pct(int(apps_memory * 100 / total_memory)))
 
         run_async(refresh_apps)
+        run_async(refresh_apps_memory)
     def show_app(self, app):
         self.show_screen(self.screen_app)
         
