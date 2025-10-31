@@ -264,6 +264,8 @@ class RinkhalsUiApp(BaseApp):
             with lvr.lock():
                 self.layout_apps()
             with lvr.lock():
+                self.layout_apps_updates()
+            with lvr.lock():
                 self.layout_app()
             with lvr.lock():
                 self.layout_app_settings()
@@ -285,10 +287,10 @@ class RinkhalsUiApp(BaseApp):
         self.screen_apps.add_flag(lv.OBJ_FLAG.HIDDEN)
         self.screen_apps.set_size(lv.pct(100), lv.pct(100))
         self.screen_apps.set_style_pad_all(0, lv.STATE.DEFAULT)
-        self.screen_apps.set_style_pad_top(lvr.get_title_bar_height() + lv.dpx(60), lv.STATE.DEFAULT)
+        self.screen_apps.set_style_pad_top(lvr.get_title_bar_height(), lv.STATE.DEFAULT)
 
         title_bar = lvr.title_bar(self.screen_apps)
-        title_bar.set_y(-lvr.get_title_bar_height() - lv.dpx(60))
+        title_bar.set_y(-lvr.get_title_bar_height())
         
         title = lvr.title(title_bar)
         title.set_text('Apps')
@@ -306,89 +308,38 @@ class RinkhalsUiApp(BaseApp):
         icon_refresh.set_text('')
                 
         icon_add = lvr.button_icon(title_bar)
-        icon_add.add_event_cb(lambda e: self.show_screen(self.screen_app_updates), lv.EVENT_CODE.CLICKED, None)
+        icon_add.add_event_cb(lambda e: self.show_screen(self.screen_apps_updates), lv.EVENT_CODE.CLICKED, None)
         icon_add.set_align(lv.ALIGN.RIGHT_MID)
         icon_add.align(lv.ALIGN.RIGHT_MID, -lv.dpx(64), 0)
         icon_add.set_text('')
 
-        self.screen_apps.graph_panel = lvr.panel(self.screen_apps)
-        self.screen_apps.graph_panel.set_style_pad_top(0, lv.STATE.DEFAULT)
-        self.screen_apps.graph_panel.set_size(lv.pct(100), lv.dpx(60))
-        self.screen_apps.graph_panel.set_style_bg_color(lvr.COLOR_DANGER, lv.STATE.DEFAULT)
-        self.screen_apps.graph_panel.set_y(-lv.dpx(60))
-        self.screen_apps.graph_panel.remove_flag(lv.OBJ_FLAG.SCROLLABLE)
-
-        total_memory_bar = lvr.panel(self.screen_apps.graph_panel, flex_flow = lv.FLEX_FLOW.ROW)
-        total_memory_bar.set_size(self.root_screen.get_width() - lv.dpx(32), lv.dpx(16))
-        total_memory_bar.set_style_pad_all(0, lv.STATE.DEFAULT)
-        total_memory_bar.set_style_bg_color(lv.color_make(96, 96, 96), lv.STATE.DEFAULT)
-        total_memory_bar.set_style_bg_opa(lv.OPA.COVER, lv.STATE.DEFAULT)
-        total_memory_bar.set_style_radius(lv.dpx(6), lv.STATE.DEFAULT)
-        total_memory_bar.remove_flag(lv.OBJ_FLAG.SCROLLABLE)
-        total_memory_bar.set_style_clip_corner(True, lv.STATE.DEFAULT)
-        total_memory_bar.set_style_pad_gap(0, lv.STATE.DEFAULT)
-
-        self.screen_apps.base_memory_bar = lvr.box(total_memory_bar)
-        self.screen_apps.base_memory_bar.set_size(0, lv.pct(100))
-        self.screen_apps.base_memory_bar.set_style_bg_color(lv.color_make(43, 77, 125), lv.STATE.DEFAULT)
-
-        self.screen_apps.reserved_memory_bar = lvr.box(total_memory_bar)
-        self.screen_apps.reserved_memory_bar.set_size(0, lv.pct(100))
-        self.screen_apps.reserved_memory_bar.set_style_bg_color(lv.color_make(120, 47, 47), lv.STATE.DEFAULT)
-        
-        self.screen_apps.apps_memory_bar = lvr.box(total_memory_bar)
-        self.screen_apps.apps_memory_bar.set_size(0, lv.pct(100))
-        self.screen_apps.apps_memory_bar.set_style_bg_color(lv.color_make(34, 177, 76), lv.STATE.DEFAULT)
-
-        base_memory_legend = lvr.box(self.screen_apps.graph_panel)
-        base_memory_legend.set_pos(0, lv.dpx(24))
-        base_memory_legend.set_size(lv.dpx(12), lv.dpx(12))
-        base_memory_legend.set_style_bg_color(lv.color_make(43, 77, 125), lv.STATE.DEFAULT)
-        base_memory_legend.set_style_border_side(lv.BORDER_SIDE.FULL, lv.STATE.DEFAULT)
-        
-        base_memory_label = lvr.label(self.screen_apps.graph_panel)
-        base_memory_label.set_pos(0, lv.dpx(22))
-        base_memory_label.set_style_text_font(lvr.get_font_text_tiny(), lv.STATE.DEFAULT)
-        base_memory_label.set_style_text_color(lvr.COLOR_SUBTITLE, lv.STATE.DEFAULT)
-        base_memory_label.set_text('     System (80MB)')
-
-        reserved_memory_legend = lvr.box(self.screen_apps.graph_panel)
-        reserved_memory_legend.set_pos(0, lv.dpx(44))
-        reserved_memory_legend.set_size(lv.dpx(12), lv.dpx(12))
-        reserved_memory_legend.set_style_bg_color(lv.color_make(120, 47, 47), lv.STATE.DEFAULT)
-        reserved_memory_legend.set_style_border_side(lv.BORDER_SIDE.FULL, lv.STATE.DEFAULT)
-        
-        reserved_memory_label = lvr.label(self.screen_apps.graph_panel)
-        reserved_memory_label.set_pos(0, lv.dpx(42))
-        reserved_memory_label.set_style_text_font(lvr.get_font_text_tiny(), lv.STATE.DEFAULT)
-        reserved_memory_label.set_style_text_color(lvr.COLOR_SUBTITLE, lv.STATE.DEFAULT)
-        reserved_memory_label.set_text('     Reserved (40MB)')
-        
-        apps_memory_legend = lvr.box(self.screen_apps.graph_panel)
-        apps_memory_legend.set_pos(lv.pct(50), lv.dpx(24))
-        apps_memory_legend.set_size(lv.dpx(12), lv.dpx(12))
-        apps_memory_legend.set_style_bg_color(lv.color_make(34, 177, 76), lv.STATE.DEFAULT)
-        apps_memory_legend.set_style_border_side(lv.BORDER_SIDE.FULL, lv.STATE.DEFAULT)
-        
-        self.screen_apps.apps_memory_label = lvr.label(self.screen_apps.graph_panel)
-        self.screen_apps.apps_memory_label.set_pos(lv.pct(50), lv.dpx(22))
-        self.screen_apps.apps_memory_label.set_style_text_font(lvr.get_font_text_tiny(), lv.STATE.DEFAULT)
-        self.screen_apps.apps_memory_label.set_style_text_color(lvr.COLOR_SUBTITLE, lv.STATE.DEFAULT)
-        self.screen_apps.apps_memory_label.set_text('     Apps (42MB)')
-        
-        free_memory_legend = lvr.box(self.screen_apps.graph_panel)
-        free_memory_legend.set_pos(lv.pct(50), lv.dpx(44))
-        free_memory_legend.set_size(lv.dpx(12), lv.dpx(12))
-        free_memory_legend.set_style_bg_color(lv.color_make(96, 96, 96), lv.STATE.DEFAULT)
-        free_memory_legend.set_style_border_side(lv.BORDER_SIDE.FULL, lv.STATE.DEFAULT)
-        
-        self.screen_apps.free_memory_label = lvr.label(self.screen_apps.graph_panel)
-        self.screen_apps.free_memory_label.set_pos(lv.pct(50), lv.dpx(42))
-        self.screen_apps.free_memory_label.set_style_text_font(lvr.get_font_text_tiny(), lv.STATE.DEFAULT)
-        self.screen_apps.free_memory_label.set_style_text_color(lvr.COLOR_SUBTITLE, lv.STATE.DEFAULT)
-        self.screen_apps.free_memory_label.set_text('     Free (42MB)')
-
         self.screen_apps.panel_apps = None
+    def layout_apps_updates(self):
+        self.screen_apps_updates = lvr.panel(self.root_screen)
+
+        self.screen_apps_updates.add_flag(lv.OBJ_FLAG.HIDDEN)
+        self.screen_apps_updates.set_size(lv.pct(100), lv.pct(100))
+        self.screen_apps_updates.set_style_pad_all(0, lv.STATE.DEFAULT)
+        self.screen_apps_updates.set_style_pad_top(lvr.get_title_bar_height(), lv.STATE.DEFAULT)
+
+        title_bar = lvr.title_bar(self.screen_apps_updates)
+        title_bar.set_y(-lvr.get_title_bar_height())
+        
+        title = lvr.title(title_bar)
+        title.set_text('Install apps')
+        title.center()
+
+        icon_back = lvr.button_icon(title_bar)
+        icon_back.set_align(lv.ALIGN.LEFT_MID)
+        icon_back.add_event_cb(lambda e: self.show_screen(self.screen_apps), lv.EVENT_CODE.CLICKED, None)
+        icon_back.set_text('')
+
+        icon_refresh = lvr.button_icon(title_bar)
+        icon_refresh.add_event_cb(lambda e: self.show_screen(self.screen_apps_updates), lv.EVENT_CODE.CLICKED, None)
+        icon_refresh.set_align(lv.ALIGN.RIGHT_MID)
+        icon_refresh.set_text('')
+
+        self.screen_apps_updates.panel_apps = None
     def layout_app(self):
         self.screen_app = lvr.panel(self.root_screen)
 
@@ -566,6 +517,7 @@ class RinkhalsUiApp(BaseApp):
 
         if screen == self.screen_main: self.show_main()
         elif screen == self.screen_apps: self.show_apps()
+        elif screen == self.screen_apps_updates: self.show_apps_updates()
     def show_main(self):
         self.screen_logo.label_model.set_text(f'Model: {KOBRA_MODEL}')
         self.screen_logo.label_firmware.set_text(f'Firmware: {KOBRA_VERSION}')
@@ -595,15 +547,6 @@ class RinkhalsUiApp(BaseApp):
                     stop_app(app)
 
             self.app_checkboxes[app].set_checked(is_app_enabled(app) == '1')
-
-        total_memory = 220
-        base_memory = 80
-        reserved_memory = 40
-        apps_memory = 0
-
-        self.screen_apps.base_memory_bar.set_width(lv.pct(int(base_memory * 100 / total_memory)))
-        self.screen_apps.reserved_memory_bar.set_width(lv.pct(int(reserved_memory * 100 / total_memory)))
-        self.screen_apps.apps_memory_bar.set_width(lv.pct(int(apps_memory * 100 / total_memory)))
 
         if self.screen_apps.panel_apps:
             self.screen_apps.panel_apps.delete()
@@ -643,39 +586,22 @@ class RinkhalsUiApp(BaseApp):
                     checkbox_app.set_checked(enabled)
 
                 self.app_checkboxes[app] = checkbox_app
-        def refresh_apps_memory():
-            apps_memory = 0
-            with lvr.lock():
-                self.screen_apps.apps_memory_bar.set_width(lv.pct(int(apps_memory * 100 / total_memory)))
-
-            apps = list_apps().split(' ')
-            apps_enabled = are_apps_enabled()
-            
-            for app in apps:
-                enabled = apps_enabled[app] == '1'
-                if not enabled:
-                    continue
-                
-                app_root = get_app_root(app)
-
-                app_manifest = None
-                if os.path.exists(f'{app_root}/app.json'):
-                    try:
-                        with open(f'{app_root}/app.json', 'r') as f:
-                            app_manifest = json.loads(f.read(), cls = JSONWithCommentsDecoder)
-                    except Exception as e:
-                        pass
-
-                app_requirements = app_manifest.get('requirements') if app_manifest else None
-                app_memory = app_requirements.get('memory') if app_requirements else None
-
-                if app_memory:
-                    apps_memory = apps_memory + app_memory + 10
-                    with lvr.lock():
-                        self.screen_apps.apps_memory_bar.set_width(lv.pct(int(apps_memory * 100 / total_memory)))
 
         run_async(refresh_apps)
-        run_async(refresh_apps_memory)
+    def show_apps_updates(self):
+
+        def refresh_apps():
+
+            repositories = get_app_property('rinkhals', 'app_repositories')
+            if not repositories:
+                repositories = trusted_app_repositories
+
+            for repository_url in repositories:
+                repository = AppRepository(repository_url)
+                repository_apps = list(repository.get_apps())
+                a=1
+
+        run_async(refresh_apps)
     def show_app(self, app):
         self.show_screen(self.screen_app)
         

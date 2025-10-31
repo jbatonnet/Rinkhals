@@ -133,7 +133,7 @@ class PrinterInfo:
 
         try:
             with open('/userdata/app/gk/config/api.cfg', 'r') as f:
-                api_config = json.loads(f.read())
+                api_config = json.loads(f.read(), cls = JSONWithCommentsDecoder)
 
             model_id = api_config['cloud']['modelId']
 
@@ -396,7 +396,7 @@ class Firmware:
 
                 return version
             
-            data = json.loads(result)
+            data = json.loads(result, cls = JSONWithCommentsDecoder)
 
             version = FirmwareVersion()
             version.version = data.get('firmware_version', None)
@@ -432,7 +432,7 @@ class Firmware:
                 logging.warning(f'Failed to fetch firmware manifest: {response.status_code}')
                 return versions
             
-            manifest = json.loads(response.text)
+            manifest = json.loads(response.text, cls = JSONWithCommentsDecoder)
             manifest_entries = sorted(manifest.get('firmwares', []), key=lambda e: e.get('version', ''), reverse=True)
 
             for entry in manifest_entries[:limit]:
@@ -662,14 +662,20 @@ class Diagnostic:
 ################
 # Apps management
 
-appRepositories = [
+trusted_app_repositories = [
     #'https://raw.githubusercontent.com/jbatonnet/Rinkhals.apps/refs/heads/master/manifest.json',
-    'https://raw.githubusercontent.com/jbatonnet/Rinkhals.apps/refs/heads/feature/apps-v3/manifest.json'
+    'https://raw.githubusercontent.com/jbatonnet/Rinkhals.apps/refs/heads/feature/apps-repository/manifest.json'
 ]
 
 class AppVersion:
-    pass
-
+    id: str
+    name: str
+    description: str
+    maintainer: str
+    version: str
+    changes: str
+    url: str
+        
 class App:
     pass
 
@@ -682,13 +688,11 @@ class AppRepository:
     def get_repositories():
         
         for appRepository in appRepositories:
-
-
             try:
                 import requests
                 response = requests.get(appRepository, timeout=5)
                 if response.status_code == 200:
-                    manifest = json.loads(response.text)
+                    manifest = json.loads(response.text, cls = JSONWithCommentsDecoder)
                     yield manifest
                 else:
                     logging.warning(f'Failed to fetch app manifest from {appRepository}: {response.status_code}')
@@ -699,7 +703,31 @@ class AppRepository:
 
 
     def get_apps(self):
-        pass
+        try:
+            import requests
+            response = requests.get(self.manifest_url, timeout=5)
+            if response.status_code == 200:
+                manifest = json.loads(response.text, cls = JSONWithCommentsDecoder)
+                if not manifest:
+                    return None
+                apps = manifest.get('apps')
+                if not apps:
+                    return None
+                
+                for app in apps:
+                    app_version = AppVersion()
+                    app_version.id = app
+                    app_version.name = apps[app].get('name')
+                    app_version.description = apps[app].get('description')
+                    app_version.maintainer = apps[app].get('maintainer')
+                    app_version.version = apps[app].get('version')
+                    app_version.changes = apps[app].get('changes')
+                    app_version.url = apps[app].get('url')
+                    yield app_version
+            else:
+                logging.warning(f'Failed to fetch app manifest from {self.manifest_url}: {response.status_code}')
+        except Exception as e:
+            logging.error(f'Error fetching app manifest from {self.manifest_url}: {e}')
 
 
 class BaseApp:
