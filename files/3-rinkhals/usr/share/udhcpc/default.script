@@ -63,12 +63,18 @@ case "$1" in
 			search_list=$domain
 		fi
 
-		[ -n "$search_list" ] &&
-			echo "search $search_list # $interface" >> $RESOLV_CONF
+		# Prepend new DNS entries to resolv.conf
+		NEW_RESOLV_ENTRIES=""
+		if [ -n "$search_list" ]; then
+			NEW_RESOLV_ENTRIES="search $search_list # $interface\n$NEW_RESOLV_ENTRIES"
+		fi
 
 		for i in $dns ; do
 			echo adding dns $i
-			echo "nameserver $i # $interface" >> $RESOLV_CONF
+			NEW_RESOLV_ENTRIES="nameserver $i # $interface\n$NEW_RESOLV_ENTRIES"
+		done
+		if [ -n "$NEW_RESOLV_ENTRIES" ]; then
+			echo -e "$NEW_RESOLV_ENTRIES$(cat $RESOLV_CONF)" > $RESOLV_CONF
 		done
 		;;
 esac
