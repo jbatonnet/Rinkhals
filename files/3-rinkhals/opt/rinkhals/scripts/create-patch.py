@@ -78,8 +78,6 @@ def patch_K3SysUi(binaryPath, modelCode, version):
     # Find the right patch / jump location
     # - In Ghidra, find connect<...AcXPageUiInit...> or a BtnRelease callback
     #   K2P / 3.1.2.3 - Settings > Support (5th button)
-    
-    #   KS1 / 2.4.8.3 - Settings > General > Service Support (4th button)
 
     patchJumpOperand = 'b'
 
@@ -88,6 +86,11 @@ def patch_K3SysUi(binaryPath, modelCode, version):
         patchJumpAddress = 0x99cb8
         patchJumpOperand = 'beq'
         patchReturnAddress = 0x99ce8
+    elif modelCode == 'K2P' and version == '3.1.4':
+        buttonCallback = k3sysui.symbols['_ZN10MainWindow23AcSettingListBtnReleaseEi']
+        patchJumpAddress = 0x8c4ac
+        patchJumpOperand = 'beq'
+        patchReturnAddress = 0x8c528
 
     # K3 - Settings > Support (5th button)
 
