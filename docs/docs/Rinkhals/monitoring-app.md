@@ -6,7 +6,7 @@ Versions of Rinkhals after commit [971d8a5](https://github.com/jbatonnet/Rinkhal
 
 This tool allows to collect system metrics and expose them in a MQTT server. The data is preformatted to be discovered and used with Home Assistant but might be used by anything reading MQTT messages.
 
-By default when enebled, this tool will send metrics to the internal printer Mochi server. This server is available on port 2883 and you will need credentials to connect to it. Username and password can be found in `/userdata/app/gk/config/device_account.json`
+By default when enabled, this tool will send metrics to the internal printer Mochi server. This server is available on port 2883 and you will need credentials to connect to it. Username and password can be found in `/userdata/app/gk/config/device_account.json`
 
 If you're not already using Home Assistant MQTT integration, you might be able to connect directly to the printer. If this is not possible, you can setup a bridge to replicate data from `homeassistant/#` and `rinkhals/#` topics to your existing Home Assistant MQTT server.
 Mosquitto can be setup as a replication broker.
