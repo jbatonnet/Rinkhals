@@ -167,6 +167,17 @@ class Kobra:
             return False
         return self.get_remote_mode() == 'lan'
 
+    def is_ace_available(self):
+        """Check if ACE (Anycubic Color Engine) hardware is connected."""
+        # ACE availability is indicated by the presence of ams_config.cfg
+        ace_config_path = '/userdata/app/gk/config/ams_config.cfg'
+        is_available = os.path.isfile(ace_config_path)
+        if is_available:
+            logging.debug('[ACE] ACE hardware detected')
+        else:
+            logging.debug('[ACE] No ACE hardware found')
+        return is_available
+
     def mqtt_print_file(self, file):
         logging.info(f'Trying to print {file} using MQTT...')
 
@@ -190,6 +201,17 @@ class Kobra:
                 }
             }
         }
+
+        # Add ACE metadata for multi-material support
+        # Only add if ACE hardware is actually connected
+        if self.KOBRA_MODEL_CODE == 'K3' and self.is_ace_available():
+            # Add minimal ams_settings with standard mapping
+            # This enables multi-material prints without requiring MMU GUI features
+            print_data["data"]["ams_settings"] = {
+                "use_ams": True,
+                "ams_box_mapping": ["0", "1", "2", "3"]
+            }
+            logging.info('[ACE Metadata] Added ams_settings with standard mapping')
 
         payload = json.dumps(print_data)
 
