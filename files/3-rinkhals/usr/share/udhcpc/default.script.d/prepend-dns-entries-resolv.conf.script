@@ -1,0 +1,37 @@
+#!/bin/sh
+
+# This script is called by udhcpc to prepend DNS entries to resolv.conf.
+# It's designed to be placed in /usr/share/udhcpc/default.script.d/
+# and will be executed by the main udhcpc script.
+
+# The resolv.conf file to modify. This should typically be /etc/resolv.conf
+# or a temporary file that the main udhcpc script then copies.
+
+RESOLV_CONF="/etc/resolv.conf"
+
+case "$1" in
+  renew|bound)
+    if [ -n "$search" ]; then
+      search_list=$search
+    elif [ -n "$domain" ]; then
+      search_list=$domain
+    fi
+
+    # Create a temporary file for the new resolv.conf content
+    TEMP_RESOLV_CONF=$(mktemp)
+
+    # Add search domain if available
+    [ -n "$search_list" ] && echo "search $search_list # $interface" >> "$TEMP_RESOLV_CONF"
+
+    # Add nameservers
+    for ns in $dns; do
+        echo "nameserver $ns # $interface" >> "$TEMP_RESOLV_CONF"
+    done
+
+    # Prepend the new entries to the existing resolv.conf
+    cat "$RESOLV_CONF" >> "$TEMP_RESOLV_CONF"
+    mv "$TEMP_RESOLV_CONF" "$RESOLV_CONF"
+  ;;
+esac
+
+exit 0
