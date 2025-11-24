@@ -125,6 +125,10 @@ def patch_K3SysUi(binaryPath, modelCode, version):
         buttonCallback = k3sysui.symbols['_ZZN10MainWindow19AcSettingPageUiInitEvENKUlvE_clEv']
         patchJumpAddress = 0xf1c98
         patchReturnAddress = 0xf1cc4
+    elif (modelCode == 'K3' and version == '2.4.4.7') or (modelCode == 'K3M' and version == '2.5.1.3') or (modelCode == 'K3V2' and version == '1.1.0.1'):
+        buttonCallback = k3sysui.symbols['_ZZN10MainWindow19AcSettingPageUiInitEvENKUlvE_clEv']
+        patchJumpAddress = 0x103528
+        patchReturnAddress = 0x103558
 
     # KS1 - Settings > General > Service Support (4th button)
     
