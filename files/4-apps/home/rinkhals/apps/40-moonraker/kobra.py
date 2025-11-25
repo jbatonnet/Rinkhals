@@ -479,14 +479,34 @@ class Kobra:
         async def handle_gcode(me, script, delegate_run_gcode: Callable[[], Coroutine]):
             parts = [s.strip() for s in shlex.split(script.strip()) if s.strip()]
             logging.warning(f"hook on gcode received: {json.dumps(parts)}")
+
+            # Split multi-command lines (e.g., "CMD1 ARG1=X CMD2 ARG2=Y")
+            # Find indices where a part is a registered handler (indicates new command)
+            handler_indices = [0]  # First part is always a command
+            for i, part in enumerate(parts[1:], 1):
+                if part in self.gcode_handlers and '=' not in part:
+                    handler_indices.append(i)
+
+            # If multiple commands detected, execute them sequentially
+            if len(handler_indices) > 1:
+                logging.warning(f"Multiple commands detected in one line: {handler_indices}")
+                last_result = None
+                for idx, start_idx in enumerate(handler_indices):
+                    end_idx = handler_indices[idx + 1] if idx + 1 < len(handler_indices) else len(parts)
+                    sub_parts = parts[start_idx:end_idx]
+                    sub_script = ' '.join(sub_parts)
+                    logging.warning(f"Executing sub-command: {sub_script}")
+                    last_result = await handle_gcode(me, sub_script, delegate_run_gcode)
+                return last_result
+
             cmd = parts[0]
-            
+
             logging.warning(f"hook on gcode cmd: {cmd}")
             handlers = self.gcode_handlers.keys()
             # join handlers
             handlers = ', '.join(handlers)
             logging.warning(f"hook on gcode handlers: {handlers}")
-            
+
             if cmd in self.gcode_handlers:
                 logging.warning(f"hook on gcode cmd found: {cmd}")
                 args = {}
