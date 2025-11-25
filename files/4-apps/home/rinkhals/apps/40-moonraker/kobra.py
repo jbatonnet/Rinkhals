@@ -7,6 +7,7 @@ import logging
 import subprocess
 import shlex
 import ast
+import random
 import paho.mqtt.client as paho
 
 from ..utils import Sentinel
@@ -201,8 +202,10 @@ class Kobra:
             'msgid': str(uuid.uuid4()),
             'timestamp': int(time.time() * 1000),
             'data': {
-                'taskid': '-1',
                 'filename': file,
+                'filepath': '/',
+                'taskid': str(random.randint(0, 1000000)),
+                'task_mode': 1,
                 'filetype': 1,
                 'task_settings': {
                     'auto_leveling': 1 if auto_leveling else 0,

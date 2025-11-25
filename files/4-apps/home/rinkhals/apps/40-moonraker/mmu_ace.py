@@ -414,18 +414,30 @@ class MmuAceController:
     def __init__(self, server: Server, host: str | None):
         self.server = server
         self.eventloop = self.server.get_event_loop()
+        self._last_status_update = 0.0
 
         if host is None:
             self.printer = KlippyPrinterController(self.server)
         else:
             self.printer = RemotePrinterController(self.server, host)
 
-    def _handle_status_update(self):
+    def _handle_status_update(self, force: bool = False):
+        """Send status update notification with throttling.
+
+        Args:
+            force: If True, bypass throttling and send update immediately.
+                   Use for critical user-initiated actions (gate selection, etc.)
+        """
+        current_time = time.time()
+        if not force and (current_time - self._last_status_update) < 5.0:
+            return  # Throttle non-critical updates to once per 5 seconds
+
+        self._last_status_update = current_time
         self.server.send_event("mmu_ace:status_update", asdict(self.get_status()))
 
     def set_ace(self, ace: MmuAce):
         self.ace = ace
-        self._handle_status_update()
+        self._handle_status_update(force=True)
 
         self.eventloop.create_task(self._plan_load_ace())
 
@@ -454,7 +466,7 @@ class MmuAceController:
         await self._load_mmu_ace_config()
         await self._subscribe_mmu_ace_status_update()
 
-        self._handle_status_update()
+        self._handle_status_update(force=True)
 
     async def _load_mmu_ace_config(self):
         result = await self.printer.query_objects({ "filament_hub": None })
@@ -522,7 +534,7 @@ class MmuAceController:
 
             self.ace.units.append(unit)
 
-        self._handle_status_update()
+        self._handle_status_update(force=True)
 
     def get_status(self) -> MmuAceStatus:
 
@@ -621,7 +633,7 @@ class MmuAceController:
 
     def update_ttg_map(self, ttg_map: List[int]):
         self.ace.ttg_map = ttg_map
-        self._handle_status_update()
+        self._handle_status_update(force=True)
 
     async def update_gate(self,
                           gate_index: int,
