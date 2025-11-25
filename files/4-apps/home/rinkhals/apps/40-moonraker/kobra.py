@@ -5,6 +5,7 @@ import re
 import time
 import logging
 import subprocess
+import random
 import paho.mqtt.client as paho
 
 from ..utils import Sentinel
@@ -173,22 +174,28 @@ class Kobra:
         vibration_compensation = self.get_app_property('40-moonraker', 'mqtt_print_vibration_compensation').lower() == 'true'
         flow_calibration = self.get_app_property('40-moonraker', 'mqtt_print_flow_calibration').lower() == 'true'
 
-        payload = f"""{{
+        # MQTT Payload format based on kobra-unleashed (https://github.com/anjomro/kobra-unleashed)
+        # Required fields: filename, filepath, taskid, task_mode, filetype
+        print_data = {
             "type": "print",
             "action": "start",
-            "msgid": "{uuid.uuid4()}",
-            "timestamp": {round(time.time() * 1000)},
-            "data": {{
-                "taskid": "-1",
-                "filename": "{file}",
-                "filetype": 1,
-                "task_settings": {{
-                    "auto_leveling": {'1' if auto_leveling else '0'},
-                    "vibration_compensation": {'1' if vibration_compensation else '0'},
-                    "flow_calibration": {'1' if flow_calibration else '0'}
-                }}
-            }}
-        }}"""
+            "msgid": str(uuid.uuid4()),
+            "timestamp": round(time.time() * 1000),
+            "data": {
+                "filename": file,
+                "filepath": "/",                           # Required: file path on printer
+                "taskid": str(random.randint(0, 1000000)), # Required: unique task ID (not "-1"!)
+                "task_mode": 1,                            # Required: 1 = local print
+                "filetype": 1,                             # 1 = gcode file
+                "task_settings": {
+                    "auto_leveling": '1' if auto_leveling else '0',
+                    "vibration_compensation": '1' if vibration_compensation else '0',
+                    "flow_calibration": '1' if flow_calibration else '0'
+                }
+            }
+        }
+
+        payload = json.dumps(print_data)
 
         self.mqtt_print_report = False
         self.mqtt_print_error = None
