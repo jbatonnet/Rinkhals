@@ -93,7 +93,7 @@ You can find more information in [the documentation](https://jbatonnet.github.io
 
 > [!WARNING]
 > Those printers are quite weak in terms of CPU and Memory. Every additional app / feature and client you connect to the web interface will make the experience slower and might end up in crashes.<br />
-> Having said that, running your printer with Moonraker, 1~2 apps and 1~2 connected clients should work fine.
+> Having said that, running your printer with Moonraker, 1\~2 apps and 1\~2 connected clients should work fine.
 
 An apps system is provided in Rinkhals. It allows for the users to easily add some features to their printer. Some default ones are provided and other are available on separate repos like:
 - https://github.com/jbatonnet/Rinkhals.apps (Tailscale, Cloudflare, OctoApp companion, some progress on vanilla Klipper, ...)
