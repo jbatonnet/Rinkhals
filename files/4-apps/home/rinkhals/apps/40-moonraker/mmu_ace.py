@@ -1441,6 +1441,7 @@ class MmuAcePatcher:
         if self.ace.enabled and "ams_settings" not in print_data:
 
             mapping = []
+            paint_index = 0  # paint_index counts the order of colors in the object (starts at 0)
 
             for tool_index, tool in enumerate(self.ace.tools):
                 gate_index = self.ace.ttg_map[tool_index]
@@ -1462,14 +1463,24 @@ class MmuAcePatcher:
                     logging.error(f"Invalid gate_index {gate_index} for tool {tool_index}")
                     continue
 
+                # Only add mapping for gates with filament (status >= 1)
+                # Empty gates (status == 0) should not be in the mapping to prevent GoKlipper errors
+                if gate.status < 1:
+                    logging.info(f"Skipping empty gate {gate_index} (tool {tool_index}) in ams_box_mapping")
+                    continue
+
                 # Add primary gate mapping
+                # paint_index = order of colors in object (0, 1, 2, ...)
+                # ams_index = physical gate number (can be any gate)
                 mapping.append({
-                    "paint_index": tool_index,
+                    "paint_index": paint_index,
                     "ams_index": gate_index,
                     "paint_color": gate.color,
                     "ams_color": gate.color,
                     "material_type": gate.material
                 })
+
+                logging.info(f"Mapping: paint_index {paint_index} (T{tool_index}) → ams_index {gate_index} ({gate.filament_name})")
 
                 # Add backup gates from endless spool groups
                 if gate_index < len(self.ace.endless_spool_groups):
@@ -1489,15 +1500,18 @@ class MmuAcePatcher:
                                 backup_current_gate_index -= num_gates
 
                             if backup_gate:
-                                # Add backup gate with same paint_index (tool) but different ams_index (gate)
+                                # Add backup gate with same paint_index (same color) but different ams_index (gate)
                                 mapping.append({
-                                    "paint_index": tool_index,
+                                    "paint_index": paint_index,
                                     "ams_index": backup_gate_index,
                                     "paint_color": backup_gate.color,
                                     "ams_color": backup_gate.color,
                                     "material_type": backup_gate.material
                                 })
-                                logging.info(f"Endless Spool: Tool {tool_index} can use Gate {backup_gate_index} as backup for Gate {gate_index} (group {endless_spool_group})")
+                                logging.info(f"Endless Spool: paint_index {paint_index} (T{tool_index}) can use Gate {backup_gate_index} as backup for Gate {gate_index} (group {endless_spool_group})")
+
+                # Increment paint_index for the next color in the object
+                paint_index += 1
 
             print_data["ams_settings"] = {
                 "use_ams": True,
