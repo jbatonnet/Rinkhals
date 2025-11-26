@@ -1427,15 +1427,15 @@ class MmuAcePatcher:
 
             # Get gate-specific temperature if available
             gate_temp = min_temp
-            gate_lookup = self._get_gate_by_index(gate)
+            gate_lookup = self.ace_controller._get_gate_by_index(gate)
             if gate_lookup:
                 unit, gate_obj = gate_lookup
                 if gate_obj.temperature > 0:
                     gate_temp = gate_obj.temperature
 
-            # Check if already hot enough
-            if current_temp >= min_temp:
-                message = f"Extruder temperature OK: {current_temp:.1f}°C (min: {min_temp}°C)"
+            # Check if already hot enough (need gate_temp, not just min_temp)
+            if current_temp >= gate_temp:
+                message = f"Extruder temperature OK: {current_temp:.1f}°C (gate requires {gate_temp}°C)"
                 logging.info(message)
                 await self._send_gcode_response(message)
                 return True
@@ -1449,12 +1449,12 @@ class MmuAcePatcher:
                 # Send M104 to set temperature
                 await self.ace_controller.printer.send_gcode(f"M104 S{gate_temp}")
 
-            # Wait for temperature (with timeout)
-            message = f"Waiting for extruder to reach {min_temp}°C (current: {current_temp:.1f}°C)..."
+            # Wait for temperature (with timeout) - wait for gate_temp, not min_temp
+            message = f"Waiting for extruder to reach {gate_temp}°C (current: {current_temp:.1f}°C)..."
             logging.info(message)
             await self._send_gcode_response(message)
 
-            # Poll temperature until min_temp reached (max 5 minutes)
+            # Poll temperature until gate_temp reached (max 5 minutes)
             # Adaptive polling: slower when far away, faster when close
             max_wait = 300  # 5 minutes
             elapsed = 0
@@ -1466,14 +1466,14 @@ class MmuAcePatcher:
                 })
                 current_temp = result["extruder"]["temperature"]
 
-                if current_temp >= min_temp:
+                if current_temp >= gate_temp:
                     message = f"Extruder ready: {current_temp:.1f}°C"
                     logging.info(message)
                     await self._send_gcode_response(message)
                     return True
 
                 # Adaptive polling interval based on temperature difference
-                temp_diff = min_temp - current_temp
+                temp_diff = gate_temp - current_temp
                 if temp_diff > 50:
                     poll_interval = 5  # Far away: slow polling (reduces API calls)
                 elif temp_diff > 10:
@@ -1483,7 +1483,7 @@ class MmuAcePatcher:
 
                 # Progress update every 10 seconds (independent of poll interval)
                 if elapsed % 10 == 0:
-                    message = f"Heating... {current_temp:.1f}°C / {min_temp}°C ({elapsed}s elapsed)"
+                    message = f"Heating... {current_temp:.1f}°C / {gate_temp}°C ({elapsed}s elapsed)"
                     logging.info(message)
                     await self._send_gcode_response(message)
 
@@ -1491,7 +1491,7 @@ class MmuAcePatcher:
                 elapsed += poll_interval
 
             # Timeout
-            message = f"ERROR: Extruder heating timeout after {max_wait}s (current: {current_temp:.1f}°C, target: {min_temp}°C)"
+            message = f"ERROR: Extruder heating timeout after {max_wait}s (current: {current_temp:.1f}°C, target: {gate_temp}°C)"
             logging.error(message)
             await self._send_gcode_response(message)
             return False
