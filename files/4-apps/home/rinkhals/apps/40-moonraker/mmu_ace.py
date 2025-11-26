@@ -17,6 +17,7 @@ import time
 import traceback
 import tempfile
 
+from collections import OrderedDict
 from dataclasses import dataclass, asdict
 from enum import Enum
 from types import NoneType
@@ -32,7 +33,8 @@ from typing import (
     Mapping,
     Callable,
     Coroutine,
-    Type
+    Type,
+    Tuple
 )
 
 # Import at runtime for actual use
@@ -539,8 +541,13 @@ class MmuAceController:
         self._throttle_delay = 0.3  # 300ms minimum delay between updates (max 3/sec)
         self._pending_update = False  # Flag to track if update is needed
 
-        # Cache for filament temperature info (key: "unit_id-gate_index-sku")
-        self._filament_temp_cache: Dict[str, Dict[str, Any]] = {}
+        # LRU Cache for filament temperature info (key: "unit_id-gate_index-sku")
+        # Limit to 16 entries (2x max gates) to prevent memory leak
+        self._filament_temp_cache: OrderedDict = OrderedDict()
+        self._max_cache_size = 16  # 2x max gates (8 gates * 2)
+
+        # Cache for gate lookups (key: gate_index, value: (unit, gate))
+        self._gate_lookup_cache: Dict[int, Tuple[MmuAceUnit, MmuAceGate]] = {}
 
         if host is None:
             self.printer = KlippyPrinterController(self.server)
@@ -615,6 +622,35 @@ class MmuAceController:
         except Exception as e:
             logging.error(f"Error sending status update: {e}")
 
+    def _get_gate_by_index(self, gate_index: int) -> Optional[Tuple[MmuAceUnit, MmuAceGate]]:
+        """Get gate by global index with caching for performance.
+
+        Args:
+            gate_index: Global gate index (0-7 for 2 units with 4 gates each)
+
+        Returns:
+            Tuple of (unit, gate) or None if not found
+        """
+        # Check cache first
+        if gate_index in self._gate_lookup_cache:
+            return self._gate_lookup_cache[gate_index]
+
+        # Linear search through units
+        current_gate_index = gate_index
+        for unit in self.ace.units:
+            if current_gate_index < len(unit.gates):
+                result = (unit, unit.gates[current_gate_index])
+                # Cache the result
+                self._gate_lookup_cache[gate_index] = result
+                return result
+            current_gate_index -= len(unit.gates)
+
+        return None
+
+    def _invalidate_gate_cache(self):
+        """Invalidate gate lookup cache when units change."""
+        self._gate_lookup_cache.clear()
+
     def _send_fast_update(self):
         """Send full status update immediately (no throttling for fast path)"""
         try:
@@ -682,6 +718,10 @@ class MmuAceController:
         filament_hub = result["filament_hub"]
 
         # Fetch temperature info for all gates with material (initial load)
+        # Collect all temperature fetch tasks for parallel execution
+        temp_tasks = []
+        task_metadata = []  # Store (hub, slot) references to apply results later
+
         for hub in filament_hub["filament_hubs"]:
             hub_id = hub["id"]
             for slot in hub["slots"]:
@@ -692,10 +732,22 @@ class MmuAceController:
                 # Only query for gates with material (source=1 RFID or source=2 user-edited)
                 # Skip empty gates (source=3)
                 if source in [1, 2]:
-                    temp_data = await self._get_filament_temperature_info(hub_id, gate_index, sku)
-                    # Store in slot for _set_ace_status to use
-                    if temp_data:
-                        slot["temperature"] = temp_data
+                    task = self._get_filament_temperature_info(hub_id, gate_index, sku)
+                    temp_tasks.append(task)
+                    task_metadata.append((hub, slot))
+
+        # Execute all temperature fetches in parallel (8x faster startup)
+        if temp_tasks:
+            logging.info(f"Fetching temperature data for {len(temp_tasks)} gates in parallel...")
+            results = await asyncio.gather(*temp_tasks, return_exceptions=True)
+
+            # Apply results back to slots
+            for i, temp_data in enumerate(results):
+                hub, slot = task_metadata[i]
+                if isinstance(temp_data, Exception):
+                    logging.warning(f"Failed to fetch temperature for gate {slot['index']}: {temp_data}")
+                elif temp_data:
+                    slot["temperature"] = temp_data
 
         self._set_ace_status(filament_hub)
 
@@ -705,6 +757,10 @@ class MmuAceController:
             logging.warning(f"mmu ace status update: {json.dumps(filament_hub)}")
 
             # Fetch temperature info for all gates with material
+            # Collect all temperature fetch tasks for parallel execution
+            temp_tasks = []
+            task_metadata = []  # Store (hub, slot) references to apply results later
+
             for hub in filament_hub["filament_hubs"]:
                 hub_id = hub["id"]
                 for slot in hub["slots"]:
@@ -715,10 +771,21 @@ class MmuAceController:
                     # Only query for gates with material (source=1 RFID or source=2 user-edited)
                     # Skip empty gates (source=3)
                     if source in [1, 2]:
-                        temp_data = await self._get_filament_temperature_info(hub_id, gate_index, sku)
-                        # Store in slot for _set_ace_status to use
-                        if temp_data:
-                            slot["temperature"] = temp_data
+                        task = self._get_filament_temperature_info(hub_id, gate_index, sku)
+                        temp_tasks.append(task)
+                        task_metadata.append((hub, slot))
+
+            # Execute all temperature fetches in parallel
+            if temp_tasks:
+                results = await asyncio.gather(*temp_tasks, return_exceptions=True)
+
+                # Apply results back to slots
+                for i, temp_data in enumerate(results):
+                    hub, slot = task_metadata[i]
+                    if isinstance(temp_data, Exception):
+                        logging.warning(f"Failed to fetch temperature for gate {slot['index']}: {temp_data}")
+                    elif temp_data:
+                        slot["temperature"] = temp_data
 
             self._set_ace_status(filament_hub)
 
@@ -761,6 +828,13 @@ class MmuAceController:
                 if isinstance(temp_data, dict) and "min" in temp_data and "max" in temp_data:
                     # Cache the result with timestamp
                     self._filament_temp_cache[cache_key] = (temp_data, time.time())
+
+                    # LRU eviction: remove oldest entry if cache is full
+                    if len(self._filament_temp_cache) > self._max_cache_size:
+                        oldest_key = next(iter(self._filament_temp_cache))
+                        self._filament_temp_cache.pop(oldest_key)
+                        logging.debug(f"Evicted oldest cache entry: {oldest_key}")
+
                     logging.info(f"Cached temperature for unit {unit_id} gate {gate_index} (SKU: {sku}): {temp_data}")
                     return temp_data
 
@@ -777,6 +851,9 @@ class MmuAceController:
         ace.units = []
         ace.tools = []
         ace.ttg_map = []
+
+        # Invalidate gate lookup cache when units change
+        self._invalidate_gate_cache()
 
         # Track global gate index across all units for tool mapping
         global_gate_index = 0
@@ -1053,16 +1130,12 @@ class MmuAceController:
         # Get gate info from ttg_map
         gate_index = self.ace.ttg_map[tool_index] if tool_index < len(self.ace.ttg_map) else -1
 
-        # Find the gate
+        # Find the gate using cached lookup
         gate = None
         if gate_index >= 0:
-            current_gate_index = gate_index
-            for unit in self.ace.units:
-                num_gates = len(unit.gates)
-                if current_gate_index < num_gates:
-                    gate = unit.gates[current_gate_index]
-                    break
-                current_gate_index -= num_gates
+            gate_lookup = self._get_gate_by_index(gate_index)
+            if gate_lookup:
+                unit, gate = gate_lookup
 
         # Use gate info if available, otherwise use tool defaults
         if gate and gate.status != GATE_EMPTY:
@@ -1100,64 +1173,58 @@ class MmuAceController:
                           spool_id: int = -1,
                           speed_override: int = -1
                           ):
-        gate: MmuAceGate | None = None
-        unit: MmuAceUnit | None = None
-        current_gate_index = gate_index
-        for u in self.ace.units:
-            num_gates = len(u.gates)
-            if num_gates - 1 >= gate_index:
-                unit = u
-                gate = u.gates[current_gate_index]
-                break
-            current_gate_index = current_gate_index - num_gates
+        # Use cached gate lookup
+        gate_lookup = self._get_gate_by_index(gate_index)
+        if not gate_lookup:
+            logging.warning(f"update gate {gate_index} not found")
+            return
+
+        unit, gate = gate_lookup
 
         logging.warning(f"update gate {gate_index} actual values {json.dumps(gate.__dict__)}")
 
         if color is None:
             color = [0, 0, 0, 0]
 
-        if gate is not None:
-            if gate.rfid == 2:
-                logging.warning(f"update gate {gate_index} not allowed, RFID tag is locked")
-                return
+        if gate.rfid == 2:
+            logging.warning(f"update gate {gate_index} not allowed, RFID tag is locked")
+            return
 
-            logging.warning(f"updating gate {gate_index} (rfid={gate.rfid})")
+        logging.warning(f"updating gate {gate_index} (rfid={gate.rfid})")
 
-            # Update local gate values immediately for UI responsiveness
-            gate.status = status
-            gate.filament_name = filament_name
-            gate.material = material
-            gate.color = color
-            gate.temperature = temperature
-            gate.spool_id = spool_id
-            gate.speed_override = speed_override
+        # Update local gate values immediately for UI responsiveness
+        gate.status = status
+        gate.filament_name = filament_name
+        gate.material = material
+        gate.color = color
+        gate.temperature = temperature
+        gate.spool_id = spool_id
+        gate.speed_override = speed_override
 
-            # Try to sync with GoKlipper (only works if gate has RFID tag)
-            # {"method":"filament_hub/set_filament_info","params":{"color":{"B":65,"G":209,"R":254},"id":0,"index":2,"type":"PLA"},"id":34}
-            params = {
-                "color": {"R": color[0], "G": color[1], "B": color[2]},
-                "id": unit.id, # ace id
-                "index": gate.index, # slot index
-                "type": material
-            }
+        # Try to sync with GoKlipper (only works if gate has RFID tag)
+        # {"method":"filament_hub/set_filament_info","params":{"color":{"B":65,"G":209,"R":254},"id":0,"index":2,"type":"PLA"},"id":34}
+        params = {
+            "color": {"R": color[0], "G": color[1], "B": color[2]},
+            "id": unit.id, # ace id
+            "index": gate.index, # slot index
+            "type": material
+        }
 
-            try:
-                result = await self.printer.send_request("filament_hub/set_filament_info", params)
-                if result == "ok":
-                    logging.info(f"Gate {gate_index} synchronized with GoKlipper/ACE hardware")
-                else:
-                    logging.info(f"Gate {gate_index} updated locally (no RFID tag, cannot sync to hardware)")
-            except Exception as e:
-                logging.info(f"Gate {gate_index} updated locally (no RFID tag, cannot sync to hardware): {e}")
+        try:
+            result = await self.printer.send_request("filament_hub/set_filament_info", params)
+            if result == "ok":
+                logging.info(f"Gate {gate_index} synchronized with GoKlipper/ACE hardware")
+            else:
+                logging.info(f"Gate {gate_index} updated locally (no RFID tag, cannot sync to hardware)")
+        except Exception as e:
+            logging.info(f"Gate {gate_index} updated locally (no RFID tag, cannot sync to hardware): {e}")
 
-            # Wait briefly for any pending subscription updates to complete
-            await asyncio.sleep(0.1)
+        # Wait briefly for any pending subscription updates to complete
+        await asyncio.sleep(0.1)
 
-            # Trigger UI update with our local values
-            self._handle_status_update(force=True)
-            logging.warning(f"updated gate {gate_index}: {material} {filament_name}")
-        else:
-            logging.warning(f"update gate {gate_index} not found")
+        # Trigger UI update with our local values
+        self._handle_status_update(force=True)
+        logging.warning(f"updated gate {gate_index}: {material} {filament_name}")
 
 class MmuAcePatcher:
 
@@ -1360,16 +1427,11 @@ class MmuAcePatcher:
 
             # Get gate-specific temperature if available
             gate_temp = min_temp
-            if gate >= 0 and gate < sum(len(unit.gates) for unit in self.ace.units):
-                # Find gate
-                current_gate_index = gate
-                for unit in self.ace.units:
-                    if current_gate_index < len(unit.gates):
-                        gate_obj = unit.gates[current_gate_index]
-                        if gate_obj.temperature > 0:
-                            gate_temp = gate_obj.temperature
-                        break
-                    current_gate_index -= len(unit.gates)
+            gate_lookup = self._get_gate_by_index(gate)
+            if gate_lookup:
+                unit, gate_obj = gate_lookup
+                if gate_obj.temperature > 0:
+                    gate_temp = gate_obj.temperature
 
             # Check if already hot enough
             if current_temp >= min_temp:
@@ -1393,14 +1455,11 @@ class MmuAcePatcher:
             await self._send_gcode_response(message)
 
             # Poll temperature until min_temp reached (max 5 minutes)
+            # Adaptive polling: slower when far away, faster when close
             max_wait = 300  # 5 minutes
-            poll_interval = 2  # 2 seconds
             elapsed = 0
 
             while elapsed < max_wait:
-                await asyncio.sleep(poll_interval)
-                elapsed += poll_interval
-
                 # Check current temperature
                 result = await self.ace_controller.printer.query_objects({
                     "extruder": ["temperature"]
@@ -1413,11 +1472,23 @@ class MmuAcePatcher:
                     await self._send_gcode_response(message)
                     return True
 
-                # Progress update every 10 seconds
+                # Adaptive polling interval based on temperature difference
+                temp_diff = min_temp - current_temp
+                if temp_diff > 50:
+                    poll_interval = 5  # Far away: slow polling (reduces API calls)
+                elif temp_diff > 10:
+                    poll_interval = 2  # Medium distance: normal polling
+                else:
+                    poll_interval = 0.5  # Close to target: fast polling (quicker response)
+
+                # Progress update every 10 seconds (independent of poll interval)
                 if elapsed % 10 == 0:
                     message = f"Heating... {current_temp:.1f}°C / {min_temp}°C ({elapsed}s elapsed)"
                     logging.info(message)
                     await self._send_gcode_response(message)
+
+                await asyncio.sleep(poll_interval)
+                elapsed += poll_interval
 
             # Timeout
             message = f"ERROR: Extruder heating timeout after {max_wait}s (current: {current_temp:.1f}°C, target: {min_temp}°C)"
@@ -1539,13 +1610,9 @@ class MmuAcePatcher:
                     await self._send_gcode_response(message)
 
                     max_wait = 300  # 5 minutes
-                    poll_interval = 2
                     elapsed = 0
 
                     while elapsed < max_wait:
-                        await asyncio.sleep(poll_interval)
-                        elapsed += poll_interval
-
                         result = await self.ace_controller.printer.query_objects({
                             "extruder": ["temperature"]
                         })
@@ -1557,10 +1624,22 @@ class MmuAcePatcher:
                             await self._send_gcode_response(message)
                             break
 
+                        # Adaptive polling interval
+                        temp_diff = max_min_temp - current_temp
+                        if temp_diff > 50:
+                            poll_interval = 5
+                        elif temp_diff > 10:
+                            poll_interval = 2
+                        else:
+                            poll_interval = 0.5
+
                         if elapsed % 10 == 0:
                             message = f"Heating... {current_temp:.1f}°C / {max_min_temp}°C ({elapsed}s elapsed)"
                             logging.info(message)
                             await self._send_gcode_response(message)
+
+                        await asyncio.sleep(poll_interval)
+                        elapsed += poll_interval
 
                     if current_temp < max_min_temp:
                         message = f"ERROR: Heating timeout after {max_wait}s (current: {current_temp:.1f}°C, target: {max_min_temp}°C)"
