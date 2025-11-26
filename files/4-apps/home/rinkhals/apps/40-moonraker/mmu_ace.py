@@ -283,7 +283,7 @@ class MmuAce:
     unit: int = UNIT_UNKNOWN
     print_state: MmuAcePrintState = MmuAcePrintState.UNKNOWN
     is_paused: bool = False
-    is_homed: bool = False
+    is_homed: bool = True  # ACE selector is virtual - always "homed" to enable manual load/unload buttons
     gate: int = TOOL_GATE_UNKNOWN
     tool: int = TOOL_GATE_UNKNOWN
     ttg_map: List[int] = []
@@ -539,6 +539,9 @@ class MmuAceController:
         self._throttle_delay = 0.3  # 300ms minimum delay between updates (max 3/sec)
         self._pending_update = False  # Flag to track if update is needed
 
+        # Cache for filament temperature info (key: "unit_id-gate_index-sku")
+        self._filament_temp_cache: Dict[str, Dict[str, Any]] = {}
+
         if host is None:
             self.printer = KlippyPrinterController(self.server)
         else:
@@ -678,6 +681,22 @@ class MmuAceController:
 
         filament_hub = result["filament_hub"]
 
+        # Fetch temperature info for all gates with material (initial load)
+        for hub in filament_hub["filament_hubs"]:
+            hub_id = hub["id"]
+            for slot in hub["slots"]:
+                gate_index = slot["index"]
+                sku = slot.get("sku", "")
+                source = slot.get("source", 3)
+
+                # Only query for gates with material (source=1 RFID or source=2 user-edited)
+                # Skip empty gates (source=3)
+                if source in [1, 2]:
+                    temp_data = await self._get_filament_temperature_info(hub_id, gate_index, sku)
+                    # Store in slot for _set_ace_status to use
+                    if temp_data:
+                        slot["temperature"] = temp_data
+
         self._set_ace_status(filament_hub)
 
     async def _handle_mmu_ace_status_update(self, status: Dict[str, Any], _: float):
@@ -685,7 +704,72 @@ class MmuAceController:
             filament_hub = status["filament_hub"]
             logging.warning(f"mmu ace status update: {json.dumps(filament_hub)}")
 
+            # Fetch temperature info for all gates with material
+            for hub in filament_hub["filament_hubs"]:
+                hub_id = hub["id"]
+                for slot in hub["slots"]:
+                    gate_index = slot["index"]
+                    sku = slot.get("sku", "")
+                    source = slot.get("source", 3)
+
+                    # Only query for gates with material (source=1 RFID or source=2 user-edited)
+                    # Skip empty gates (source=3)
+                    if source in [1, 2]:
+                        temp_data = await self._get_filament_temperature_info(hub_id, gate_index, sku)
+                        # Store in slot for _set_ace_status to use
+                        if temp_data:
+                            slot["temperature"] = temp_data
+
             self._set_ace_status(filament_hub)
+
+    async def _get_filament_temperature_info(self, unit_id: int, gate_index: int, sku: str) -> Optional[Dict[str, Any]]:
+        """Get filament temperature info from ACE hardware with time-based caching.
+
+        Cache expires after 60 seconds to allow detection of RFID tag changes.
+
+        Args:
+            unit_id: ACE unit ID (0 or 1)
+            gate_index: Local gate index (0-3)
+            sku: SKU code for cache key
+
+        Returns:
+            Dict with 'min' and 'max' temperature, or None if not available
+        """
+        # Create cache key from unit, gate, and SKU
+        cache_key = f"{unit_id}-{gate_index}-{sku}"
+
+        # Check if cached data is still valid (< 60 seconds old)
+        if cache_key in self._filament_temp_cache:
+            cached_data, timestamp = self._filament_temp_cache[cache_key]
+            age = time.time() - timestamp
+            if age < 60:  # Cache valid for 60 seconds
+                logging.debug(f"Using cached temperature for unit {unit_id} gate {gate_index} (age: {age:.1f}s)")
+                return cached_data
+            else:
+                logging.info(f"Cache expired for unit {unit_id} gate {gate_index} (age: {age:.1f}s), refreshing...")
+
+        # Query ACE hardware for filament info
+        try:
+            result = await self.printer.send_request(
+                "filament_hub/filament_info",
+                {"id": unit_id, "index": gate_index}
+            )
+
+            # Extract temperature data
+            if result and "extruder_temp" in result:
+                temp_data = result["extruder_temp"]
+                if isinstance(temp_data, dict) and "min" in temp_data and "max" in temp_data:
+                    # Cache the result with timestamp
+                    self._filament_temp_cache[cache_key] = (temp_data, time.time())
+                    logging.info(f"Cached temperature for unit {unit_id} gate {gate_index} (SKU: {sku}): {temp_data}")
+                    return temp_data
+
+            logging.warning(f"No temperature data in filament_info for unit {unit_id} gate {gate_index}")
+            return None
+
+        except Exception as e:
+            logging.warning(f"Failed to get filament_info for unit {unit_id} gate {gate_index}: {e}")
+            return None
 
     def _set_ace_status(self, filament_hub):
         # set units
@@ -778,6 +862,34 @@ class MmuAceController:
 
             self.ace.units.append(unit)
 
+        # Sync MMU status with ACE Hub current_filament state
+        # Only sync if MMU thinks filament is loaded (pos == LOADED) but ACE Hub disagrees
+        current_filament = filament_hub.get("current_filament", "")
+
+        # If MMU thinks filament is LOADED but ACE Hub says nothing loaded -> sync (reset)
+        if self.ace.filament.pos == FILAMENT_POS_LOADED and (not current_filament or current_filament == ""):
+            logging.info(f"_set_ace_status: MMU thinks loaded but ACE Hub current_filament is empty, resetting MMU status")
+            self.ace.gate = -1
+            self.ace.tool = -1
+            self.ace.filament.pos = FILAMENT_POS_UNLOADED
+        # If ACE Hub says filament loaded but MMU doesn't know -> sync (set loaded)
+        elif current_filament and current_filament != "" and self.ace.filament.pos != FILAMENT_POS_LOADED:
+            # Parse current_filament (format: "unit_id-gate_index" like "0-1")
+            try:
+                parts = current_filament.split("-")
+                if len(parts) == 2:
+                    unit_id = int(parts[0])
+                    local_gate = int(parts[1])
+                    # Calculate global gate index
+                    global_gate = (unit_id * 4) + local_gate
+                    logging.info(f"_set_ace_status: ACE Hub current_filament='{current_filament}', setting MMU gate={global_gate}")
+                    self.ace.gate = global_gate
+                    self.ace.tool = global_gate  # Tool = Gate for ACE
+                    self.ace.filament.pos = FILAMENT_POS_LOADED
+            except Exception as e:
+                logging.error(f"_set_ace_status: Failed to parse current_filament '{current_filament}': {e}")
+        # Otherwise: MMU status and ACE Hub agree, or MMU is in selection state (gate >= 0 but not loaded) - don't interfere
+
         self._handle_status_update(force=True)
 
     def get_status(self) -> MmuAceStatus:
@@ -795,24 +907,25 @@ class MmuAceController:
         gate_speed_override = [gate.speed_override if gate.speed_override >= 0 else 100 for gate in gates]
         gate_vendor = [gate.vendor if hasattr(gate, 'vendor') and gate.vendor else "" for gate in gates]
 
-        # Set filament position and name based on currently selected gate
-        # For ACE: Filament in gate = LOADED, empty gate = UNLOADED
-        filament_pos = FILAMENT_POS_UNKNOWN
+        # Use actual filament position from self.ace.filament.pos
+        # This is set by MMU_SELECT, MMU_LOAD, MMU_UNLOAD, and ACE Hub sync
+        filament_pos = self.ace.filament.pos
         filament_name = "Unknown"
         filament_vendor = ""
         filament_material = ""
         filament_color = ""
 
+        # Set filament info based on currently selected gate
         if self.ace.gate >= 0 and self.ace.gate < len(gates):
             current_gate = gates[self.ace.gate]
             if current_gate.status == GATE_AVAILABLE or current_gate.status == GATE_AVAILABLE_FROM_BUFFER:
-                filament_pos = FILAMENT_POS_LOADED  # Filament is in gate (loaded)
+                # Gate has filament - show its info
                 filament_name = current_gate.filament_name if current_gate.filament_name else current_gate.material
                 filament_vendor = current_gate.vendor if hasattr(current_gate, 'vendor') and current_gate.vendor else ""
                 filament_material = current_gate.material if current_gate.material else ""
                 filament_color = rgba_to_hex(current_gate.color) if current_gate.color else "000000FF"
             elif current_gate.status == GATE_EMPTY:
-                filament_pos = FILAMENT_POS_UNLOADED  # Gate is empty (unloaded)
+                # Gate is empty
                 filament_name = "Empty"
 
         # Create active_filament status with proper structure
@@ -1168,8 +1281,11 @@ class MmuAcePatcher:
                         self.ace.tool = tool_idx
                         break
 
+                # Set filament_pos to UNLOADED (selection is not loading, just preparation)
+                self.ace.filament.pos = FILAMENT_POS_UNLOADED
+
                 self.ace_controller._handle_status_update(throttle=True)  # Throttle: max 3 updates/sec
-                logging.info(f"Selected gate {gate}, tool {self.ace.tool}")
+                logging.info(f"Selected gate {gate}, tool {self.ace.tool}, filament_pos set to UNLOADED")
             else:
                 logging.error(f"Invalid gate {gate}, total gates: {num_gates}")
         elif tool >= 0:
@@ -1177,8 +1293,12 @@ class MmuAcePatcher:
             if tool < len(self.ace.ttg_map):
                 self.ace.gate = self.ace.ttg_map[tool]
                 self.ace.tool = tool
+
+                # Set filament_pos to UNLOADED (selection is not loading, just preparation)
+                self.ace.filament.pos = FILAMENT_POS_UNLOADED
+
                 self.ace_controller._handle_status_update(throttle=True)  # Throttle: max 3 updates/sec
-                logging.info(f"Selected tool {tool} -> gate {self.ace.gate}")
+                logging.info(f"Selected tool {tool} -> gate {self.ace.gate}, filament_pos set to UNLOADED")
             else:
                 logging.error(f"Invalid tool {tool}, total tools: {len(self.ace.ttg_map)}")
 
@@ -1312,20 +1432,25 @@ class MmuAcePatcher:
             return False
 
     async def _on_gcode_mmu_load(self, args: dict[str, str | None], delegate):
-        """Manual load filament: MMU_LOAD GATE=0 [LENGTH=100] [SPEED=25]
+        """Manual load filament: MMU_LOAD [GATE=0] [LENGTH=100] [SPEED=25]
 
         Uses GoKlipper's FEED_FILAMENT G-code command internally.
         Automatically heats extruder to proper temperature for selected gate.
+        If GATE not specified, uses currently selected gate from MMU_SELECT.
         """
         gate = self._get_gcode_arg_int("GATE", args, -1)
         length = self._get_gcode_arg_float("LENGTH", args, default=100.0)
         speed = self._get_gcode_arg_float("SPEED", args, default=25.0)
 
+        # Use currently selected gate if no GATE parameter provided
         if gate < 0:
-            message = "MMU_LOAD: GATE parameter required (0-7)"
-            logging.error(message)
-            await self._send_gcode_response(message)
-            return None
+            gate = self.ace.gate
+            if gate < 0:
+                message = "MMU_LOAD: No gate selected. Use MMU_SELECT GATE=X first or provide GATE parameter"
+                logging.error(message)
+                await self._send_gcode_response(message)
+                return None
+            logging.info(f"MMU_LOAD: Using currently selected gate {gate}")
 
         # Ensure extruder is heated to proper temperature
         if not await self._ensure_extruder_temp(gate):
@@ -1343,7 +1468,14 @@ class MmuAcePatcher:
         try:
             # Send directly to GoKlipper via G-code
             await self.ace_controller.printer.send_gcode(gcode)
-            message = f"MMU_LOAD: Loading {length}mm from gate {gate} (index {local_index}) at {speed}mm/s"
+
+            # Update MMU status after successful load
+            self.ace.gate = gate
+            self.ace.tool = gate  # Tool = Gate for ACE
+            self.ace.filament.pos = FILAMENT_POS_LOADED
+            self.ace_controller._handle_status_update(force=True)
+
+            message = f"MMU_LOAD: Loading {length}mm from gate {gate} (index {local_index}) at {speed}mm/s completed, MMU status updated"
             logging.info(message)
             await self._send_gcode_response(message)
         except Exception as e:
@@ -1354,22 +1486,119 @@ class MmuAcePatcher:
         return None  # Don't execute original command
 
     async def _on_gcode_mmu_unload(self, args: dict[str, str | None], delegate):
-        """Manual unload filament: MMU_UNLOAD GATE=0 [LENGTH=100] [SPEED=20]
+        """Manual unload filament: MMU_UNLOAD [GATE=0] [LENGTH=100] [SPEED=20]
 
-        Uses GoKlipper's UNWIND_FILAMENT G-code command internally.
+        Uses GoKlipper's UNWIND_FILAMENT or UNWIND_ALL_FILAMENT G-code command internally.
         Automatically heats extruder to min_extrude_temp if needed.
+        If GATE not specified, uses UNWIND_ALL_FILAMENT to unload all gates.
         """
         gate = self._get_gcode_arg_int("GATE", args, -1)
         length = self._get_gcode_arg_float("LENGTH", args, default=100.0)
         speed = self._get_gcode_arg_float("SPEED", args, default=20.0)
 
+        # If no gate specified, use UNWIND_ALL_FILAMENT
         if gate < 0:
-            message = "MMU_UNLOAD: GATE parameter required (0-7)"
-            logging.error(message)
-            await self._send_gcode_response(message)
-            return None
+            logging.info("MMU_UNLOAD: No GATE parameter, using UNWIND_ALL_FILAMENT")
 
-        # Ensure extruder is heated to minimum temperature for retraction
+            # Find highest minimum temperature among all loaded gates
+            # Since Kobra 3 has no cutter and only unloads by heat, we need
+            # the highest temperature to safely unload ALL filaments
+            max_min_temp = 170  # Start with min_extrude_temp as fallback
+            gates_with_temp = []
+
+            for unit in self.ace.units:
+                for gate_obj in unit.gates:
+                    # Check if gate has filament loaded (status >= 1)
+                    if gate_obj.status >= 1:
+                        gate_min_temp = gate_obj.temperature_min if hasattr(gate_obj, 'temperature_min') and gate_obj.temperature_min > 0 else gate_obj.temperature
+                        if gate_min_temp > 0:
+                            max_min_temp = max(max_min_temp, gate_min_temp)
+                            gates_with_temp.append((gate_obj.index, gate_min_temp))
+
+            if gates_with_temp:
+                logging.info(f"MMU_UNLOAD: Found loaded gates with temps: {gates_with_temp}, using max={max_min_temp}°C")
+            else:
+                logging.info(f"MMU_UNLOAD: No gates with temp data, using min_extrude_temp={max_min_temp}°C")
+
+            # Heat to highest minimum temperature
+            try:
+                result = await self.ace_controller.printer.query_objects({
+                    "extruder": ["temperature", "target"]
+                })
+                current_temp = result["extruder"]["temperature"]
+
+                if current_temp < max_min_temp:
+                    message = f"Heating extruder to {max_min_temp}°C (highest min temp of loaded filaments)..."
+                    logging.info(message)
+                    await self._send_gcode_response(message)
+                    await self.ace_controller.printer.send_gcode(f"M104 S{max_min_temp}")
+
+                    # Wait for temperature
+                    message = f"Waiting for extruder to reach {max_min_temp}°C (current: {current_temp:.1f}°C)..."
+                    logging.info(message)
+                    await self._send_gcode_response(message)
+
+                    max_wait = 300  # 5 minutes
+                    poll_interval = 2
+                    elapsed = 0
+
+                    while elapsed < max_wait:
+                        await asyncio.sleep(poll_interval)
+                        elapsed += poll_interval
+
+                        result = await self.ace_controller.printer.query_objects({
+                            "extruder": ["temperature"]
+                        })
+                        current_temp = result["extruder"]["temperature"]
+
+                        if current_temp >= max_min_temp:
+                            message = f"Extruder ready: {current_temp:.1f}°C"
+                            logging.info(message)
+                            await self._send_gcode_response(message)
+                            break
+
+                        if elapsed % 10 == 0:
+                            message = f"Heating... {current_temp:.1f}°C / {max_min_temp}°C ({elapsed}s elapsed)"
+                            logging.info(message)
+                            await self._send_gcode_response(message)
+
+                    if current_temp < max_min_temp:
+                        message = f"ERROR: Heating timeout after {max_wait}s (current: {current_temp:.1f}°C, target: {max_min_temp}°C)"
+                        logging.error(message)
+                        await self._send_gcode_response(message)
+                        return None
+                else:
+                    message = f"Extruder temperature OK: {current_temp:.1f}°C (>= {max_min_temp}°C)"
+                    logging.info(message)
+                    await self._send_gcode_response(message)
+
+            except Exception as e:
+                message = f"ERROR: Failed to check/heat extruder: {e}"
+                logging.error(message)
+                await self._send_gcode_response(message)
+                return None
+
+            try:
+                # Unload all filaments
+                await self.ace_controller.printer.send_gcode("UNWIND_ALL_FILAMENT")
+
+                # Reset MMU status after unload
+                self.ace.gate = -1
+                self.ace.tool = -1
+                self.ace.filament.pos = FILAMENT_POS_UNLOADED
+                self.ace_controller._handle_status_update(force=True)
+
+                message = "MMU_UNLOAD: Unloading all filaments completed, MMU status reset"
+                logging.info(message)
+                await self._send_gcode_response(message)
+            except Exception as e:
+                message = f"MMU_UNLOAD failed: {e}"
+                logging.error(message)
+                await self._send_gcode_response(message)
+
+            return None  # Don't execute original command
+
+        # Ensure extruder is heated to gate-specific temperature
         if not await self._ensure_extruder_temp(gate):
             message = "MMU_UNLOAD: Extruder temperature check failed - aborting"
             logging.error(message)
@@ -1385,7 +1614,14 @@ class MmuAcePatcher:
         try:
             # Send directly to GoKlipper via G-code
             await self.ace_controller.printer.send_gcode(gcode)
-            message = f"MMU_UNLOAD: Unloading {length}mm from gate {gate} (index {local_index}) at {speed}mm/s"
+
+            # Reset MMU status after unload
+            self.ace.gate = -1
+            self.ace.tool = -1
+            self.ace.filament.pos = FILAMENT_POS_UNLOADED
+            self.ace_controller._handle_status_update(force=True)
+
+            message = f"MMU_UNLOAD: Unloading {length}mm from gate {gate} (index {local_index}) at {speed}mm/s completed, MMU status reset"
             logging.info(message)
             await self._send_gcode_response(message)
         except Exception as e:
@@ -1427,7 +1663,14 @@ class MmuAcePatcher:
         try:
             # Send directly to GoKlipper via G-code
             await self.ace_controller.printer.send_gcode(gcode)
-            message = f"MMU_EJECT: Ejecting {length}mm from gate {gate} (index {local_index}) at {speed}mm/s"
+
+            # Reset MMU status after eject
+            self.ace.gate = -1
+            self.ace.tool = -1
+            self.ace.filament.pos = FILAMENT_POS_UNLOADED
+            self.ace_controller._handle_status_update(force=True)
+
+            message = f"MMU_EJECT: Ejecting {length}mm from gate {gate} (index {local_index}) at {speed}mm/s completed, MMU status reset"
             logging.info(message)
             await self._send_gcode_response(message)
         except Exception as e:
