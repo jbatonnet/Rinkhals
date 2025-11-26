@@ -707,6 +707,7 @@ class MmuAceController:
                 color: list[int] = slot["color"] if "color" in slot else None
                 rfid: int = slot["rfid"] if "rfid" in slot else None
                 source: int = slot["source"] if "source" in slot else None
+                temp_data: dict = slot["temperature"] if "temperature" in slot else None
 
                 gate = MmuAceGate()
                 gate.index = index
@@ -717,9 +718,15 @@ class MmuAceController:
                 gate.source = source
                 gate.status = GATE_AVAILABLE if status == "ready" else GATE_EMPTY if status == "empty" or status == "runout" else GATE_UNKNOWN
 
-                # Set default temperature based on material type
-                if type:
+                # Set temperature from RFID tag if available, otherwise use material default
+                if temp_data and isinstance(temp_data, dict) and "min" in temp_data:
+                    # Use min temperature from RFID tag (more conservative)
+                    gate.temperature = temp_data["min"]
+                    logging.info(f"Gate {index}: Using RFID temperature {gate.temperature}°C (min={temp_data.get('min')}, max={temp_data.get('max')})")
+                elif type:
+                    # Fallback to material-based default
                     gate.temperature = get_material_temperature(type)
+                    logging.info(f"Gate {index}: Using material default temperature {gate.temperature}°C for {type}")
 
                 # Parse SKU for additional information
                 gate.sku = sku
@@ -1102,6 +1109,19 @@ class MmuAcePatcher:
             return default
         raise ValueError(f"Required parameter {name} not found")
 
+    def _get_gcode_arg_float(self, name: str, args: dict[str, str | None], default: float = None) -> float:
+        """Get float argument from G-code"""
+        if name in args and args[name] is not None:
+            try:
+                return float(args[name])
+            except ValueError:
+                if default is not None:
+                    return default
+                raise ValueError(f"Invalid float for {name}: {args[name]}")
+        if default is not None:
+            return default
+        raise ValueError(f"Required parameter {name} not found")
+
     async def _on_gcode_mmu_unknown(self, args: dict[str, str | None], delegate):
         pass
 
@@ -1181,24 +1201,119 @@ class MmuAcePatcher:
             logging.error(f"Failed to send gcode response: {e}")
 
     async def _on_gcode_mmu_load(self, args: dict[str, str | None], delegate):
-        """Manual load not supported - ACE loads automatically during print"""
-        message = "MMU_LOAD: ACE hardware loads filament automatically during print (via tool change)"
-        logging.info(message)
-        await self._send_gcode_response(message)
+        """Manual load filament: MMU_LOAD GATE=0 [LENGTH=100] [SPEED=25]"""
+        gate = self._get_gcode_arg_int("GATE", args, -1)
+        length = self._get_gcode_arg_float("LENGTH", args, default=100.0)
+        speed = self._get_gcode_arg_float("SPEED", args, default=25.0)
+
+        if gate < 0:
+            message = "MMU_LOAD: GATE parameter required (0-7)"
+            logging.error(message)
+            await self._send_gcode_response(message)
+            return None
+
+        # Determine unit and local gate index
+        unit = gate // 4
+        local_index = gate % 4
+
+        params = {
+            "id": unit,
+            "index": local_index,
+            "length": int(length),
+            "speed": int(speed)
+        }
+
+        try:
+            await self.ace_controller.printer.send_request(
+                "filament_hub/feed_filament",
+                params
+            )
+            message = f"MMU_LOAD: Loading {length}mm from gate {gate} at {speed}mm/s"
+            logging.info(message)
+            await self._send_gcode_response(message)
+        except Exception as e:
+            message = f"MMU_LOAD failed: {e}"
+            logging.error(message)
+            await self._send_gcode_response(message)
+
         return None  # Don't execute original command
 
     async def _on_gcode_mmu_unload(self, args: dict[str, str | None], delegate):
-        """Manual unload not supported - ACE unloads automatically during print"""
-        message = "MMU_UNLOAD: ACE hardware unloads filament automatically during print (via tool change)"
-        logging.info(message)
-        await self._send_gcode_response(message)
+        """Manual unload filament: MMU_UNLOAD GATE=0 [LENGTH=100] [SPEED=20]"""
+        gate = self._get_gcode_arg_int("GATE", args, -1)
+        length = self._get_gcode_arg_float("LENGTH", args, default=100.0)
+        speed = self._get_gcode_arg_float("SPEED", args, default=20.0)
+
+        if gate < 0:
+            message = "MMU_UNLOAD: GATE parameter required (0-7)"
+            logging.error(message)
+            await self._send_gcode_response(message)
+            return None
+
+        # Determine unit and local gate index
+        unit = gate // 4
+        local_index = gate % 4
+
+        params = {
+            "id": unit,
+            "index": local_index,
+            "length": int(length),
+            "speed": int(speed),
+            "mode": 1
+        }
+
+        try:
+            await self.ace_controller.printer.send_request(
+                "filament_hub/unwind_filament",
+                params
+            )
+            message = f"MMU_UNLOAD: Unloading {length}mm from gate {gate} at {speed}mm/s"
+            logging.info(message)
+            await self._send_gcode_response(message)
+        except Exception as e:
+            message = f"MMU_UNLOAD failed: {e}"
+            logging.error(message)
+            await self._send_gcode_response(message)
+
         return None  # Don't execute original command
 
     async def _on_gcode_mmu_eject(self, args: dict[str, str | None], delegate):
-        """Manual eject not supported - remove filament manually from ACE slot"""
-        message = "MMU_EJECT: Remove filament manually from ACE slot"
-        logging.info(message)
-        await self._send_gcode_response(message)
+        """Manual eject filament: MMU_EJECT GATE=0 [LENGTH=500] [SPEED=20]"""
+        gate = self._get_gcode_arg_int("GATE", args, -1)
+        length = self._get_gcode_arg_float("LENGTH", args, default=500.0)  # Eject more for full removal
+        speed = self._get_gcode_arg_float("SPEED", args, default=20.0)
+
+        if gate < 0:
+            message = "MMU_EJECT: GATE parameter required (0-7)"
+            logging.error(message)
+            await self._send_gcode_response(message)
+            return None
+
+        # Determine unit and local gate index
+        unit = gate // 4
+        local_index = gate % 4
+
+        params = {
+            "id": unit,
+            "index": local_index,
+            "length": int(length),
+            "speed": int(speed),
+            "mode": 1
+        }
+
+        try:
+            await self.ace_controller.printer.send_request(
+                "filament_hub/unwind_filament",
+                params
+            )
+            message = f"MMU_EJECT: Ejecting {length}mm from gate {gate} at {speed}mm/s"
+            logging.info(message)
+            await self._send_gcode_response(message)
+        except Exception as e:
+            message = f"MMU_EJECT failed: {e}"
+            logging.error(message)
+            await self._send_gcode_response(message)
+
         return None  # Don't execute original command
 
     async def _on_gcode_mmu_home(self, args: dict[str, str | None], delegate):
