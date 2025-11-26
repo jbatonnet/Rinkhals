@@ -348,6 +348,12 @@ class KlippyPrinterController(PrinterController):
         logging.warning(f"Sending {method} with params: {json.dumps(params)}")
         return await self._send_klippy_request(method, params, default)
         # return await self.klippy_apis._send_klippy_request(method, params, default)
+
+    async def send_gcode(self, script: str) -> Any:
+        """Send G-code script to GoKlipper"""
+        logging.info(f"Sending G-code: {script}")
+        return await self.send_request("gcode/script", {"script": script})
+
     async def query_objects(self,
                             objects: Mapping[str, Optional[List[str]]],
                             default: Union[Sentinel, _T] = Sentinel.MISSING
@@ -1201,7 +1207,11 @@ class MmuAcePatcher:
             logging.error(f"Failed to send gcode response: {e}")
 
     async def _on_gcode_mmu_load(self, args: dict[str, str | None], delegate):
-        """Manual load filament: MMU_LOAD GATE=0 [LENGTH=100] [SPEED=25]"""
+        """Manual load filament: MMU_LOAD GATE=0 [LENGTH=100] [SPEED=25]
+
+        Uses GoKlipper's FEED_FILAMENT G-code command internally.
+        Note: Extruder must be heated above min_extrude_temp.
+        """
         gate = self._get_gcode_arg_int("GATE", args, -1)
         length = self._get_gcode_arg_float("LENGTH", args, default=100.0)
         speed = self._get_gcode_arg_float("SPEED", args, default=25.0)
@@ -1212,23 +1222,16 @@ class MmuAcePatcher:
             await self._send_gcode_response(message)
             return None
 
-        # Determine unit and local gate index
-        unit = gate // 4
+        # Determine local gate index (GoKlipper's FEED_FILAMENT uses INDEX 0-3, not global gate)
         local_index = gate % 4
 
-        params = {
-            "id": unit,
-            "index": local_index,
-            "length": int(length),
-            "speed": int(speed)
-        }
+        # Build G-code command for GoKlipper
+        gcode = f"FEED_FILAMENT INDEX={local_index} LENGTH={int(length)} SPEED={int(speed)}"
 
         try:
-            await self.ace_controller.printer.send_request(
-                "filament_hub/feed_filament",
-                params
-            )
-            message = f"MMU_LOAD: Loading {length}mm from gate {gate} at {speed}mm/s"
+            # Send directly to GoKlipper via G-code
+            await self.ace_controller.printer.send_gcode(gcode)
+            message = f"MMU_LOAD: Loading {length}mm from gate {gate} (index {local_index}) at {speed}mm/s"
             logging.info(message)
             await self._send_gcode_response(message)
         except Exception as e:
@@ -1239,7 +1242,11 @@ class MmuAcePatcher:
         return None  # Don't execute original command
 
     async def _on_gcode_mmu_unload(self, args: dict[str, str | None], delegate):
-        """Manual unload filament: MMU_UNLOAD GATE=0 [LENGTH=100] [SPEED=20]"""
+        """Manual unload filament: MMU_UNLOAD GATE=0 [LENGTH=100] [SPEED=20]
+
+        Uses GoKlipper's UNWIND_FILAMENT G-code command internally.
+        Note: Extruder must be heated above min_extrude_temp.
+        """
         gate = self._get_gcode_arg_int("GATE", args, -1)
         length = self._get_gcode_arg_float("LENGTH", args, default=100.0)
         speed = self._get_gcode_arg_float("SPEED", args, default=20.0)
@@ -1250,24 +1257,16 @@ class MmuAcePatcher:
             await self._send_gcode_response(message)
             return None
 
-        # Determine unit and local gate index
-        unit = gate // 4
+        # Determine local gate index (GoKlipper's UNWIND_FILAMENT uses INDEX 0-3, not global gate)
         local_index = gate % 4
 
-        params = {
-            "id": unit,
-            "index": local_index,
-            "length": int(length),
-            "speed": int(speed),
-            "mode": 1
-        }
+        # Build G-code command for GoKlipper
+        gcode = f"UNWIND_FILAMENT INDEX={local_index} LENGTH={int(length)} SPEED={int(speed)}"
 
         try:
-            await self.ace_controller.printer.send_request(
-                "filament_hub/unwind_filament",
-                params
-            )
-            message = f"MMU_UNLOAD: Unloading {length}mm from gate {gate} at {speed}mm/s"
+            # Send directly to GoKlipper via G-code
+            await self.ace_controller.printer.send_gcode(gcode)
+            message = f"MMU_UNLOAD: Unloading {length}mm from gate {gate} (index {local_index}) at {speed}mm/s"
             logging.info(message)
             await self._send_gcode_response(message)
         except Exception as e:
@@ -1278,7 +1277,11 @@ class MmuAcePatcher:
         return None  # Don't execute original command
 
     async def _on_gcode_mmu_eject(self, args: dict[str, str | None], delegate):
-        """Manual eject filament: MMU_EJECT GATE=0 [LENGTH=500] [SPEED=20]"""
+        """Manual eject filament: MMU_EJECT GATE=0 [LENGTH=500] [SPEED=20]
+
+        Uses GoKlipper's UNWIND_FILAMENT G-code command internally with longer distance.
+        Note: Extruder must be heated above min_extrude_temp.
+        """
         gate = self._get_gcode_arg_int("GATE", args, -1)
         length = self._get_gcode_arg_float("LENGTH", args, default=500.0)  # Eject more for full removal
         speed = self._get_gcode_arg_float("SPEED", args, default=20.0)
@@ -1289,24 +1292,16 @@ class MmuAcePatcher:
             await self._send_gcode_response(message)
             return None
 
-        # Determine unit and local gate index
-        unit = gate // 4
+        # Determine local gate index (GoKlipper's UNWIND_FILAMENT uses INDEX 0-3, not global gate)
         local_index = gate % 4
 
-        params = {
-            "id": unit,
-            "index": local_index,
-            "length": int(length),
-            "speed": int(speed),
-            "mode": 1
-        }
+        # Build G-code command for GoKlipper (EJECT is just UNWIND with longer distance)
+        gcode = f"UNWIND_FILAMENT INDEX={local_index} LENGTH={int(length)} SPEED={int(speed)}"
 
         try:
-            await self.ace_controller.printer.send_request(
-                "filament_hub/unwind_filament",
-                params
-            )
-            message = f"MMU_EJECT: Ejecting {length}mm from gate {gate} at {speed}mm/s"
+            # Send directly to GoKlipper via G-code
+            await self.ace_controller.printer.send_gcode(gcode)
+            message = f"MMU_EJECT: Ejecting {length}mm from gate {gate} (index {local_index}) at {speed}mm/s"
             logging.info(message)
             await self._send_gcode_response(message)
         except Exception as e:
