@@ -288,6 +288,7 @@ class MmuAce:
     is_homed: bool = True  # ACE selector is virtual - always "homed" to enable manual load/unload buttons
     gate: int = TOOL_GATE_UNKNOWN
     tool: int = TOOL_GATE_UNKNOWN
+    loaded_gate: int = TOOL_GATE_UNKNOWN  # Track which gate is physically loaded in extruder
     ttg_map: List[int] = []
     num_toolchanges: int = 0
     last_tool: int = TOOL_GATE_UNKNOWN
@@ -984,9 +985,15 @@ class MmuAceController:
         gate_speed_override = [gate.speed_override if gate.speed_override >= 0 else 100 for gate in gates]
         gate_vendor = [gate.vendor if hasattr(gate, 'vendor') and gate.vendor else "" for gate in gates]
 
-        # Use actual filament position from self.ace.filament.pos
-        # This is set by MMU_SELECT, MMU_LOAD, MMU_UNLOAD, and ACE Hub sync
-        filament_pos = self.ace.filament.pos
+        # Determine filament_pos based on loaded_gate vs selected gate
+        # This controls Load/Unload button visibility in Happy Hare GUI
+        if self.ace.loaded_gate != TOOL_GATE_UNKNOWN and self.ace.loaded_gate == self.ace.gate:
+            # Currently selected gate is the one that's loaded -> show LOADED (Unload button)
+            filament_pos = FILAMENT_POS_LOADED
+        else:
+            # Either no gate loaded, or different gate selected -> show UNLOADED (Load button)
+            filament_pos = FILAMENT_POS_UNLOADED
+
         filament_name = "Unknown"
         filament_vendor = ""
         filament_material = ""
@@ -1523,6 +1530,20 @@ class MmuAcePatcher:
                 return None
             logging.info(f"MMU_LOAD: Using currently selected gate {gate}")
 
+        # Check if a different gate is already loaded - if so, unload it first
+        if self.ace.loaded_gate != TOOL_GATE_UNKNOWN and self.ace.loaded_gate != gate:
+            message = f"MMU_LOAD: Gate {self.ace.loaded_gate} is currently loaded. Unloading it first before loading gate {gate}..."
+            logging.info(message)
+            await self._send_gcode_response(message)
+
+            # Call MMU_UNLOAD with the currently loaded gate
+            await self._on_gcode_mmu_unload({"GATE": str(self.ace.loaded_gate)}, None)
+
+            # After unload, continue with load of new gate
+            message = f"MMU_LOAD: Unload complete. Now loading gate {gate}..."
+            logging.info(message)
+            await self._send_gcode_response(message)
+
         # Ensure extruder is heated to proper temperature
         if not await self._ensure_extruder_temp(gate):
             message = "MMU_LOAD: Extruder temperature check failed - aborting"
@@ -1543,6 +1564,7 @@ class MmuAcePatcher:
             # Update MMU status after successful load
             self.ace.gate = gate
             self.ace.tool = gate  # Tool = Gate for ACE
+            self.ace.loaded_gate = gate  # Track which gate is physically loaded
             self.ace.filament.pos = FILAMENT_POS_LOADED
             self.ace_controller._handle_status_update(force=True)
 
@@ -1664,6 +1686,7 @@ class MmuAcePatcher:
                 # Reset MMU status after unload
                 self.ace.gate = -1
                 self.ace.tool = -1
+                self.ace.loaded_gate = TOOL_GATE_UNKNOWN  # No gate loaded anymore
                 self.ace.filament.pos = FILAMENT_POS_UNLOADED
                 self.ace_controller._handle_status_update(force=True)
 
@@ -1697,6 +1720,7 @@ class MmuAcePatcher:
             # Reset MMU status after unload
             self.ace.gate = -1
             self.ace.tool = -1
+            self.ace.loaded_gate = TOOL_GATE_UNKNOWN  # No gate loaded anymore
             self.ace.filament.pos = FILAMENT_POS_UNLOADED
             self.ace_controller._handle_status_update(force=True)
 
