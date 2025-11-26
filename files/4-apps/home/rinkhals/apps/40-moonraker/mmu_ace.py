@@ -151,6 +151,8 @@ class MmuStatus:
     gate_material: List[str]
     gate_color: List[str]
     gate_temperature: List[int]
+    gate_temperature_min: List[int]  # Min safe temperature per gate from RFID
+    gate_temperature_max: List[int]  # Max recommended temperature per gate from RFID
     gate_spool_id: List[int]
     gate_speed_override: List[int]
     gate_vendor: List[str]
@@ -185,7 +187,9 @@ class MmuAceGate:
     filament_name: str = "Unknown"
     material: str = "Unknown"
     color: List[int] | None = None # rgba [0, 0, 0, 0]
-    temperature: int = -1
+    temperature: int = -1  # Default/display temperature (uses min from RFID or material default)
+    temperature_min: int = -1  # Minimum safe temperature from RFID
+    temperature_max: int = -1  # Maximum recommended temperature from RFID
     spool_id: int = -1
     speed_override: int = -1
     rfid: int = 1 # 1 = no rfid 2 = rfid, if rfid = 2 not update possible
@@ -726,12 +730,17 @@ class MmuAceController:
 
                 # Set temperature from RFID tag if available, otherwise use material default
                 if temp_data and isinstance(temp_data, dict) and "min" in temp_data:
-                    # Use min temperature from RFID tag (more conservative)
-                    gate.temperature = temp_data["min"]
-                    logging.info(f"Gate {index}: Using RFID temperature {gate.temperature}°C (min={temp_data.get('min')}, max={temp_data.get('max')})")
+                    # Store both min and max from RFID tag
+                    gate.temperature_min = temp_data.get("min", -1)
+                    gate.temperature_max = temp_data.get("max", -1)
+                    # Use min temperature as default (more conservative)
+                    gate.temperature = gate.temperature_min
+                    logging.info(f"Gate {index}: Using RFID temperatures min={gate.temperature_min}°C, max={gate.temperature_max}°C")
                 elif type:
-                    # Fallback to material-based default
+                    # Fallback to material-based default (no min/max range for defaults)
                     gate.temperature = get_material_temperature(type)
+                    gate.temperature_min = -1
+                    gate.temperature_max = -1
                     logging.info(f"Gate {index}: Using material default temperature {gate.temperature}°C for {type}")
 
                 # Parse SKU for additional information
@@ -780,6 +789,8 @@ class MmuAceController:
         gate_material = [gate.material if gate.material else "" for gate in gates]
         gate_color = [rgba_to_hex(gate.color) if gate.color is not None else "000000FF" for gate in gates]
         gate_temperature = [gate.temperature if gate.temperature >= 0 else 0 for gate in gates]
+        gate_temperature_min = [gate.temperature_min if hasattr(gate, 'temperature_min') and gate.temperature_min >= 0 else 0 for gate in gates]
+        gate_temperature_max = [gate.temperature_max if hasattr(gate, 'temperature_max') and gate.temperature_max >= 0 else 0 for gate in gates]
         gate_spool_id = [gate.spool_id if gate.spool_id >= 0 else 0 for gate in gates]
         gate_speed_override = [gate.speed_override if gate.speed_override >= 0 else 100 for gate in gates]
         gate_vendor = [gate.vendor if hasattr(gate, 'vendor') and gate.vendor else "" for gate in gates]
@@ -845,6 +856,8 @@ class MmuAceController:
                 gate_material = gate_material,
                 gate_color = gate_color,
                 gate_temperature = gate_temperature,
+                gate_temperature_min = gate_temperature_min,
+                gate_temperature_max = gate_temperature_max,
                 gate_spool_id = gate_spool_id,
                 gate_speed_override = gate_speed_override,
                 gate_vendor = gate_vendor,
@@ -1206,11 +1219,103 @@ class MmuAcePatcher:
         except Exception as e:
             logging.error(f"Failed to send gcode response: {e}")
 
+    async def _ensure_extruder_temp(self, gate: int, min_temp: int = 170) -> bool:
+        """Ensure extruder is heated to proper temperature for filament operations.
+
+        Args:
+            gate: Gate index (0-7) to get target temperature from
+            min_temp: Minimum extrusion temperature (default: 170°C)
+
+        Returns:
+            True if temperature is OK, False if error occurred
+        """
+        try:
+            # Query current extruder state
+            result = await self.ace_controller.printer.query_objects({
+                "extruder": ["temperature", "target"]
+            })
+
+            current_temp = result["extruder"]["temperature"]
+            target_temp = result["extruder"]["target"]
+
+            # Get gate-specific temperature if available
+            gate_temp = min_temp
+            if gate >= 0 and gate < sum(len(unit.gates) for unit in self.ace.units):
+                # Find gate
+                current_gate_index = gate
+                for unit in self.ace.units:
+                    if current_gate_index < len(unit.gates):
+                        gate_obj = unit.gates[current_gate_index]
+                        if gate_obj.temperature > 0:
+                            gate_temp = gate_obj.temperature
+                        break
+                    current_gate_index -= len(unit.gates)
+
+            # Check if already hot enough
+            if current_temp >= min_temp:
+                message = f"Extruder temperature OK: {current_temp:.1f}°C (min: {min_temp}°C)"
+                logging.info(message)
+                await self._send_gcode_response(message)
+                return True
+
+            # Set target temperature if not already set
+            if target_temp < gate_temp:
+                message = f"Heating extruder to {gate_temp}°C (gate {gate} requires {gate_temp}°C)..."
+                logging.info(message)
+                await self._send_gcode_response(message)
+
+                # Send M104 to set temperature
+                await self.ace_controller.printer.send_gcode(f"M104 S{gate_temp}")
+
+            # Wait for temperature (with timeout)
+            message = f"Waiting for extruder to reach {min_temp}°C (current: {current_temp:.1f}°C)..."
+            logging.info(message)
+            await self._send_gcode_response(message)
+
+            # Poll temperature until min_temp reached (max 5 minutes)
+            max_wait = 300  # 5 minutes
+            poll_interval = 2  # 2 seconds
+            elapsed = 0
+
+            while elapsed < max_wait:
+                await asyncio.sleep(poll_interval)
+                elapsed += poll_interval
+
+                # Check current temperature
+                result = await self.ace_controller.printer.query_objects({
+                    "extruder": ["temperature"]
+                })
+                current_temp = result["extruder"]["temperature"]
+
+                if current_temp >= min_temp:
+                    message = f"Extruder ready: {current_temp:.1f}°C"
+                    logging.info(message)
+                    await self._send_gcode_response(message)
+                    return True
+
+                # Progress update every 10 seconds
+                if elapsed % 10 == 0:
+                    message = f"Heating... {current_temp:.1f}°C / {min_temp}°C ({elapsed}s elapsed)"
+                    logging.info(message)
+                    await self._send_gcode_response(message)
+
+            # Timeout
+            message = f"ERROR: Extruder heating timeout after {max_wait}s (current: {current_temp:.1f}°C, target: {min_temp}°C)"
+            logging.error(message)
+            await self._send_gcode_response(message)
+            return False
+
+        except Exception as e:
+            message = f"ERROR: Failed to check/heat extruder: {e}"
+            logging.error(message)
+            await self._send_gcode_response(message)
+            return False
+
     async def _on_gcode_mmu_load(self, args: dict[str, str | None], delegate):
         """Manual load filament: MMU_LOAD GATE=0 [LENGTH=100] [SPEED=25]
 
         Uses GoKlipper's FEED_FILAMENT G-code command internally.
-        Note: Extruder must be heated above min_extrude_temp.
+        Automatically heats extruder to proper temperature for selected gate.
         """
         gate = self._get_gcode_arg_int("GATE", args, -1)
         length = self._get_gcode_arg_float("LENGTH", args, default=100.0)
@@ -1218,6 +1323,13 @@ class MmuAcePatcher:
 
         if gate < 0:
             message = "MMU_LOAD: GATE parameter required (0-7)"
+            logging.error(message)
+            await self._send_gcode_response(message)
+            return None
+
+        # Ensure extruder is heated to proper temperature
+        if not await self._ensure_extruder_temp(gate):
+            message = "MMU_LOAD: Extruder temperature check failed - aborting"
             logging.error(message)
             await self._send_gcode_response(message)
             return None
@@ -1245,7 +1357,7 @@ class MmuAcePatcher:
         """Manual unload filament: MMU_UNLOAD GATE=0 [LENGTH=100] [SPEED=20]
 
         Uses GoKlipper's UNWIND_FILAMENT G-code command internally.
-        Note: Extruder must be heated above min_extrude_temp.
+        Automatically heats extruder to min_extrude_temp if needed.
         """
         gate = self._get_gcode_arg_int("GATE", args, -1)
         length = self._get_gcode_arg_float("LENGTH", args, default=100.0)
@@ -1253,6 +1365,13 @@ class MmuAcePatcher:
 
         if gate < 0:
             message = "MMU_UNLOAD: GATE parameter required (0-7)"
+            logging.error(message)
+            await self._send_gcode_response(message)
+            return None
+
+        # Ensure extruder is heated to minimum temperature for retraction
+        if not await self._ensure_extruder_temp(gate):
+            message = "MMU_UNLOAD: Extruder temperature check failed - aborting"
             logging.error(message)
             await self._send_gcode_response(message)
             return None
@@ -1280,7 +1399,7 @@ class MmuAcePatcher:
         """Manual eject filament: MMU_EJECT GATE=0 [LENGTH=500] [SPEED=20]
 
         Uses GoKlipper's UNWIND_FILAMENT G-code command internally with longer distance.
-        Note: Extruder must be heated above min_extrude_temp.
+        Automatically heats extruder to min_extrude_temp if needed.
         """
         gate = self._get_gcode_arg_int("GATE", args, -1)
         length = self._get_gcode_arg_float("LENGTH", args, default=500.0)  # Eject more for full removal
@@ -1288,6 +1407,13 @@ class MmuAcePatcher:
 
         if gate < 0:
             message = "MMU_EJECT: GATE parameter required (0-7)"
+            logging.error(message)
+            await self._send_gcode_response(message)
+            return None
+
+        # Ensure extruder is heated to minimum temperature for retraction
+        if not await self._ensure_extruder_temp(gate):
+            message = "MMU_EJECT: Extruder temperature check failed - aborting"
             logging.error(message)
             await self._send_gcode_response(message)
             return None
