@@ -159,6 +159,9 @@ check_counter=0
 high_mode_start_time=0      # Unix timestamp when HIGH mode was started
 HIGH_MODE_TIMEOUT=300       # 5 minutes in seconds
 previous_client_count=0     # Track client count to detect new connections
+no_client_streak=0          # Count consecutive checks with no clients
+NO_CLIENT_THRESHOLD=3       # Require 3 consecutive "no client" checks (30s) before downgrade
+last_restart_time=0         # Track when we last restarted to avoid restart loops
 
 echo "Main loop started - will switch to HIGH mode on demand, auto-downgrade after 5min" >> $APP_LOG
 
@@ -169,20 +172,29 @@ while [ 1 ]; do
         previous_cameras="$current_cameras"
         echo "Camera changed, restarting mjpg-streamer..." >> $APP_LOG
         restart_mjpg_streamer
+        last_restart_time=$(date +%s)
     fi
 
     # Check for active clients every 10 seconds
     check_counter=$((check_counter + 1))
     if [ $check_counter -ge 2 ]; then  # 2 * 5s = 10s
         check_counter=0
+        current_time=$(date +%s)
+
+        # Avoid checking immediately after restart (grace period)
+        time_since_restart=$((current_time - last_restart_time))
+        if [ "$last_restart_time" -gt 0 ] && [ "$time_since_restart" -lt 15 ]; then
+            # Grace period: skip check for 15 seconds after restart
+            continue
+        fi
 
         # Count active clients
         client_count=$(netstat -tn 2>/dev/null | grep -c ":8080.*ESTABLISHED")
 
         # Determine desired mode based on clients and timeout
         if [ "$client_count" -gt 0 ]; then
-            # Clients are active
-            current_time=$(date +%s)
+            # Clients are active - reset no-client streak
+            no_client_streak=0
 
             if [ "$current_mode" = "low" ]; then
                 # Switch to HIGH mode and start timer
@@ -210,16 +222,24 @@ while [ 1 ]; do
                 fi
             fi
         else
-            # No clients - switch to LOW mode
-            desired_mode="low"
-            if [ "$current_mode" = "high" ]; then
-                echo "No clients detected, switching to LOW mode" >> $APP_LOG
+            # No clients detected - increment streak
+            no_client_streak=$((no_client_streak + 1))
+
+            if [ "$current_mode" = "high" ] && [ "$no_client_streak" -ge "$NO_CLIENT_THRESHOLD" ]; then
+                # Only downgrade after multiple consecutive "no client" checks
+                desired_mode="low"
+                echo "No clients detected for ${no_client_streak} checks (30s), switching to LOW mode" >> $APP_LOG
+                no_client_streak=0
+            else
+                # Keep current mode during no-client streak
+                desired_mode=$current_mode
             fi
         fi
 
         # Switch mode if needed
         if [ "$current_mode" != "$desired_mode" ]; then
             restart_mjpg_streamer "$desired_mode"
+            last_restart_time=$(date +%s)
         fi
     fi
 
