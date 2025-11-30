@@ -1,6 +1,7 @@
 . /useremain/rinkhals/.current/tools.sh
 
 APP_ROOT=$(dirname $(realpath $0))
+APP_LOG=$RINKHALS_LOGS/app-mjpg-streamer.log
 
 # Configuration for dual-mode operation
 LOW_RES="640x480"       # For AI features (spaghetti detection, etc.)
@@ -80,13 +81,13 @@ restart_mjpg_streamer() {
     for CAMERA in $CAMERAS; do
         echo "Found camera $CAMERA" >> $APP_LOG
 
-        # List camera resolutions
-        RESOLUTIONS=$(v4l2-ctl -w -d $CAMERA --list-formats-ext | sed -n '/MJPG/,$p' | sed '/Index/,$d' | grep Size | awk '{print $3}' | sort -ruV)
-        echo "Camera $INDEX resolutions: $(echo $RESOLUTIONS)" >> $APP_LOG
+        # List camera resolutions (with fallback if v4l2-ctl not available)
+        RESOLUTIONS=$(v4l2-ctl -w -d $CAMERA --list-formats-ext 2>/dev/null | sed -n '/MJPG/,$p' | sed '/Index/,$d' | grep Size | awk '{print $3}' | sort -ruV)
         if [ "$RESOLUTIONS" = "" ]; then
-            echo "No resolution found, skipping..." >> $APP_LOG
-            continue
+            echo "v4l2-ctl not available or no MJPG resolutions found, using defaults" >> $APP_LOG
+            RESOLUTIONS="1920x1080 1280x720 640x480"
         fi
+        echo "Camera $INDEX resolutions: $(echo $RESOLUTIONS)" >> $APP_LOG
 
         # Update the JSON accordingly
         APP_JSON=$(echo $APP_JSON | jq ".properties.camera_$INDEX.display = \"Camera $INDEX\"")
