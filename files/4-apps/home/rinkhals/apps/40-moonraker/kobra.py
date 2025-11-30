@@ -405,14 +405,14 @@ class Kobra:
         def wrap_request(original_request):
             async def request(me, web_request: WebRequest) -> Any:
                 rpc_method = web_request.get_endpoint()
-                logging.warning(f'Wrap request method: {rpc_method}')
+                logging.debug(f'Wrap request method: {rpc_method}')
                 result = await original_request(me, web_request)
-                logging.warning(f'Wrap request method {rpc_method} result type: {type(result)}')
+                logging.debug(f'Wrap request method {rpc_method} result type: {type(result)}')
                 if result and isinstance(result, dict):
-                    logging.warning(f'Wrap request method {rpc_method} result: {json.dumps(result)}')
+                    logging.debug(f'Wrap request method {rpc_method} result: {json.dumps(result)}')
                 if result and isinstance(result, dict) and 'status' in result:
                     result['status'] = self.patch_status(result['status'])
-                    logging.warning(f'Wrap request method {rpc_method} result status: {json.dumps(result)}')
+                    logging.debug(f'Wrap request method {rpc_method} result status: {json.dumps(result)}')
                 return result
             return request
 
@@ -478,7 +478,7 @@ class Kobra:
 
         async def handle_gcode(me, script, delegate_run_gcode: Callable[[], Coroutine]):
             parts = [s.strip() for s in shlex.split(script.strip()) if s.strip()]
-            logging.warning(f"hook on gcode received: {json.dumps(parts)}")
+            logging.debug(f"hook on gcode received: {json.dumps(parts)}")
 
             # Split multi-command lines (e.g., "CMD1 ARG1=X CMD2 ARG2=Y")
             # Find indices where a part is a registered handler (indicates new command)
@@ -489,26 +489,26 @@ class Kobra:
 
             # If multiple commands detected, execute them sequentially
             if len(handler_indices) > 1:
-                logging.warning(f"Multiple commands detected in one line: {handler_indices}")
+                logging.debug(f"Multiple commands detected in one line: {handler_indices}")
                 last_result = None
                 for idx, start_idx in enumerate(handler_indices):
                     end_idx = handler_indices[idx + 1] if idx + 1 < len(handler_indices) else len(parts)
                     sub_parts = parts[start_idx:end_idx]
                     sub_script = ' '.join(sub_parts)
-                    logging.warning(f"Executing sub-command: {sub_script}")
+                    logging.debug(f"Executing sub-command: {sub_script}")
                     last_result = await handle_gcode(me, sub_script, delegate_run_gcode)
                 return last_result
 
             cmd = parts[0]
 
-            logging.warning(f"hook on gcode cmd: {cmd}")
+            logging.debug(f"hook on gcode cmd: {cmd}")
             handlers = self.gcode_handlers.keys()
             # join handlers
             handlers = ', '.join(handlers)
-            logging.warning(f"hook on gcode handlers: {handlers}")
+            logging.debug(f"hook on gcode handlers: {handlers}")
 
             if cmd in self.gcode_handlers:
-                logging.warning(f"hook on gcode cmd found: {cmd}")
+                logging.debug(f"hook on gcode cmd found: {cmd}")
                 args = {}
                 for part in parts[1:]:
                     if '=' in part:
@@ -517,22 +517,22 @@ class Kobra:
                     else:
                         args[part] = None
 
-                logging.warning(f"hook on gcode args: {json.dumps(args)}")
+                logging.debug(f"hook on gcode args: {json.dumps(args)}")
                 result = await self.gcode_handlers[cmd](args, delegate_run_gcode)
                 result_str = "None" if result is None else "Any"
-                logging.warning(f"hook on gcode result: {result_str}")
+                logging.debug(f"hook on gcode result: {result_str}")
 
                 if result is None:
                     return None
 
                 return await result
             else:
-                logging.warning(f"hook on gcode cmd not found: {cmd}")
+                logging.debug(f"hook on gcode cmd not found: {cmd}")
                 return await delegate_run_gcode()
 
         def wrap_request(original_request: KlippyConnection.request):
             async def request(me: KlippyConnection, web_request: WebRequest):
-                logging.warning(f"hook on request")
+                logging.debug(f"hook on request")
 
                 rpc_method = web_request.get_endpoint()
                 if rpc_method == "gcode/script":
@@ -550,7 +550,7 @@ class Kobra:
 
         def wrap_run_gcode(original_run_gcode: KlippyAPI.run_gcode):
             async def run_gcode(me: KlippyAPI, script: str, default: Any = Sentinel.MISSING):
-                logging.warning(f"hook on run gcode: {script}")
+                logging.debug(f"hook on run gcode: {script}")
 
                 async def delegate_run_gcode():
                     return await original_run_gcode(me, script, default)

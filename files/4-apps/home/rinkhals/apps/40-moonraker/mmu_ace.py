@@ -241,6 +241,9 @@ UNIT_UNKNOWN = -1
 TOOL_GATE_UNKNOWN = -1
 TOOL_GATE_BYPASS = -2
 
+# Maximum tools for memory management (prevents unbounded list growth)
+MAX_TOOLS = 32  # Reasonable limit for multi-material printing
+
 FILAMENT_POS_UNKNOWN = -1
 FILAMENT_POS_UNLOADED = 0 # Parked in gate
 FILAMENT_POS_HOMED_GATE = 1 # Homed at either gate or gear sensor (currently assumed mutually exclusive sensors)
@@ -337,11 +340,11 @@ class KlippyPrinterController(PrinterController):
             default: Any = Sentinel.MISSING,
             transport: Optional[APITransport] = None
     ) -> Any:
-        logging.warning(f"Sending {method} with params: {json.dumps(params)}")
+        logging.debug(f"Sending {method} with params: {json.dumps(params)}")
         try:
             req = WebRequest(method, params, transport=transport or self)
             result = await self.klippy.request(req)
-            logging.warning(f"Result of {method}: {json.dumps(result)}")
+            logging.debug(f"Result of {method}: {json.dumps(result)}")
         except self.server.error:
             logging.warning(f"Error sending {method} with params: {json.dumps(params)}")
             if default is Sentinel.MISSING:
@@ -352,7 +355,7 @@ class KlippyPrinterController(PrinterController):
     async def send_request(self, method: str,
                            params: Dict[str, Any],
                            default: Any = Sentinel.MISSING) -> Any:
-        logging.warning(f"Sending {method} with params: {json.dumps(params)}")
+        logging.debug(f"Sending {method} with params: {json.dumps(params)}")
         return await self._send_klippy_request(method, params, default)
         # return await self.klippy_apis._send_klippy_request(method, params, default)
 
@@ -387,13 +390,13 @@ class RemotePrinterController(PrinterController):
 
         response: HttpResponse
         if args is not None:
-            logging.warning(f"Sending POST {name} with args: {json.dumps(args)}")
+            logging.debug(f"Sending POST {name} with args: {json.dumps(args)}")
             response = await self.http_client.post(f"{self.host}/printer/{name}", body=args)
         else:
-            logging.warning(f"Sending GET {name} with args: {json.dumps(args)}")
+            logging.debug(f"Sending GET {name} with args: {json.dumps(args)}")
             response = await self.http_client.get(f"{self.host}/printer/{name}")
 
-        logging.warning(f"Response: {response.status_code}")
+        logging.debug(f"Response: {response.status_code}")
 
         if response.has_error():
             raise ValueError(f"error {response.status_code}: {response.text}")
@@ -403,7 +406,7 @@ class RemotePrinterController(PrinterController):
         if "result" in result:
             result = result["result"]
 
-        logging.warning(f"Result: {json.dumps(result)}")
+        logging.debug(f"Result: {json.dumps(result)}")
 
         return result
 
@@ -548,12 +551,18 @@ class MmuAceController:
         self._max_cache_size = 16  # 2x max gates (8 gates * 2)
 
         # Cache for gate lookups (key: gate_index, value: (unit, gate))
-        self._gate_lookup_cache: Dict[int, Tuple[MmuAceUnit, MmuAceGate]] = {}
+        # Also LRU with same size limit to prevent unbounded growth
+        self._gate_lookup_cache: OrderedDict = OrderedDict()
+        self._max_gate_cache_size = 16  # Match temp cache size
 
         if host is None:
             self.printer = KlippyPrinterController(self.server)
         else:
             self.printer = RemotePrinterController(self.server, host)
+
+        # Start periodic cache cleanup task (runs every 60 seconds)
+        # Removes expired temperature cache entries to prevent slow memory leak
+        asyncio.create_task(self._periodic_cache_cleanup())
 
     def _handle_status_update(self, force: bool = False, throttle: bool = False):
         """Send status update notification with debouncing or throttling.
@@ -592,9 +601,12 @@ class MmuAceController:
             )
 
     async def _throttled_status_update(self):
-        """Throttled status update - sends at most every 300ms"""
+        """Throttled status update - sends at most every 300ms with cleanup"""
+        max_iterations = 100  # Prevent infinite loops
+        iterations = 0
+
         try:
-            while self._pending_update:
+            while self._pending_update and iterations < max_iterations:
                 # Clear the pending flag
                 self._pending_update = False
 
@@ -603,16 +615,26 @@ class MmuAceController:
 
                 # Wait minimum delay
                 await asyncio.sleep(self._throttle_delay)
+                iterations += 1
+
+            if iterations >= max_iterations:
+                logging.warning(f"Status update throttle reached max iterations ({max_iterations})")
         except asyncio.CancelledError:
             pass  # Task was cancelled, that's fine
+        finally:
+            # Cleanup: Set task reference to None to allow garbage collection
+            self._status_update_task = None
 
     async def _debounced_status_update(self):
-        """Debounced status update - waits before sending"""
+        """Debounced status update - waits before sending with cleanup"""
         try:
             await asyncio.sleep(self._status_update_delay)
             self._send_status_update()
         except asyncio.CancelledError:
             pass  # Task was cancelled, that's fine
+        finally:
+            # Cleanup: Set task reference to None to allow garbage collection
+            self._status_update_task = None
 
     def _send_status_update(self):
         """Send full status update"""
@@ -634,6 +656,8 @@ class MmuAceController:
         """
         # Check cache first
         if gate_index in self._gate_lookup_cache:
+            # Move to end (most recently used)
+            self._gate_lookup_cache.move_to_end(gate_index)
             return self._gate_lookup_cache[gate_index]
 
         # Linear search through units
@@ -641,7 +665,12 @@ class MmuAceController:
         for unit in self.ace.units:
             if current_gate_index < len(unit.gates):
                 result = (unit, unit.gates[current_gate_index])
-                # Cache the result
+
+                # Cache the result with LRU eviction
+                if len(self._gate_lookup_cache) >= self._max_gate_cache_size:
+                    # Remove oldest entry (FIFO/LRU)
+                    self._gate_lookup_cache.popitem(last=False)
+
                 self._gate_lookup_cache[gate_index] = result
                 return result
             current_gate_index -= len(unit.gates)
@@ -651,6 +680,36 @@ class MmuAceController:
     def _invalidate_gate_cache(self):
         """Invalidate gate lookup cache when units change."""
         self._gate_lookup_cache.clear()
+
+    def _cleanup_expired_cache_entries(self):
+        """Remove expired entries from temperature cache.
+
+        Reduces cache timeout from 60s to 30s for RAM-constrained systems.
+        Prevents accumulation of stale entries over time.
+        """
+        current_time = time.time()
+        expired_keys = [
+            key for key, (_, timestamp) in self._filament_temp_cache.items()
+            if current_time - timestamp > 30  # 30s for RAM-constrained systems (was 60s)
+        ]
+        for key in expired_keys:
+            del self._filament_temp_cache[key]
+
+        if expired_keys:
+            logging.debug(f"Cache cleanup: Removed {len(expired_keys)} expired temperature entries")
+
+    async def _periodic_cache_cleanup(self):
+        """Periodically clean up expired cache entries.
+
+        Runs every 60 seconds to remove stale entries from temperature cache.
+        Prevents slow memory leak from expired but retained cache entries.
+        """
+        while True:
+            await asyncio.sleep(60)  # Run every 60 seconds
+            try:
+                self._cleanup_expired_cache_entries()
+            except Exception as e:
+                logging.error(f"Cache cleanup failed: {e}")
 
     def _send_fast_update(self):
         """Send full status update immediately (no throttling for fast path)"""
@@ -709,12 +768,12 @@ class MmuAceController:
 
     async def _load_mmu_ace_config(self):
         result = await self.printer.query_objects({ "filament_hub": None })
-        logging.warning(f"mmu ace config: {json.dumps(result)}")
+        logging.debug(f"mmu ace config: {json.dumps(result)}")
 
     async def _subscribe_mmu_ace_status_update(self):
         result = await self.printer.subscribe_objects({ "filament_hub": None }, self._handle_mmu_ace_status_update)
 
-        logging.warning(f"mmu ace status subscribe: {json.dumps(result)}")
+        logging.debug(f"mmu ace status subscribe: {json.dumps(result)}")
 
         filament_hub = result["filament_hub"]
 
@@ -755,7 +814,7 @@ class MmuAceController:
     async def _handle_mmu_ace_status_update(self, status: Dict[str, Any], _: float):
         if "filament_hub" in status:
             filament_hub = status["filament_hub"]
-            logging.warning(f"mmu ace status update: {json.dumps(filament_hub)}")
+            logging.debug(f"mmu ace status update: {json.dumps(filament_hub)}")
 
             # Fetch temperature info for all gates with material
             # Collect all temperature fetch tasks for parallel execution
@@ -1196,7 +1255,7 @@ class MmuAceController:
 
         unit, gate = gate_lookup
 
-        logging.warning(f"update gate {gate_index} actual values {json.dumps(gate.__dict__)}")
+        logging.debug(f"update gate {gate_index} actual values {json.dumps(gate.__dict__)}")
 
         if color is None:
             color = [0, 0, 0, 0]
@@ -1205,7 +1264,7 @@ class MmuAceController:
             logging.warning(f"update gate {gate_index} not allowed, RFID tag is locked")
             return
 
-        logging.warning(f"updating gate {gate_index} (rfid={gate.rfid})")
+        logging.debug(f"updating gate {gate_index} (rfid={gate.rfid})")
 
         # Update local gate values immediately for UI responsiveness
         gate.status = status
@@ -1239,7 +1298,7 @@ class MmuAceController:
 
         # Trigger UI update with our local values
         self._handle_status_update(force=True)
-        logging.warning(f"updated gate {gate_index}: {material} {filament_name}")
+        logging.debug(f"updated gate {gate_index}: {material} {filament_name}")
 
 class MmuAcePatcher:
 
@@ -1398,8 +1457,16 @@ class MmuAcePatcher:
         name = self._get_gcode_arg_str_def("NAME", args, f"Tool {tool}")
         used = self._get_gcode_arg_int("USED", args, default=1)
 
-        # Ensure tool exists
+        # Check tool index against maximum limit (memory management)
+        if tool >= MAX_TOOLS:
+            logging.warning(f"Tool index {tool} exceeds maximum {MAX_TOOLS}, ignoring")
+            return None
+
+        # Ensure tool exists (with limit check)
         while len(self.ace.tools) <= tool:
+            if len(self.ace.tools) >= MAX_TOOLS:
+                logging.error(f"Cannot add tool {tool}, maximum {MAX_TOOLS} reached")
+                return None
             new_tool = MmuAceTool()
             new_tool.name = f"T{len(self.ace.tools)}"
             self.ace.tools.append(new_tool)
@@ -1861,7 +1928,7 @@ class MmuAcePatcher:
 
     # Triggered on ToolToGate edit in ui
     async def _on_gcode_mmu_ttg_map(self, args: dict[str, str | None], delegate):
-        logging.warning(f"handle mmu_ttg_map: {json.dumps(args)}")
+        logging.debug(f"handle mmu_ttg_map: {json.dumps(args)}")
 
         # Check if this is a reset command
         reset = self._get_gcode_arg_int("RESET", args, default=0)
@@ -1889,9 +1956,9 @@ class MmuAcePatcher:
     # Triggered on ToolToGate edit in ui
     async def _on_gcode_mmu_endless_spool(self, args: dict[str, str | None], delegate):
         """Configure endless spool groups (Happy Hare compatible)"""
-        logging.warning(f"handle _on_gcode_mmu_endless_spool: {json.dumps(args)}")
+        logging.debug(f"handle _on_gcode_mmu_endless_spool: {json.dumps(args)}")
         groups_str = self._get_gcode_arg_str("GROUPS", args)
-        logging.warning(f"handle _on_gcode_mmu_endless_spool groups_str: {groups_str}")
+        logging.debug(f"handle _on_gcode_mmu_endless_spool groups_str: {groups_str}")
 
         # Parse groups: "0,0,1,1" means gate 0+1 are group 0, gate 2+3 are group 1
         # Handle empty strings (e.g., ",,0" becomes [0, 0, 0])
@@ -1910,16 +1977,16 @@ class MmuAcePatcher:
 
     # Triggered on spool edit in ui
     async def _on_gcode_mmu_gate_map(self, args: dict[str, str | None], delegate):
-        logging.warning(f"handle mmu_gate_map: {json.dumps(args)}")
+        logging.debug(f"handle mmu_gate_map: {json.dumps(args)}")
         gate_map_str = self._get_gcode_arg_str("MAP", args)
-        logging.warning(f"handle mmu_gate_map gate_map_str: {gate_map_str}")
+        logging.debug(f"handle mmu_gate_map gate_map_str: {gate_map_str}")
         gate_map = ast.literal_eval(gate_map_str)
-        logging.warning(f"handle mmu_gate_map gate_map: {json.dumps(gate_map)}")
+        logging.debug(f"handle mmu_gate_map gate_map: {json.dumps(gate_map)}")
 
         for key, value in gate_map.items():
             gate_index = int(key)
 
-            logging.warning(f"try update gate {key}: {json.dumps(value)}")
+            logging.debug(f"try update gate {key}: {json.dumps(value)}")
 
             await self.ace_controller.update_gate(
                 gate_index = gate_index,
@@ -2108,7 +2175,7 @@ class MmuAcePatcher:
                 "ams_box_mapping": mapping
             }
 
-            logging.warning(f"mmu_ace: patch_print_data: {json.dumps(print_data)}")
+            logging.debug(f"mmu_ace: patch_print_data: {json.dumps(print_data)}")
 
         return print_data
 
@@ -2387,10 +2454,10 @@ class MmuAcePatcher:
 
     # Add support for anycubic slicer
     def setup_anycubic_slicer(self):
-        logging.warning("setup_anycubic_slicer")
+        logging.debug("setup_anycubic_slicer")
         from .file_manager import file_manager
         file_manager.METADATA_SCRIPT = os.path.abspath(__file__)
-        logging.warning(f"setup_anycubic_slicer METADATA_SCRIPT: {file_manager.METADATA_SCRIPT}")
+        logging.debug(f"setup_anycubic_slicer METADATA_SCRIPT: {file_manager.METADATA_SCRIPT}")
 
 
 def load_component(config):
@@ -2462,7 +2529,7 @@ def process_file(input_filename, output_filename, tools_used, total_toolchanges)
     
 def main(config: Dict[str, Any], metadata) -> None:
 
-    logging.warning("main setup_anycubic_slicer")
+    logging.debug("main setup_anycubic_slicer")
     
     path = config["gcode_dir"]
     filename = config["filename"]
@@ -2505,7 +2572,7 @@ def main(config: Dict[str, Any], metadata) -> None:
     
     class AnycubicSlicerNext(metadata.PrusaSlicer):
         def check_identity(self, data: str) -> bool:
-            logging.warning("AnycubicSlicerNext checking identity")
+            logging.debug("AnycubicSlicerNext checking identity")
             aliases = {
                 'AnycubicSlicerNext': r"AnycubicSlicerNext\s(.*)\son",
             }
@@ -2514,20 +2581,20 @@ def main(config: Dict[str, Any], metadata) -> None:
                 if match:
                     self.slicer_name = name
                     self.slicer_version = match.group(1)
-                    logging.warning(f"AnycubicSlicerNext found {name} version {self.slicer_version}")
+                    logging.debug(f"AnycubicSlicerNext found {name} version {self.slicer_version}")
                     return True
 
-            logging.warning("AnycubicSlicerNext no identity found")
+            logging.debug("AnycubicSlicerNext no identity found")
             return False
 
     # log supported slicers
-    logging.warning("Adding AnycubicSlicerNext to supported slicers")
+    logging.debug("Adding AnycubicSlicerNext to supported slicers")
     supported_slicers: List[Type[metadata.BaseSlicer]] = metadata.SUPPORTED_SLICERS
-    logging.warning(f"Supported slicers before: {supported_slicers}")
+    logging.debug(f"Supported slicers before: {supported_slicers}")
     supported_slicers.append(AnycubicSlicerNext)
-    logging.warning(f"Supported slicers after: {supported_slicers}")
+    logging.debug(f"Supported slicers after: {supported_slicers}")
     metadata.SUPPORTED_SLICERS = supported_slicers
-    logging.warning(f"Supported slicers after metadata: {supported_slicers}")
+    logging.debug(f"Supported slicers after metadata: {supported_slicers}")
 
     # process file to add referenced_tools metadata
 
