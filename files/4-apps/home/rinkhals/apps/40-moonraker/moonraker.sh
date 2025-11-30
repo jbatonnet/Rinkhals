@@ -4,8 +4,9 @@
 python -m venv --without-pip .
 . bin/activate
 
-# Copy Kobra component
+# Copy Kobra and Memory Manager components
 cp -rf kobra.py moonraker/moonraker/components/kobra.py
+cp -rf memory_manager.py moonraker/moonraker/components/memory_manager.py
 
 # Sometimes .moonraker.uuid is empty for some reason (#199)
 if [ ! -s /useremain/home/rinkhals/printer_data/.moonraker.uuid ]; then
@@ -63,6 +64,14 @@ start_moonraker_with_restart() {
         fi
 
         echo "$(date): Starting Moonraker (crash count: $crash_count/$max_crashes)" >> $RINKHALS_ROOT/logs/app-moonraker.log
+
+        # Python Garbage Collection settings for RAM-constrained systems
+        # Enable aggressive GC to prevent memory creep
+        export PYTHONGC=1
+        # Set GC thresholds (generation0, generation1, generation2)
+        # Default: (700, 10, 10) - collect less frequently
+        # Aggressive: (500, 5, 5) - collect more frequently to save RAM
+        export PYTHONGCTHRESHOLD="500,5,5"
 
         # Memory limit for RAM-constrained system (213 MB total RAM)
         # Limit Moonraker to 80 MB virtual memory to prevent system-wide OOM
