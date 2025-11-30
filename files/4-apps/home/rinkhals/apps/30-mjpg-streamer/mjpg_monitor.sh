@@ -24,8 +24,9 @@ get_cameras() {
 check_active_clients() {
     # Check if anyone is actively streaming from port 8080+
     # Returns 0 (true) if clients found, 1 (false) if no clients
+    # Note: Using netstat instead of lsof because BusyBox lsof doesn't support -sTCP:ESTABLISHED properly
     for port in 8080 8081 8082; do
-        if lsof -i :$port -sTCP:ESTABLISHED 2>/dev/null | grep -q mjpg_streamer; then
+        if netstat -tn 2>/dev/null | grep -q ":$port.*ESTABLISHED"; then
             return 0  # Clients found
         fi
     done
@@ -54,6 +55,7 @@ start_mjpg_streamer_with_mode() {
 
 restart_mjpg_streamer() {
     local force_mode=$1  # Optional: "low" or "high" to force a specific mode
+    local mode  # Local variable for the mode to use in this restart
 
     cd $APP_ROOT
 
@@ -70,12 +72,12 @@ restart_mjpg_streamer() {
     # Determine mode: use forced mode or check for clients
     if [ -z "$force_mode" ]; then
         if check_active_clients; then
-            current_mode="high"
+            mode="high"
         else
-            current_mode="low"
+            mode="low"
         fi
     else
-        current_mode=$force_mode
+        mode=$force_mode
     fi
 
     for CAMERA in $CAMERAS; do
@@ -127,11 +129,14 @@ restart_mjpg_streamer() {
         PORT=$((8080 + $INDEX))
 
         # Start in appropriate mode
-        start_mjpg_streamer_with_mode "$CAMERA" "$PORT" "$current_mode"
+        start_mjpg_streamer_with_mode "$CAMERA" "$PORT" "$mode"
 
         wait_for_port $PORT
         INDEX=$(($INDEX + 1))
     done
+
+    # Update global current_mode after successful restart
+    current_mode=$mode
 
     PIDS=$(get_by_name mjpg_streamer)
     if [ "$PIDS" = "" ]; then
@@ -149,17 +154,15 @@ restart_mjpg_streamer() {
 previous_cameras=$(get_cameras)
 restart_mjpg_streamer "low"  # Start in low-res mode
 
-# Main monitoring loop
+# Main monitoring loop with timeout system
 check_counter=0
+high_mode_start_time=0      # Unix timestamp when HIGH mode was started
+HIGH_MODE_TIMEOUT=300       # 5 minutes in seconds
+previous_client_count=0     # Track client count to detect new connections
+
+echo "Main loop started - will switch to HIGH mode on demand, auto-downgrade after 5min" >> $APP_LOG
+
 while [ 1 ]; do
-    printer_state=$(get_printer_state)
-
-    # Don't change resolution if printer is busy
-    if [ "$printer_state" != "standby" ] && [ "$printer_state" != "complete" ] && [ "$printer_state" != "" ]; then
-        sleep 10
-        continue
-    fi
-
     # Check for camera changes
     current_cameras=$(get_cameras)
     if [ "$current_cameras" != "$previous_cameras" ]; then
@@ -173,16 +176,49 @@ while [ 1 ]; do
     if [ $check_counter -ge 2 ]; then  # 2 * 5s = 10s
         check_counter=0
 
-        # Determine desired mode based on clients
-        if check_active_clients; then
-            desired_mode="high"
+        # Count active clients
+        client_count=$(netstat -tn 2>/dev/null | grep -c ":8080.*ESTABLISHED")
+
+        # Determine desired mode based on clients and timeout
+        if [ "$client_count" -gt 0 ]; then
+            # Clients are active
+            current_time=$(date +%s)
+
+            if [ "$current_mode" = "low" ]; then
+                # Switch to HIGH mode and start timer
+                desired_mode="high"
+                high_mode_start_time=$current_time
+                previous_client_count=$client_count
+                echo "Switching to HIGH mode ($client_count clients connected)" >> $APP_LOG
+            elif [ "$current_mode" = "high" ]; then
+                # Already in HIGH mode - check timeout and new clients
+                elapsed=$((current_time - high_mode_start_time))
+
+                # Reset timer if new clients joined (refresh/new tab)
+                if [ "$client_count" -gt "$previous_client_count" ]; then
+                    echo "New clients detected ($previous_client_count → $client_count), resetting HIGH mode timer" >> $APP_LOG
+                    high_mode_start_time=$current_time
+                    previous_client_count=$client_count
+                fi
+
+                # Force downgrade to LOW after 5 minutes
+                if [ "$elapsed" -gt "$HIGH_MODE_TIMEOUT" ]; then
+                    desired_mode="low"
+                    echo "HIGH mode timeout reached (${elapsed}s), forcing downgrade to LOW mode" >> $APP_LOG
+                else
+                    desired_mode="high"
+                fi
+            fi
         else
+            # No clients - switch to LOW mode
             desired_mode="low"
+            if [ "$current_mode" = "high" ]; then
+                echo "No clients detected, switching to LOW mode" >> $APP_LOG
+            fi
         fi
 
         # Switch mode if needed
         if [ "$current_mode" != "$desired_mode" ]; then
-            echo "Switching from $current_mode to $desired_mode mode (clients: $(check_active_clients && echo 'yes' || echo 'no'))" >> $APP_LOG
             restart_mjpg_streamer "$desired_mode"
         fi
     fi
