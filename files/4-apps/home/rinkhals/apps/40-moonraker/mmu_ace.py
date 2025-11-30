@@ -71,7 +71,7 @@ else:
 
 @dataclass
 class ActiveFilamentStatus:
-    empty: str
+    empty: bool  # True if no filament loaded, False if loaded
     vendor: str = ""
     manufacturer: str = ""  # Alias for vendor (Fluidd might read this)
     material: str = ""
@@ -1013,16 +1013,24 @@ class MmuAceController:
                 filament_name = "Empty"
 
         # Create active_filament status with proper structure
+        # empty is True if no filament loaded, False if loaded
         active_filament_status = ActiveFilamentStatus(
-            empty="",
+            empty=(filament_pos != FILAMENT_POS_LOADED),
             vendor=filament_vendor,
             manufacturer=filament_vendor,  # Same as vendor (alias for Fluidd compatibility)
             material=filament_material,
             color=filament_color
         )
 
-        # ACE has no encoder - set to None to hide encoder UI in Fluidd
+        # ACE has no encoder - return null to hide encoder UI completely
+        # Fluidd expects null when no encoder is present, not a disabled encoder object
         encoder_status = None
+
+        # Ensure endless_spool_groups has correct length (Fluidd expects array with num_gates entries)
+        endless_spool_groups = self.ace.endless_spool_groups
+        if len(endless_spool_groups) != num_gates:
+            # Fill with zeros if empty or wrong length
+            endless_spool_groups = [0] * num_gates
 
         return MmuAceStatus(
             mmu = MmuStatus(
@@ -1047,7 +1055,7 @@ class MmuAceController:
                 filament_pos = filament_pos,  # Calculated based on gate status
                 filament_direction = self.ace.filament.direction,
                 ttg_map = self.ace.ttg_map,
-                endless_spool_groups = self.ace.endless_spool_groups,
+                endless_spool_groups = endless_spool_groups,
                 gate_status = gate_status,
                 gate_filament_name = gate_filament_name,
                 gate_material = gate_material,
@@ -1067,7 +1075,7 @@ class MmuAceController:
                 endless_spool_enabled = True,  # Enable endless spool for backup roll functionality
                 reason_for_pause = "",
                 extruder_filament_remaining = -1,
-                spoolman_support = False,
+                spoolman_support = "off",  # off/readonly/push/pull - we don't use spoolman
                 sensors = {},
                 espooler_active = "",
                 servo = "",
