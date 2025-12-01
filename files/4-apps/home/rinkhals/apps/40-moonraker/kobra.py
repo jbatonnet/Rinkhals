@@ -88,8 +88,8 @@ class Kobra:
 
     async def component_init(self):
 
-        if self.KOBRA_MODEL_CODE == 'K3':
-            # Add camera and head lights power devices
+        if self.KOBRA_MODEL_CODE in ('K3', 'K3M', 'K3V2'):
+            # Add camera and head lights power devices for K3, K3 Max and K3 V2
             config = self.server.config.read_supplemental_dict({
                 'power camera_light': {
                     'type': 'shell',
