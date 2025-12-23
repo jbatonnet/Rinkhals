@@ -103,6 +103,7 @@ class Kobra:
         self.patch_objects_list()
         self.patch_mainsail()
         self.patch_k2p_bug()
+        self.patch_ace_flush_control()
 
         logging.info('Completed Kobra patching! Yay!')
 
@@ -851,6 +852,88 @@ class Kobra:
         logging.debug(f'  Before: {KlippyAPI.get_klippy_info}')
         setattr(KlippyAPI, 'get_klippy_info', wrap_get_klippy_info(KlippyAPI.get_klippy_info))
         logging.debug(f'  After: {KlippyAPI.get_klippy_info}')
+
+    def patch_ace_flush_control(self):
+        from .klippy_connection import KlippyConnection
+        import asyncio
+
+        async def handle_ace_flush_command(script_upper, script):
+            """Handle ACE flush control commands. Returns (handled, result)."""
+
+            if script_upper.startswith('SET_ACE_FLUSH_MULTIPLIER'):
+                import re
+                value_match = re.search(r'VALUE=([0-9.]+)', script, re.IGNORECASE)
+                if not value_match:
+                    logging.error('[ACE Flush] Missing VALUE parameter')
+                    return (True, None)
+
+                value = float(value_match.group(1))
+
+                # Validate range
+                if value < 0.0 or value > 3.0:
+                    logging.error(f'[ACE Flush] Invalid value {value}, must be 0.0-3.0')
+                    return (True, None)
+
+                # Call GoKlipper's filament_hub API via HTTP client
+                try:
+                    http_client = self.server.lookup_component('http_client')
+                    url = 'http://localhost:7125/printer/filament_hub/set_config'
+                    data = {'flush_multiplier': value}
+
+                    response = await http_client.post(url, body=json.dumps(data),
+                                                    headers={'Content-Type': 'application/json'})
+
+                    logging.info(f'[ACE Flush] Set flush_multiplier to {value} via HTTP API')
+                    self.server.send_event("server:gcode_response", f"// ACE flush_multiplier set to {value}")
+                    return (True, "ok")
+                except Exception as e:
+                    logging.error(f'[ACE Flush] Failed to call API: {e}')
+                    return (True, None)
+
+            elif script_upper == 'ACE_FLUSH_MINIMAL':
+                return await handle_ace_flush_command('SET_ACE_FLUSH_MULTIPLIER', 'SET_ACE_FLUSH_MULTIPLIER VALUE=0.1')
+
+            elif script_upper == 'ACE_FLUSH_NORMAL':
+                return await handle_ace_flush_command('SET_ACE_FLUSH_MULTIPLIER', 'SET_ACE_FLUSH_MULTIPLIER VALUE=1.0')
+
+            elif script_upper == 'ACE_FLUSH_MAXIMUM':
+                return await handle_ace_flush_command('SET_ACE_FLUSH_MULTIPLIER', 'SET_ACE_FLUSH_MULTIPLIER VALUE=3.0')
+
+            elif script_upper == 'GET_ACE_FLUSH_MULTIPLIER':
+                try:
+                    http_client = self.server.lookup_component('http_client')
+                    url = 'http://localhost:7125/printer/filament_hub/get_config'
+
+                    response = await http_client.get(url)
+                    data = response.json()
+                    value = data['result']['flush_multiplier']
+
+                    self.server.send_event("server:gcode_response", f"// ACE flush_multiplier: {value}")
+                    logging.info(f'[ACE Flush] Current flush_multiplier: {value}')
+                    return (True, "ok")
+                except Exception as e:
+                    logging.error(f'[ACE Flush] Failed to read config: {e}')
+                    return (True, None)
+
+            return (False, None)
+
+        def wrap_request(original_request):
+            async def request(me, web_request):
+                rpc_method = web_request.get_endpoint()
+                if self.is_goklipper_running() and rpc_method == "gcode/script":
+                    script = web_request.get_str('script', "")
+                    script_upper = script.strip().upper()
+
+                    # Check if it's an ACE flush control command
+                    handled, result = await handle_ace_flush_command(script_upper, script)
+                    if handled:
+                        return result
+
+                return await original_request(me, web_request)
+            return request
+
+        logging.info('> Adding ACE flush control macros...')
+        setattr(KlippyConnection, 'request', wrap_request(KlippyConnection.request))
 
 
 class ShellPowerDevice(PowerDevice):
