@@ -1,6 +1,7 @@
 export RINKHALS_ROOT=$(realpath /useremain/rinkhals/.current)
 export RINKHALS_VERSION=$(cat $RINKHALS_ROOT/.version)
 export RINKHALS_HOME=/useremain/home/rinkhals
+export RINKHALS_LOGS=/tmp/rinkhals
 
 export KOBRA_MODEL_ID=$(cat /userdata/app/gk/config/api.cfg | sed -nr 's/.*"modelId"\s*:\s*"([0-9]+)".*/\1/p')
 
@@ -13,6 +14,12 @@ elif [ "$KOBRA_MODEL_ID" == "20024" ]; then
 elif [ "$KOBRA_MODEL_ID" == "20025" ]; then
     export KOBRA_MODEL="Anycubic Kobra S1"
     export KOBRA_MODEL_CODE=KS1
+elif [ "$KOBRA_MODEL_ID" == "20026" ]; then
+    export KOBRA_MODEL="Anycubic Kobra 3 Max"
+    export KOBRA_MODEL_CODE=K3M
+elif [ "$KOBRA_MODEL_ID" == "20027" ]; then
+    export KOBRA_MODEL="Anycubic Kobra 3 V2"
+    export KOBRA_MODEL_CODE=K3V2
 fi
 
 export KOBRA_VERSION=$(cat /useremain/dev/version)
@@ -31,42 +38,37 @@ beep() {
 log() {
     echo "${*}"
 
-    mkdir -p $RINKHALS_ROOT/logs
-    echo "$(date): ${*}" >> $RINKHALS_ROOT/logs/rinkhals.log
+    mkdir -p $RINKHALS_LOGS
+    echo "$(date): ${*}" >> $RINKHALS_LOGS/rinkhals.log
 }
 quit() {
     exit 1
 }
 
 check_compatibility() {
-    if [ "$KOBRA_MODEL_CODE" != "K2P" ] && [ "$KOBRA_MODEL_CODE" == "K3" ] && [ "$KOBRA_MODEL_CODE" == "KS1" ]; then
+    if [ "$KOBRA_MODEL_CODE" != "K2P" ] && [ "$KOBRA_MODEL_CODE" == "K3" ] && [ "$KOBRA_MODEL_CODE" == "KS1" ] && [ "$KOBRA_MODEL_CODE" == "K3M" ]; then
         log "Your printer's model is not recognized, exiting"
         quit
     fi
 }
-is_verified_firmware() {
-    if [ "$KOBRA_MODEL_CODE" = "K2P" ]; then
-        if [ "$KOBRA_VERSION" = "3.1.2.3" ]; then
-            echo 1
-            return
-        fi
-    elif [ "$KOBRA_MODEL_CODE" = "K3" ]; then
-        if [ "$KOBRA_VERSION" = "2.3.8.9" ] || [ "$KOBRA_VERSION" = "2.3.9.3" ]; then
-            echo 1
-            return
-        fi
-    elif [ "$KOBRA_MODEL_CODE" = "KS1" ]; then
-        if [ "$KOBRA_VERSION" = "2.5.1.6" ] || [ "$KOBRA_VERSION" = "2.5.2.3" ]; then
-            echo 1
-            return
-        fi
-    fi
-
-    echo 0
+is_supported_firmware() {
+    SUPPORTED=0
+    [ "$KOBRA_MODEL_CODE" = "KS1" ] && [ "$KOBRA_VERSION" = "2.5.8.8" ] && SUPPORTED=1
+    [ "$KOBRA_MODEL_CODE" = "KS1" ] && [ "$KOBRA_VERSION" = "2.5.6.4" ] && SUPPORTED=1
+    [ "$KOBRA_MODEL_CODE" = "K3V2" ] && [ "$KOBRA_VERSION" = "1.1.0.1" ] && SUPPORTED=1
+    [ "$KOBRA_MODEL_CODE" = "K3V2" ] && [ "$KOBRA_VERSION" = "1.0.9.7" ] && SUPPORTED=1
+    [ "$KOBRA_MODEL_CODE" = "K3M" ] && [ "$KOBRA_VERSION" = "2.5.1.3" ] && SUPPORTED=1
+    [ "$KOBRA_MODEL_CODE" = "K3M" ] && [ "$KOBRA_VERSION" = "2.5.0.9" ] && SUPPORTED=1
+    [ "$KOBRA_MODEL_CODE" = "K3" ] && [ "$KOBRA_VERSION" = "2.4.4.7" ] && SUPPORTED=1
+    [ "$KOBRA_MODEL_CODE" = "K3" ] && [ "$KOBRA_VERSION" = "2.4.4.3" ] && SUPPORTED=1
+    [ "$KOBRA_MODEL_CODE" = "K2P" ] && [ "$KOBRA_VERSION" = "3.1.4" ] && SUPPORTED=1
+    [ "$KOBRA_MODEL_CODE" = "K2P" ] && [ "$KOBRA_VERSION" = "3.1.2.3" ] && SUPPORTED=1
+    echo $SUPPORTED
 }
 
 install_swu() {
-    SWU_FILE=$1
+    SWU_FILE=$(realpath $1)
+    shift
 
     echo "> Extracting $SWU_FILE ..."
 
@@ -76,12 +78,16 @@ install_swu() {
     cd /useremain/update_swu
 
     unzip -P U2FsdGVkX19deTfqpXHZnB5GeyQ/dtlbHjkUnwgCi+w= $SWU_FILE -d /useremain
-    tar -xzf /useremain/update_swu/setup.tar.gz -C /useremain/update_swu
+    if [ -f /useremain/update_swu/setup.tar.gz ]; then
+        tar -xzf /useremain/update_swu/setup.tar.gz -C /useremain/update_swu
+    elif [ -f /useremain/update_swu/setup.tar ]; then
+        tar -xf /useremain/update_swu/setup.tar -C /useremain/update_swu
+    fi
 
     echo "> Running update.sh ..."
 
     chmod +x update.sh
-    ./update.sh
+    ./update.sh $@
 }
 
 get_command_line() {
@@ -110,7 +116,7 @@ kill_by_id() {
 }
 
 get_by_name() {
-    ps | grep "$1" | grep -v grep | awk '{print $1}'
+    echo $(ps | grep "$1" | grep -v grep | awk '{print $1}')
 }
 wait_for_name() {
     DELAY=250
@@ -260,7 +266,7 @@ get_app_pids() {
     fi
 
     chmod +x $APP_ROOT/app.sh
-    APP_PIDS=$($APP_ROOT/app.sh status | grep PIDs: | awk '{print $2}')
+    APP_PIDS=$($APP_ROOT/app.sh status | grep PIDs: | awk '{$1=""; print $0}')
 
     echo $APP_PIDS
 }
@@ -390,16 +396,16 @@ stop_app() {
     $APP_ROOT/app.sh stop
 }
 
-list_app_properties() {
-    APP=$1
-    APP_ROOT=$(get_app_root $APP)
+# list_app_properties() {
+#     APP=$1
+#     APP_ROOT=$(get_app_root $APP)
 
-    if [ ! -f $APP_ROOT/app.json ]; then
-        return
-    fi
+#     if [ ! -f $APP_ROOT/app.json ]; then
+#         return
+#     fi
 
-    cat $APP_ROOT/app.json | sed 's/\/\/.*//' | jq -r '.properties | keys[]'
-}
+#     cat $APP_ROOT/app.json | sed 's/\/\/.*//' | jq -r '.properties | keys[]'
+# }
 get_app_property() {
     APP=$1
     PROPERTY=$2
@@ -413,6 +419,13 @@ get_app_property() {
     fi
     if [ "$VALUE" = "null" ]; then
         VALUE=
+    fi
+    if [ "$VALUE" = "" ]; then
+        APP_ROOT=$(get_app_root $APP)
+        VALUE=$(cat $APP_ROOT/app.json 2>/dev/null | jq -r ".properties.$PROPERTY.default")
+        if [ "$VALUE" = "null" ]; then
+            VALUE=
+        fi
     fi
 
     echo $VALUE
@@ -444,4 +457,28 @@ set_temporary_app_property() {
     CONFIG=${CONFIG:-'{}'}
 
     echo $CONFIG | jq ".$PROPERTY = \"$VALUE\"" > $TEMPORARY_CONFIG_PATH
+}
+remove_app_property() {
+    APP=$1
+    PROPERTY=$2
+    
+    if [ ! -d $RINKHALS_HOME/apps ]; then
+        return
+    fi
+
+    CONFIG_PATH=$USER_APP_PATH/$APP.config
+    CONFIG=$(cat $CONFIG_PATH 2>/dev/null)
+    CONFIG=${CONFIG:-'{}'}
+
+    echo $CONFIG | jq "del(.$PROPERTY)" > $CONFIG_PATH
+}
+clear_app_properties() {
+    APP=$1
+    
+    if [ ! -d $RINKHALS_HOME/apps ]; then
+        return
+    fi
+
+    CONFIG_PATH=$USER_APP_PATH/$APP.config
+    rm $CONFIG_PATH 2>/dev/null
 }

@@ -1,7 +1,7 @@
 . $(dirname $(realpath $0))/tools.sh
 
 cd $RINKHALS_ROOT
-mkdir -p ./logs
+mkdir -p $RINKHALS_LOGS
 
 if [ ! -d /useremain/rinkhals/.current ]; then
     echo Rinkhals has not started
@@ -37,6 +37,9 @@ cd $RINKHALS_ROOT
 log "> Cleaning overlay..."
 
 cd /useremain/rinkhals/.current
+
+rm -f /userdata/app/gk/printer_mutable.cfg 2> /dev/null
+[ -f /userdata/app/gk/printer_mutable.cfg.bak ] && mv /userdata/app/gk/printer_mutable.cfg.bak /userdata/app/gk/printer_mutable.cfg
 
 umount -l /userdata/app/gk/printer_data/gcodes 2> /dev/null
 umount -l /userdata/app/gk/printer_data 2> /dev/null

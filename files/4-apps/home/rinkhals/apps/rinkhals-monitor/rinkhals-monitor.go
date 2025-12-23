@@ -1,4 +1,4 @@
-// docker run --rm -it -v .\files:/files -w /files/4-rinkhals/home/rinkhals/apps/rinkhals-monitor --entrypoint=/bin/sh golang:1.23.4 -c "GOOS=linux GOARCH=arm go build -v"
+// docker run --rm -it -v .\files:/files -w /files/4-apps/home/rinkhals/apps/rinkhals-monitor --entrypoint=/bin/sh golang:1.23.4 -c "GOOS=linux GOARCH=arm go build -v"
 
 package main
 
@@ -27,12 +27,12 @@ var processCommands = map[string]string {
 	"gkapi": "gkapi",
 	"K3SysUi": "K3SysUi",
 	"Moonraker": "moonraker.py",
-	"Rinkhals proxy": "moonraker-proxy.py",
 	"Rinkhals UI": "rinkhals-ui.py",
 	"mjpg-streamer": "mjpg_streamer",
 	"Rinkhals monitor": "rinkhals-monitor",
-	"nginx": "nginx: worker",
+	"lighttp": "lighttpd",
 	"OctoApp": "octoapp",
+	"OctoEverywhere": "octoeverywhere",
 }
 var processCache = map[string]*process.Process {}
 
@@ -99,7 +99,7 @@ func main() {
     log.SetFlags(log.Ldate | log.Ltime)
 
 	// Load environment variables from .env file
-    err := godotenv.Load()
+    err := godotenv.Load(".env", "/useremain/home/rinkhals/apps/rinkhals-monitor/.env")
     if err == nil {
         log.Println("Loading environment from .env file")
     }
@@ -186,18 +186,13 @@ func main() {
 
 	// Retrieve current device ID
 	deviceID := ""
-	
-	deviceIDPath := "/useremain/dev/device_id"
-	if _, err := os.Stat(deviceIDPath); !os.IsNotExist(err) {
-		deviceIDBytes, err := os.ReadFile(deviceIDPath)
-		if err != nil {
-			log.Fatalf("Error reading device ID: %v", err)
-		}
-		deviceID = strings.TrimSpace(string(deviceIDBytes))
+	if os.Getenv("KOBRA_DEVICE_ID") != "" {
+		deviceID = os.Getenv("KOBRA_DEVICE_ID")
 	}
 
-	if os.Getenv("DEVICE_ID") != "" {
-		deviceID = os.Getenv("DEVICE_ID")
+	model := "Anycubic Kobra"
+	if os.Getenv("KOBRA_MODEL") != "" {
+		model = os.Getenv("KOBRA_MODEL")
 	}
 	
 	// Publish the Home Assistant MQTT discovery topic information
@@ -206,7 +201,7 @@ func main() {
 			"ids": "`, deviceID, `",
 			"name": "`, deviceID, `",
 			"manufacturer": "Anycubic",
-			"model": "Kobra 3",
+			"model": "`, model, `",
 			"serial_number": "`, deviceID, `"
 		},
 		"origin": {

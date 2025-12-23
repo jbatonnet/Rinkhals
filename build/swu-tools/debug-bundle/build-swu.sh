@@ -18,7 +18,7 @@ BUILD_ROOT=$(dirname $(realpath $0))
 mkdir -p /tmp/update_swu
 rm -rf /tmp/update_swu/*
 
-cp /build/swu-tools/debug-bundle/update.sh /tmp/update_swu/update.sh
+cp /files/3-rinkhals/opt/rinkhals/tools/debug-bundle.sh /tmp/update_swu/update.sh
 
 
 # Create the update.swu

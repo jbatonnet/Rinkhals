@@ -54,6 +54,7 @@ class Kobra:
     _remote_mode_next_check = 0
     _remote_mode = None
     _total_layer = 0
+    _states_cache = []
 
     # GCode handlers
     gcode_handlers: dict[str, FlexCallback] = {}
@@ -302,8 +303,15 @@ class Kobra:
                         state = 'printing'
                     if state.lower() == 'leveling':
                         state = 'printing'
+                    if state.lower() == 'resonance':
+                        state = 'printing'
                     if state.lower() == 'onpause':
                         state = 'paused'
+
+                    # Ensures same string memory location for Moonraker job_state check (https://github.com/jbatonnet/Rinkhals/issues/118#issuecomment-2980916709)
+                    if state not in self._states_cache:
+                        self._states_cache.append(state)
+                    state = [ s for s in self._states_cache if s == state ][0]
 
                     status['print_stats']['state'] = state
 
@@ -596,6 +604,7 @@ class Kobra:
                 rpc_method = web_request.get_endpoint()
                 if self.is_goklipper_running() and rpc_method == "gcode/script":
                     script = web_request.get_str('script', "")
+
                     if script.lower() == "bed_mesh_map" and os.path.isfile("/userdata/app/gk/printer_data/config/printer_mutable.cfg"):
                         logging.info('[Kobra] Injected bed mesh')
                         with open("/userdata/app/gk/printer_data/config/printer_mutable.cfg", "r") as f:
@@ -612,13 +621,66 @@ class Kobra:
                                 raise self.server.error("Failed to open mesh")
                     elif script.lower().startswith("bed_mesh_calibrate"):
                         logging.info('[Kobra] Injected bed mesh calibration script')
-                        web_request.get_args()["script"] = "MOVE_HEAT_POS\nM109 S140\nWIPE_NOZZLE\nBED_MESH_CALIBRATE\nSAVE_CONFIG"
+
+                        bed_temp = 60
+                        extru_temp = 170
+                        extru_end_temp = 140
+
+                        if os.path.isfile('/userdata/app/gk/printer_data/config/printer.generated.cfg'):
+                            with open('/userdata/app/gk/printer_data/config/printer.generated.cfg', 'r') as f:
+                                printer_config = f.read()
+
+                            leviQ3_match = re.search(r'(?:^|\n)\[leviQ3\]((?:.|\n)*?)(?=\n\[|$)', printer_config)
+                            if leviQ3_match:
+                                leviQ3_config = leviQ3_match[0]
+
+                                bed_temp_match = re.search(r'bed_temp\s*:\s*(\d+(?:\.\d+)?)', leviQ3_config)
+                                if bed_temp_match:
+                                    bed_temp = int(bed_temp_match[1])
+                                    logging.info(f'[Kobra] Using leviQ3 bed_temp: {bed_temp}')
+                                extru_temp_match = re.search(r'extru_temp\s*:\s*(\d+(?:\.\d+)?)', leviQ3_config)
+                                if extru_temp_match:
+                                    extru_temp = int(extru_temp_match[1])
+                                    logging.info(f'[Kobra] Using leviQ3 extru_temp: {extru_temp}')
+                                extru_end_temp_match = re.search(r'extru_end_temp\s*:\s*(\d+(?:\.\d+)?)', leviQ3_config)
+                                if extru_end_temp_match:
+                                    extru_end_temp = int(extru_end_temp_match[1])
+                                    logging.info(f'[Kobra] Using leviQ3 extru_end_temp: {extru_end_temp}')
+
+                        calibrate_script = [
+                            'MOVE_HEAT_POS',
+                            f'M140 S{bed_temp}', # Set bed to 60
+                            f'M109 S{extru_temp}', # Wait hotend to 170
+                            f'M190 S{bed_temp}', # Wait bed to 60
+                            'WIPE_ENTER', # Move to wiping position
+                            'WIPE_NOZZLE', # Wipe nozzle
+                            'WIPE_EXIT', # Exit wiping position
+                            f'M109 S{extru_end_temp}', # Wait hotend to 140
+                            'BED_MESH_CALIBRATE',
+                            'TURN_OFF_HEATERS',
+                            'M106 S0', # Set fan speed to 0
+                            'SAVE_CONFIG'
+                        ]
+
+                        if self.KOBRA_MODEL_CODE != 'KS1':
+                            calibrate_script.remove('WIPE_ENTER')
+                            calibrate_script.remove('WIPE_EXIT')
+
+                        web_request.get_args()["script"] = '\n'.join(calibrate_script)
                     elif script.lower().startswith('bed_mesh_profile'):
                         name = re.search('save=(\"(?:[^\"]+)\"|(?:[^\s]+))', script.lower())
                         if name and name[1] != 'default':
                             message = 'GoKlipper only support one default bed mesh'
                             logging.error(message)
                             raise self.server.error(message)
+                
+                    if script.lower() == 'help':
+                        web_request.endpoint = 'gcode/help'
+                        result = await original_request(me, web_request)
+                        result = '\n'.join([ f'// {g}: {result[g]}' for g in result ])
+                        self.server.send_event("server:gcode_response", result)
+                        return None
+
                 return await original_request(me, web_request)
             return request
 
@@ -629,12 +691,14 @@ class Kobra:
                 # Do not send bed_mesh to goklipper, it does not support it
                 want_bed_mesh = False
                 if self.is_goklipper_running():
-                    if 'objects' in args and 'bed_mesh' in args['objects']:
+                    if 'objects' in args and ('bed_mesh' in args['objects'] or 'bed_mesh default' in args['objects'] or 'bed_mesh \"default\"' in args['objects']):
                         want_bed_mesh = True
-                        del args['objects']['bed_mesh']
-                    if 'objects' in args and 'bed_mesh \"default\"' in args['objects']:
-                        want_bed_mesh = True
-                        del args['objects']['bed_mesh \"default\"']
+                        if 'bed_mesh' in args['objects']:
+                            del args['objects']['bed_mesh']
+                        if 'bed_mesh default' in args['objects']:
+                            del args['objects']['bed_mesh default']
+                        if 'bed_mesh \"default\"' in args['objects']:
+                            del args['objects']['bed_mesh \"default\"']
 
                 result = await original__request_standard(me, web_request, timeout)
 
@@ -644,6 +708,7 @@ class Kobra:
                         result['status'] = {}
 
                     result['status']['bed_mesh'] = {}
+                    result['status']['bed_mesh default'] = {}
                     result['status']['bed_mesh \"default\"'] = {}
 
                     if os.path.isfile("/userdata/app/gk/printer_data/config/printer_mutable.cfg"):
@@ -660,7 +725,7 @@ class Kobra:
                                     "probed_matrix": points,
                                     "mesh_matrix": points
                                 }
-                                result['status']['bed_mesh \"default\"'] = {
+                                result['status']['bed_mesh default'] = {
                                     "points": points,
                                     "mesh_params": {
                                         "min_x": float(mesh["min_x"]),
@@ -675,6 +740,7 @@ class Kobra:
                                         "algo": mesh["algo"]
                                     }
                                 }
+                                #result['status']['bed_mesh \"default\"'] = result['status']['bed_mesh default']
                 return result
             return _request_standard
 
@@ -696,40 +762,48 @@ class Kobra:
                 rpc_method = web_request.get_endpoint()
                 if self.is_goklipper_running() and rpc_method == "objects/list":
                     logging.info('[Kobra] Injected objects list')
-                    return {
-                        "objects": [
-                            "motion_report",
-                            "gcode_macro pause",
-                            "gcode_macro resume",
-                            "gcode_macro cancel_print",
-                            "gcode_macro t0",
-                            "gcode_macro t1",
-                            "gcode_macro t2",
-                            "gcode_macro t3",
-                            "configfile",
-                            "heaters",
-                            "respond",
-                            "display_status",
-                            "extruder",
-                            "fan",
-                            "gcode_move",
-                            "heater_bed",
-                            "mcu",
-                            "mcu nozzle_mcu",
-                            "ota_filament_hub",
-                            "pause_resume",
-                            "pause_resume/cancel",
-                            "print_stats",
-                            "toolhead",
-                            "verify_heater extrude",
-                            "verify_heater heater_bed",
-                            "virtual_sdcard",
-                            "webhooks",
-                            "bed_mesh",
-                            "bed_mesh \"default\"",
-                            "idle_timeout"
-                        ]
-                    }
+                    
+                    objects = [
+                        "motion_report",
+                        "gcode_macro t0",
+                        "gcode_macro t1",
+                        "gcode_macro t2",
+                        "gcode_macro t3",
+                        "configfile",
+                        "heaters",
+                        "respond",
+                        "display_status",
+                        "extruder",
+                        "fan",
+                        "gcode_move",
+                        "heater_bed",
+                        "mcu",
+                        "mcu nozzle_mcu",
+                        "ota_filament_hub",
+                        "pause_resume",
+                        "pause_resume/cancel",
+                        "print_stats",
+                        "toolhead",
+                        "verify_heater extrude",
+                        "verify_heater heater_bed",
+                        "virtual_sdcard",
+                        "webhooks",
+                        "bed_mesh",
+                        "bed_mesh default",
+                        "bed_mesh \"default\"",
+                        "idle_timeout"
+                    ]
+                    
+                    web_request.endpoint = 'gcode/help'
+                    result = await original_request(me, web_request)
+                    for gcode in result:
+                        objects.append(f"gcode_macro {gcode}")
+                    
+                    if self.KOBRA_MODEL_CODE == 'KS1':
+                        objects.append("fan_generic air_filter_fan")
+                        objects.append("fan_generic box_fan")
+
+                    return { "objects": objects }
                 return await original_request(me, web_request)
             return request
 

@@ -1,5 +1,0 @@
-- Easiest to have a dedicated Linux machine or container at this point
-- docker run --rm -it -v .\build\buildroot:/config -v .\build\target:/output ghcr.io/jbatonnet/rinkhals/buildroot
-- Run `make`
-- Run `prepare-final.sh`
-- Get generated files

@@ -1,0 +1,2 @@
+source "$BR2_EXTERNAL_RINKHALS_PATH/package/drm-vncserver/Config.in"
+source "$BR2_EXTERNAL_RINKHALS_PATH/package/lv_micropython/Config.in"

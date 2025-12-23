@@ -21,22 +21,56 @@ log() {
         echo "$(date): ${*}" >> $USB_PATH/install.log
     fi
 }
-progress() {
-    if [ "$1" == "success" ]; then
-        fb_draw "drawbox=x=16:y=16:w=32:h=ih-32:t=fill:color=black,drawbox=x=20:y=20:w=24:h=ih-40:t=fill:color=green"
-        return
-    fi
-    if [ "$1" == "error" ]; then
-        fb_draw "drawbox=x=16:y=16:w=32:h=ih-32:t=fill:color=black,drawbox=x=20:y=20:w=24:h=ih-40:t=fill:color=red"
-        return
-    fi
-    if [ $1 == 0 ]; then
-        fb_draw "drawbox=x=16:y=16:w=32:h=ih-32:t=fill:color=black"
-        return
-    fi
 
-    fb_draw "drawbox=x=16:y=16:w=32:h=ih-32:t=fill:color=black,drawbox=x=20:y=20:w=24:h=(ih-40)*${*}:t=fill:color=white"
+FBIMG="/tmp/framebuffer.bmp"
+ICON_GRID="$SOURCE_PATH/rinkhals/opt/rinkhals/ui/assets/snake-grid.webp"
+ICON_ERR="$SOURCE_PATH/rinkhals/opt/rinkhals/ui/assets/snake-error.webp"
+ICON=${ICON_GRID}
+
+progress() {
+    case "${KOBRA_MODEL_CODE}" in
+        KS1)
+            SCL=".5"
+            TRANS="hflip,vflip"
+            Y_OFF="(H/3.4)"
+            X_OFF="((W/2)-(w/2))"
+            ERR_X_OFF=""
+            ERR_Y_OFF="-29"
+            ;;
+        K3M)
+            SCL=".25"
+            TRANS="transpose=2"
+            X_OFF="(W-(W/6.8)-(128*${SCL}))"
+            Y_OFF="((H/2)-(h/2))"
+            ERR_X_OFF="-25"
+            ERR_Y_OFF=""
+            ;;
+        *)
+            SCL=".25"
+            TRANS="transpose=1"
+            X_OFF="(W/6.8)"
+            Y_OFF="((H/2)-(h/2))"
+            ERR_X_OFF="-15"
+            ERR_Y_OFF=""
+            ;;
+    esac
+    case "${1}" in
+        "success")
+            CROP="crop=1024:128:0:(1280*1)"
+            ;;
+        "error")
+            ICON=${ICON_ERR}
+            CROP="null"
+            X_OFF="${X_OFF}${ERR_X_OFF}"
+            Y_OFF="${Y_OFF}${ERR_Y_OFF}"
+            ;;
+        *)
+            CROP="crop=1024:128:0:(1280*${1})"
+            ;;
+    esac
+    fb_draw "-i ${ICON} -frames:v 1 -filter_complex [1]${CROP},scale=iw*${SCL}:ih*${SCL},${TRANS}[bar];[0][bar]overlay=x=${X_OFF}:y=${Y_OFF} "
 }
+
 quit() {
     sync
     progress error
@@ -53,17 +87,17 @@ quit() {
 
 fb_capture() {
     if [ -f /ac_lib/lib/third_bin/ffmpeg ]; then
-        /ac_lib/lib/third_bin/ffmpeg -f fbdev -i /dev/fb0 -frames:v 1 -y /tmp/framebuffer.bmp 1>/dev/null 2>/dev/null
+        /ac_lib/lib/third_bin/ffmpeg -f fbdev -i /dev/fb0 -frames:v 1 -y ${FBIMG} 1>/dev/null 2>/dev/null
     fi
 }
 fb_restore() {
     if [ -f /ac_lib/lib/third_bin/ffmpeg ]; then
-        /ac_lib/lib/third_bin/ffmpeg -i /tmp/framebuffer.bmp -f fbdev /dev/fb0 1>/dev/null 2>/dev/null
+        /ac_lib/lib/third_bin/ffmpeg -i ${FBIMG} -f fbdev /dev/fb0 1>/dev/null 2>/dev/null
     fi
 }
 fb_draw() {
     if [ -f /ac_lib/lib/third_bin/ffmpeg ]; then
-        /ac_lib/lib/third_bin/ffmpeg -i /tmp/framebuffer.bmp -vf "${*}" -f fbdev /dev/fb0 1>/dev/null 2>/dev/null
+        /ac_lib/lib/third_bin/ffmpeg -i ${FBIMG} ${*} -pix_fmt bgra -f fbdev /dev/fb0 1>/dev/null 2>/dev/null
     fi
 }
 
@@ -117,7 +151,7 @@ cd $PREVIOUS_WD
 
 
 # Find the right directory target
-progress 0.2
+progress 0.3
 
 RINKHALS_VERSION=$(cat $SOURCE_PATH/.version)
 
@@ -132,7 +166,7 @@ log "Installing Rinkhals version $RINKHALS_VERSION to $TARGET_PATH"
 
 
 # Copy Rinkhals
-progress 0.3
+progress 0.4
 
 log "Copying Rinkhals files"
 

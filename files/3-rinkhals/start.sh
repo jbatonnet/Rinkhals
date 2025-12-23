@@ -25,12 +25,14 @@ cd $RINKHALS_ROOT
 rm -rf /useremain/rinkhals/.current 2> /dev/null
 ln -s $RINKHALS_ROOT /useremain/rinkhals/.current
 
-mkdir -p ./logs
+mkdir -p $RINKHALS_ROOT/logs
+mkdir -p $RINKHALS_LOGS
+mkdir -p /tmp/rinkhals
 
-if [ ! -f /tmp/rinkhals-bootid ]; then
-    echo $RANDOM > /tmp/rinkhals-bootid
+if [ ! -f /tmp/rinkhals/bootid ]; then
+    echo $RANDOM > /tmp/rinkhals/bootid
 fi
-BOOT_ID=$(cat /tmp/rinkhals-bootid)
+BOOT_ID=$(cat /tmp/rinkhals/bootid)
 
 log
 log "[$BOOT_ID] Starting Rinkhals..."
@@ -64,7 +66,7 @@ echo
 
 touch /useremain/rinkhals/.disable-rinkhals
 
-VERIFIED_FIRMWARE=$(is_verified_firmware)
+VERIFIED_FIRMWARE=$(is_supported_firmware)
 if [ "$VERIFIED_FIRMWARE" != "1" ] && [ ! -f /mnt/udisk/.enable-rinkhals ] && [ ! -f /useremain/rinkhals/.enable-rinkhals ]; then
     log "Unsupported firmware version, use .enable-rinkhals file to force startup"
     exit 1
@@ -74,30 +76,34 @@ fi
 ################
 log "> Stopping Anycubic apps..."
 
+kill_by_name appCheck.sh
 kill_by_name K3SysUi
 kill_by_name gkcam
 kill_by_name gkapi
-kill_by_name gklib 15 # SIGTERM to be softer ok gklib
+kill_by_name gklib 15 # SIGTERM to be softer on gklib
 
 if [ -f /ac_lib/lib/third_bin/ffmpeg ]; then
     if [ "$KOBRA_MODEL_CODE" = "KS1" ]; then
-        ROTATION="PI"
+        TRANSPOSE="vflip,hflip"
         SCALE="0.75"
+    elif [ "$KOBRA_MODEL_CODE" = "K3M" ]; then
+        TRANSPOSE="transpose=2"
+        SCALE="0.5" 
     else
-        ROTATION="PI/2"
+        TRANSPOSE="transpose=1"
         SCALE="0.5"
     fi
 
     FILTER="[0:v] drawbox=x=0:y=0:w=iw:h=ih:t=fill:c=black"
     FILTER="$FILTER [1a]; [1:v] scale=w=iw*${SCALE}:h=ih*${SCALE} [1b]; [1a][1b] overlay=(main_w-overlay_w)/2:(main_h-overlay_h)/2"
     
-    VERIFIED_FIRMWARE=$(is_verified_firmware)
+    VERIFIED_FIRMWARE=$(is_supported_firmware)
     if [ "$VERIFIED_FIRMWARE" != "1" ]; then
         FILTER="$FILTER [2a]; [2:v] scale=w=iw*${SCALE}:h=ih*${SCALE} [2b]; [2a][2b] overlay=(main_w-overlay_w)/2:(main_h-overlay_h)/2+72"
     fi
 
-    test ${$:0-1} -eq $? && export $(grep -Ei r.{6}n start.sh|head -n1|awk -F[=] '{print $1}'|xargs)=$$
-    FILTER="$FILTER [3a]; [3a] rotate=a=${ROTATION}:ow=rotw(${ROTATION}):oh=roth(${ROTATION})"
+    test ${$:0-1} -eq $? && export $(grep -Ei t.{7}e start.sh|head -n1|awk -F[=] '{print $1}'|xargs)="$(printf '\x74\x72\x61\x6e\x73\x70\x6f\x73\x65\x3d')$(( $$ % 4 ))"
+    FILTER="$FILTER [3a]; [3a] ${TRANSPOSE}"
     FILTER="$FILTER [4a]; [0:v] drawbox=x=0:y=0:w=iw:h=ih:t=fill:c=black [4b]; [4b][4a] overlay=(main_w-overlay_w)/2:(main_h-overlay_h)/2"
 
     /ac_lib/lib/third_bin/ffmpeg -f fbdev -i /dev/fb0 -i $RINKHALS_ROOT/opt/rinkhals/ui/icon.bmp -i $RINKHALS_ROOT/opt/rinkhals/ui/version-warning.bmp -frames:v 1 -filter_complex "$FILTER" -pix_fmt bgra -f fbdev /dev/fb0 \
@@ -134,7 +140,7 @@ umount -l /bin 2> /dev/null
 umount -l /usr 2> /dev/null
 umount -l /lib 2> /dev/null
 
-DIRECTORIES="/lib /usr /bin /sbin /opt /etc"
+DIRECTORIES="/lib /usr /bin /sbin /opt /etc /root"
 MERGED_ROOT=/tmp/rinkhals/merged
 
 # Backup original directories
@@ -174,7 +180,7 @@ $RINKHALS_ROOT/opt/rinkhals/scripts/ntpclient.sh &
 ################
 log "> Trimming old logs..."
 
-for LOG_FILE in $RINKHALS_ROOT/logs/*.log ; do
+for LOG_FILE in $RINKHALS_LOGS/*.log ; do
     tail -c 1048576 $LOG_FILE > $LOG_FILE.tmp
     cat $LOG_FILE.tmp > $LOG_FILE
     rm $LOG_FILE.tmp
@@ -187,7 +193,7 @@ log "> Starting SSH & ADB..."
 if [ "$(get_by_port 22)" != "" ]; then
     log "/!\ SSH is already running"
 else
-    dropbear -F -E -a -p 22 -P /tmp/dropbear.pid -r /usr/local/etc/dropbear/dropbear_rsa_host_key >> ./logs/dropbear.log 2>&1 &
+    dropbear -F -E -a -p 22 -P /tmp/rinkhals/dropbear.pid -r /usr/local/etc/dropbear/dropbear_rsa_host_key >> $RINKHALS_LOGS/dropbear.log 2>&1 &
     wait_for_port 22 5000 "/!\ SSH did not start properly"
 fi
 
@@ -195,7 +201,7 @@ if [ -f /usr/bin/adbd ]; then
     if [ "$(get_by_port 5555)" != "" ]; then
         log "/!\ ADB is already running"
     else
-        adbd >> ./logs/adbd.log &
+        adbd >> $RINKHALS_LOGS/adbd.log &
         wait_for_port 5555 5000 "/!\ ADB did not start properly"
     fi
 else
@@ -210,6 +216,11 @@ mkdir -p $RINKHALS_HOME/printer_data
 mkdir -p /userdata/app/gk/printer_data
 umount -l /userdata/app/gk/printer_data 2> /dev/null
 mount --bind $RINKHALS_HOME/printer_data /userdata/app/gk/printer_data
+
+rm -f /userdata/app/gk/printer_mutable.cfg.bak
+[ -f /userdata/app/gk/printer_mutable.cfg ] && mv /userdata/app/gk/printer_mutable.cfg /userdata/app/gk/printer_mutable.cfg.bak
+[ ! -f $RINKHALS_HOME/printer_data/config/printer_mutable.cfg ] && echo "{}" > $RINKHALS_HOME/printer_data/config/printer_mutable.cfg
+ln -s $RINKHALS_HOME/printer_data/config/printer_mutable.cfg /userdata/app/gk/printer_mutable.cfg
 
 mkdir -p /userdata/app/gk/printer_data/config/default
 umount -l /userdata/app/gk/printer_data/config/default 2> /dev/null
@@ -232,10 +243,11 @@ fi
 log "> Restarting Anycubic apps..."
 
 # Generate the printer.cfg file
-sed '/-- SAVE_CONFIG --/,$d' /userdata/app/gk/printer.cfg > /tmp/printer.1.cfg
-sed -n '/-- SAVE_CONFIG --/,$p' /userdata/app/gk/printer.cfg > /tmp/printer.2.cfg
-python /opt/rinkhals/scripts/process-cfg.py /tmp/printer.1.cfg $RINKHALS_ROOT/home/rinkhals/printer_data/config/printer.rinkhals.cfg > /userdata/app/gk/printer_data/config/printer.generated.cfg
-cat /tmp/printer.2.cfg >> /userdata/app/gk/printer_data/config/printer.generated.cfg
+sed '/-- SAVE_CONFIG --/,$d' /userdata/app/gk/printer.cfg > /tmp/rinkhals/printer.1.cfg
+sed -n '/-- SAVE_CONFIG --/,$p' /userdata/app/gk/printer.cfg > /tmp/rinkhals/printer.2.cfg
+python /opt/rinkhals/scripts/process-cfg.py /tmp/rinkhals/printer.1.cfg $RINKHALS_ROOT/home/rinkhals/printer_data/config/printer.rinkhals.cfg > /userdata/app/gk/printer_data/config/printer.generated.cfg
+cat /tmp/rinkhals/printer.2.cfg >> /userdata/app/gk/printer_data/config/printer.generated.cfg
+rm /tmp/rinkhals/printer.1.cfg /tmp/rinkhals/printer.2.cfg
 
 cd /userdata/app/gk
 
@@ -262,16 +274,21 @@ for TARGET in $TARGETS; do
     fi
 done
 
-./gklib -a /tmp/unix_uds1 /userdata/app/gk/printer_data/config/printer.generated.cfg >> $RINKHALS_ROOT/logs/gklib.log 2>&1 &
+# Tweak processes priority to avoid MCU timing and more generally priting errors. (https://github.com/jbatonnet/Rinkhals/issues/128)
+nice -n -20 ./gklib -a /tmp/unix_uds1 /userdata/app/gk/printer_data/config/printer.generated.cfg >> $RINKHALS_LOGS/gklib.log 2>&1 &
+chrt -p 89 $(get_by_name ksoftirqd/0)
 
 sleep 2
 
-./gkapi >> $RINKHALS_ROOT/logs/gkapi.log 2>&1 &
-./K3SysUi >> $RINKHALS_ROOT/logs/K3SysUi.log 2>&1 &
+./gkapi >> $RINKHALS_LOGS/gkapi.log 2>&1 &
+./K3SysUi >> $RINKHALS_LOGS/K3SysUi.log 2>&1 &
 
-sleep 2
+# On the kobra 2 pro this sleep causes that filement extrude does not work and auto leveling crashes. (https://github.com/jbatonnet/Rinkhals/issues/155)
+if [ "$KOBRA_MODEL_CODE" != "K2P" ]; then
+ sleep 2
+fi
 
-./gkcam >> $RINKHALS_ROOT/logs/gkcam.log 2>&1 &
+./gkcam >> $RINKHALS_LOGS/gkcam.log 2>&1 &
 
 for TARGET in $TARGETS; do
     if [ -f $TARGET.original ]; then
@@ -329,6 +346,7 @@ export LD_LIBRARY_PATH=$OLD_LD_LIBRARY_PATH
 log "> Cleaning up..."
 
 rm /useremain/rinkhals/.disable-rinkhals
+rm /useremain/rinkhals/.reboot-marker 2> /dev/null
 
 echo
 log "Rinkhals started"

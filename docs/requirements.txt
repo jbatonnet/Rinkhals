@@ -1,0 +1,4 @@
+mkdocs-material ~= 9.0
+mkdocs-nav-weight == 0.2.0
+mkdocs-glightbox == 0.4.0
+Pygments ~= 2.0

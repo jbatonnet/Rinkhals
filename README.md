@@ -1,3 +1,6 @@
+[![Discord](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fdiscord.com%2Fapi%2Finvites%2F3mrANjpNJC%3Fwith_counts%3Dtrue&query=%24.approximate_member_count&logo=discord&logoColor=white&label=Discord&suffix=%20members&color=%235865F2)](https://discord.gg/3mrANjpNJC) [![Downloads](https://img.shields.io/github/downloads/jbatonnet/Rinkhals/total?label=Downloads&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4KPCEtLSBMaWNlbnNlOiBQRC4gTWFkZSBieSBzdGVwaGVuaHV0Y2hpbmdzOiBodHRwczovL2dpdGh1Yi5jb20vc3RlcGhlbmh1dGNoaW5ncy9taWNyb25zIC0tPgo8c3ZnIGZpbGw9IiNmZmZmZmYiIHdpZHRoPSI4MDBweCIgaGVpZ2h0PSI4MDBweCIgdmlld0JveD0iMCAwIDUxMiA1MTIiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgPjx0aXRsZT5kb3dubG9hZDwvdGl0bGU%2BPHBhdGggZD0iTTIzMiA2NEwyODAgNjQgMjgwIDIxNCAyNzcgMjcwIDMwMCAyNDIgMzU2IDE4OSAzODggMjIxIDI1NiAzNTMgMTI0IDIyMSAxNTYgMTg5IDIxMiAyNDIgMjM1IDI3MCAyMzIgMjE0IDIzMiA2NFpNNjQgNDAwTDQ0OCA0MDAgNDQ4IDQ0OCA2NCA0NDggNjQgNDAwWiIgLz48L3N2Zz4%3D)](https://github.com/jbatonnet/Rinkhals/releases) [![Firmwares](https://img.shields.io/badge/Stock%20firmwares-blue?logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4KPCEtLSBMaWNlbnNlOiBQRC4gTWFkZSBieSBzdGVwaGVuaHV0Y2hpbmdzOiBodHRwczovL2dpdGh1Yi5jb20vc3RlcGhlbmh1dGNoaW5ncy9taWNyb25zIC0tPgo8c3ZnIGZpbGw9IiNmZmZmZmYiIHdpZHRoPSI4MDBweCIgaGVpZ2h0PSI4MDBweCIgdmlld0JveD0iMCAwIDUxMiA1MTIiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgPjx0aXRsZT5kb3dubG9hZDwvdGl0bGU%2BPHBhdGggZD0iTTIzMiA2NEwyODAgNjQgMjgwIDIxNCAyNzcgMjcwIDMwMCAyNDIgMzU2IDE4OSAzODggMjIxIDI1NiAzNTMgMTI0IDIyMSAxNTYgMTg5IDIxMiAyNDIgMjM1IDI3MCAyMzIgMjE0IDIzMiA2NFpNNjQgNDAwTDQ0OCA0MDAgNDQ4IDQ0OCA2NCA0NDggNjQgNDAwWiIgLz48L3N2Zz4%3D)](https://rinkhals.thedju.net) [![GitHub Sponsors](https://img.shields.io/badge/Sponsor-indianred?logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4KCjwhRE9DVFlQRSBzdmcgUFVCTElDICItLy9XM0MvL0RURCBTVkcgMS4xLy9FTiIgImh0dHA6Ly93d3cudzMub3JnL0dyYXBoaWNzL1NWRy8xLjEvRFREL3N2ZzExLmR0ZCI%2BCgo8IS0tIExpY2Vuc2U6IFBELiBNYWRlIGJ5IHp1cmI6IGh0dHBzOi8vZ2l0aHViLmNvbS96dXJiL2ZvdW5kYXRpb24taWNvbi1mb250cyAtLT4KPHN2ZyBmaWxsPSIjZmZmZmZmIiB2ZXJzaW9uPSIxLjEiIGlkPSJMYXllcl8xIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiAKCSB3aWR0aD0iODAwcHgiIGhlaWdodD0iODAwcHgiIHZpZXdCb3g9IjAgMCAxMDAgMTAwIiBlbmFibGUtYmFja2dyb3VuZD0ibmV3IDAgMCAxMDAgMTAwIiB4bWw6c3BhY2U9InByZXNlcnZlIj4KPHBhdGggZD0iTTY3LjYwNywxMy40NjJjLTcuMDA5LDAtMTMuNDMzLDMuMjM4LTE3LjYwNyw4LjY3NGMtNC4xNzQtNS40MzctMTAuNTk4LTguNjc0LTE3LjYxLTguNjc0CgljLTEyLjI2NiwwLTIyLjI4MywxMC4wMTMtMjIuMzMsMjIuMzJjLTAuMDQ2LDEzLjI0NSw2LjM1OSwyMS4wNTQsMTEuNTA3LDI3LjMzMWwxLjEwNCwxLjM0OQoJYzYuMDk1LDcuNTE1LDI0Ljk5MiwyMS4wMTMsMjUuNzkyLDIxLjU4NGMwLjQ1OCwwLjMyOCwxLDAuNDkyLDEuNTM4LDAuNDkyYzAuNTM5LDAsMS4wOC0wLjE2NSwxLjUzOS0wLjQ5MgoJYzAuOC0wLjU3MSwxOS42OTctMTQuMDY5LDI1Ljc5Mi0yMS41ODRsMS4xMDMtMS4zNDljNS4xNDctNi4yNzcsMTEuNTUzLTE0LjA4NiwxMS41MDctMjcuMzMxCglDODkuODk0LDIzLjQ3NSw3OS44NzYsMTMuNDYyLDY3LjYwNywxMy40NjJ6Ii8%2BCjwvc3ZnPg%3D%3D&logoColor=white)](https://github.com/sponsors/jbatonnet) [![Ko-fi](https://img.shields.io/badge/Ko--fi-indianred?logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4KCjwhRE9DVFlQRSBzdmcgUFVCTElDICItLy9XM0MvL0RURCBTVkcgMS4xLy9FTiIgImh0dHA6Ly93d3cudzMub3JnL0dyYXBoaWNzL1NWRy8xLjEvRFREL3N2ZzExLmR0ZCI%2BCgo8IS0tIExpY2Vuc2U6IFBELiBNYWRlIGJ5IHp1cmI6IGh0dHBzOi8vZ2l0aHViLmNvbS96dXJiL2ZvdW5kYXRpb24taWNvbi1mb250cyAtLT4KPHN2ZyBmaWxsPSIjZmZmZmZmIiB2ZXJzaW9uPSIxLjEiIGlkPSJMYXllcl8xIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiAKCSB3aWR0aD0iODAwcHgiIGhlaWdodD0iODAwcHgiIHZpZXdCb3g9IjAgMCAxMDAgMTAwIiBlbmFibGUtYmFja2dyb3VuZD0ibmV3IDAgMCAxMDAgMTAwIiB4bWw6c3BhY2U9InByZXNlcnZlIj4KPHBhdGggZD0iTTY3LjYwNywxMy40NjJjLTcuMDA5LDAtMTMuNDMzLDMuMjM4LTE3LjYwNyw4LjY3NGMtNC4xNzQtNS40MzctMTAuNTk4LTguNjc0LTE3LjYxLTguNjc0CgljLTEyLjI2NiwwLTIyLjI4MywxMC4wMTMtMjIuMzMsMjIuMzJjLTAuMDQ2LDEzLjI0NSw2LjM1OSwyMS4wNTQsMTEuNTA3LDI3LjMzMWwxLjEwNCwxLjM0OQoJYzYuMDk1LDcuNTE1LDI0Ljk5MiwyMS4wMTMsMjUuNzkyLDIxLjU4NGMwLjQ1OCwwLjMyOCwxLDAuNDkyLDEuNTM4LDAuNDkyYzAuNTM5LDAsMS4wOC0wLjE2NSwxLjUzOS0wLjQ5MgoJYzAuOC0wLjU3MSwxOS42OTctMTQuMDY5LDI1Ljc5Mi0yMS41ODRsMS4xMDMtMS4zNDljNS4xNDctNi4yNzcsMTEuNTUzLTE0LjA4NiwxMS41MDctMjcuMzMxCglDODkuODk0LDIzLjQ3NSw3OS44NzYsMTMuNDYyLDY3LjYwNywxMy40NjJ6Ii8%2BCjwvc3ZnPg%3D%3D&logoColor=white)](https://ko-fi.com/jbatonnet)
+
+
 # Rinkhals
 
 Rinkhals is a custom firmware for some Anycubic Kobra 3D printers (specifically the ones running Kobra OS, see below for the details).
@@ -17,15 +20,17 @@ Latest version will likely support the two latest firmwares from Anycubic, unles
 Here are the suported printers and firmwares with latest Rinkhals release:
 | Model  | Tested firmwares | Notes |
 | -- | -- | -- |
-| Kobra 3 (+ combo) | `2.3.8.9` `2.3.9.3` | `2.3.7` and `2.3.7.1` have some instabilities |
-| Kobra 2 Pro | `3.1.2.3` | Only with mainboard [Trigorilla Spe **B** v1.0.x](https://1coderookie.github.io/Kobra2ProInsights/hardware/mainboard/#trigorilla_spe_b_v10x-stock-new-revision). `3.1.4` is buggy |
-| Kobra S1 (+ combo) | `2.5.1.6` `2.5.2.3` |
+| Kobra 3 (+ combo) | `2.4.4.3` `2.4.4.7` |
+| Kobra 2 Pro | `3.1.2.3` `3.1.4` | Only with mainboard [Trigorilla Spe **B** v1.0.x](https://1coderookie.github.io/Kobra2ProInsights/hardware/mainboard/#trigorilla_spe_b_v10x-stock-new-revision). `3.1.4` seems to be buggy for some people |
+| Kobra S1 (+ combo) | `2.5.6.4` `2.5.8.8` |
+| Kobra 3 Max (+ combo) | `2.5.0.9` `2.5.1.3` |
+| Kobra 3 V2 (+ combo) | `1.0.9.7` `1.1.0.1` |
 
 In case you're wondering this project is named after rinkhals, a sub-species of Cobras ... Kobra ... Rinkhals 👏
 
 You can join the Rinkhals community on Discord: https://discord.gg/3mrANjpNJC
 
-Since people have been asking, I accept donations but please remember that I work on Rinkhals for fun and not for the money. I will not accept donations to work on specific bugs or features.
+Since people have been asking, I accept donations but please remember that I work on Rinkhals for fun and not for the money. I will not accept donations to work on specific bugs or features. Donation link is the Sponsor button at the top of the page.
 
 
 <p align="center">
@@ -33,19 +38,35 @@ Since people have been asking, I accept donations but please remember that I wor
 </p>
 
 
-## How to install Rinkhals
+## Rinkhals installation
 
 > [!WARNING]
-> **Make sure you're confident tweaking your printer and you understand what you're doing. I'm not responsible if you brick your printer (even if there's some [documentation](https://github.com/jbatonnet/Rinkhals/wiki/Boot-issues) about that)**
+> **Make sure you're confident tweaking your printer and you understand what you're doing. I'm not responsible if you brick your printer (even if there's some [documentation](https://jbatonnet.github.io/Rinkhals/Kobra%20Printers/recover-boot-issues/) about that)**
 
 > [!CAUTION]
-> Many users want to change their Klipper printer configuration (the printer.cfg file). I strongly advise not modifying the stock printer configuration. Rinkhals offers additional protection you don't have while modifying directly your printer configuration. **I won't offer any support** and **your printer might not work properly or not boot anymore**. Check the Wiki for more information: [Printer configuration](https://github.com/jbatonnet/Rinkhals/wiki/Rinkhals-%E2%80%90-Printer-configuration)
+> Many users want to change their Klipper printer configuration (the printer.cfg file). I strongly advise not modifying the stock printer configuration. Rinkhals offers additional protection you don't have while modifying directly your printer configuration. **I won't offer any support** and **your printer might not work properly or not boot anymore**. Check the documentation for more information: [Printer configuration](https://jbatonnet.github.io/Rinkhals/Rinkhals/printer-configuration/)
 
-Rinkhals uses an overlay system to keep its modifications isolated from the stock firmware. This way it's easier to revert back to stock if needed, or use multiple versions in parrallel.
+A [quick start guide](https://jbatonnet.github.io/Rinkhals/guides/rinkhals-quick-start/) is available to get Rinkhals up and running on your printer.
 
-Download the release you want from the [Releases](https://github.com/jbatonnet/Rinkhals/releases) page, rename it as **update.swu** in a directory named **aGVscF9zb3Nf** on a FAT32 USB drive.
+There are two options to install Rinkhals:
+1. Use the provided Rinkhals installer (named **install-*.swu**)
+2. Install the raw swu directly (named **update-*.swu**)
 
-For more information about installation, firmware updates and details about specific situations, go to https://github.com/jbatonnet/Rinkhals/wiki/Rinkhals-%E2%80%90-Installation-and-firmware-updates
+Either way, you'll need to:
+- Download the release / file you want from the [Releases](https://github.com/jbatonnet/Rinkhals/releases) page
+- Rename the downlaoded SWU file as **update.swu**
+- Copy it in a directory named **aGVscF9zb3Nf** (or **update** for the Kobra 2 Pro in certain conditions) on a FAT32 USB drive (MBR, GPT is not supported)
+- Plug the USB drive in your printer
+
+More detailed information about the Rinkhals installer are available in the [documentation](https://jbatonnet.github.io/Rinkhals/Rinkhals/rinkhals-installer/)
+
+For more information about installation, firmware updates and details about specific situations, go to https://jbatonnet.github.io/Rinkhals/Rinkhals/installation-and-firmware-updates/
+
+
+<p align="center">
+    <img width="48" src="https://github.com/jbatonnet/Rinkhals/blob/master/icon.png?raw=true" />
+</p>
+
 
 ## Touch UI
 
@@ -55,12 +76,18 @@ This UI allows you to manage installed apps, trigger an OTA update, reboot your 
 
 <p align="center">
     <!-- <img width="192" src="./.github/images/screenshot-settings.png"> -->
-    <img width="192" src="./.github/images/screenshot-rinkhals-main.png">
-    <img width="192" src="./.github/images/screenshot-rinkhals-apps.png">
-    <img width="192" src="./.github/images/screenshot-rinkhals-app.png">
-    <img width="192" src="./.github/images/screenshot-rinkhals-ota.png">
+    <img width="192" src="./docs/docs/assets/rinkhals-ui/ui-main.png">
+    <img width="192" src="./docs/docs/assets/rinkhals-ui/ui-apps.png">
+    <img width="192" src="./docs/docs/assets/rinkhals-ui/ui-apps-moonraker.png">
+    <img width="192" src="./docs/docs/assets/rinkhals-ui/ui-updates.png">
     <!-- <img width="192" src="./.github/images/screenshot-rinkhals-advanced.png"> -->
 </p>
+
+## Rinkhals Installer
+
+From the release pages, you'll find the installer-\*.swu files for your printer model. This is an interactive touch tool to install and update Rinkhals and system firmware updates.
+
+You can find more information in [the documentation](https://jbatonnet.github.io/Rinkhals/Rinkhals/rinkhals-installer/)
 
 ## Apps system
 
@@ -70,66 +97,30 @@ An apps system is provided in Rinkhals. It allows for the users to easily add so
 
 Instructions on how to install or develop apps are on the other repo as well.
 
-## How to uninstall Rinkhals
-
-1. **Disable Rinkhals** by disabling from the touch UI or by creating a .disable-rinkhals file on a USB drive or at this location: /useremain/rinkhals/.disable-rinkhals
-2. **Reboot your printer**, it will boot the stock firmware
-3. If you want, you can **delete Rinkhals** by deleting the /useremain/rinkhals directory
-
 
 <p align="center">
     <img width="48" src="https://github.com/jbatonnet/Rinkhals/blob/master/icon.png?raw=true" />
 </p>
 
 
-## Documentation / Known issues
+## Contributing
 
-The [wiki](https://github.com/jbatonnet/Rinkhals/wiki) is a collection of documentation, reverse engineering and notes about the printer and development, don't forget to [check it out](https://github.com/jbatonnet/Rinkhals/wiki)!
-
-If your printer shows a 11407 error, check the wiki there: [See the wiki about error 11407](https://github.com/jbatonnet/Rinkhals/wiki/Firmware#my-printer-shows-a-11407-error)
-
-## SWU tools
-
-This repo contains some tools you can use **no matter what firmware you are using**. It is a set of scripts packaged in a SWU file.
-
-They are available on this page: https://github.com/jbatonnet/Rinkhals/actions/workflows/build-swu-tools.yml
-
-You can download the SWU file for the tool you want, copy it as **update.swu** on a FAT32 USB drive in a **aGVscF9zb3Nf** directory, plug the USB drive in your printer and it just works.
-You will ear two beeps, the second one will tell you that the tool completed its work. There is no need to reboot afterwards.
-
-Here are the tools available:
-- **SSH**: get a SSH server running on port **2222**, even on stock firmware
-- **Backup partitions**: creates a dump of your userdata and useremain partition on the USB drive
-- **Debug bundle**: creates a zip file with printer and configuration information on the USB drive to ease debugging
-
-<p align="center">
-    <img width="48" src="https://github.com/jbatonnet/Rinkhals/blob/master/icon.png?raw=true" />
-</p>
-
-
-## Development
-
-> [!WARNING]
+> [!NOTE]
 > If you develop on Windows like me, don't forget to disable Git's autocrlf function, as this repo contains Linux scripts running on Linux machines.<br />
 > Run `git config core.autocrlf false` **BEFORE** cloning the repo
 
-You will need either a Linux machine or a Windows machine with Docker.
-Read the documentation in the Wiki and join us on Discord to discuss development!
+More and more contributors help this project move faster. Thank you everyone!
+If you want to help Rinkhals and contribute, whether it's code, documentation or sharing good ideas, come join us on Discord!
 
+<a href="https://github.com/jbatonnet/Rinkhals/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=jbatonnet/Rinkhals" />
+</a>
+<br /><br />
 
-## Thanks
-
-Thanks to the following projects/persons:
-- utkabobr (https://github.com/utkabobr/DuckPro-Kobra3)
-- systemik (https://github.com/systemik/Kobra3-Firmware)
+Special thanks to those people for providing the base research and helping support for more printers:
+- **utkabobr** (https://github.com/utkabobr/DuckPro-Kobra3)
+- **systemik** (https://github.com/systemik/Kobra3-Firmware)
+- **moosbewohner** for Kobra 2 Pro support (https://github.com/moosbewohner/Rinkhals)
+- **Kalenell** and **woswai1337** for Kobra S1 support
+- **evil_santa**, **CalmFrog**, **basvd**, **_René**, **RadioRadio** and more for Kobra 3 Max support
 - Anycubic for the cool printer and the few OSS items (https://github.com/ANYCUBIC-3D/Kobra)
-- Icon created by Freepik - Flaticon (https://www.flaticon.com/free-icon/cobra_375098)
-- moosbewohner for Kobra 2 Pro support (https://github.com/moosbewohner/Rinkhals)
-- Kalenell and woswai1337 for Kobra S1 support
-
-Thanks to the project and apps contributors, including the persons below and many more:
-- Matthias Goebl (https://github.com/matgoebl)
-- Tobias Göbel (https://github.com/kubax)
-- dan3805 (https://github.com/dan3805)
-- basvd (https://github.com/basvd)
-- Meowcat285 (https://github.com/Meowcat285)
