@@ -85,7 +85,15 @@ for PRINTER_MODEL_CODE in $PRINTER_MODEL_CODES; do
         fi
 
         python $BASE_DIRECTORY/files/3-rinkhals/opt/rinkhals/scripts/create-patch.py $DEST_K3SYSUI_PATH
+
+        # Patch gkapi
+        DEST_GKAPI_PATH=$BASE_DIRECTORY/files/3-rinkhals/opt/rinkhals/patches/gkapi.${PRINTER_MODEL_CODE}_${SUPPORTED_VERSION}
+        if [ ! -f $DEST_GKAPI_PATH ]; then
+            cp -f $VERSION_DIRECTORY/update_swu/app/gkapi $DEST_GKAPI_PATH
+        fi
         
+        python $BASE_DIRECTORY/files/3-rinkhals/opt/rinkhals/scripts/create-patch.py $DEST_GKAPI_PATH
+
         # TODO: Hash printer.cfg
 
     done

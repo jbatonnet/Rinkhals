@@ -376,10 +376,29 @@ def patch_gkapi(binaryPath, modelCode, version):
     ################
     # Open MQTT broker to the outside
 
-    brokerAddress = next(gkapi.search(b'127.0.0.1:2883'), None)
-    if brokerAddress:
-        gkapi.write(brokerAddress, b'0.0.0.0:002883')
+    # brokerAddress = next(gkapi.search(b'127.0.0.1:2883'), None)
+    # if brokerAddress:
+    #     gkapi.write(brokerAddress, b'0.0.0.0:002883')
 
+
+    ################
+    # Change orcaSim (Octoprint compat API) to port 71
+    # - We replace the reference to :80 by a reference to :71 (from localhost:7125)
+
+    moonrakerAddress = next(gkapi.search(b'localhost:7125'), None)
+    if moonrakerAddress:
+        orcaSimStart = functionsByName.get('printerApi/service/orcaSim.Start')
+
+        moonrakerOffset = None
+        for i in range(200):
+            moonrakerReference = read32(gkapi, orcaSimStart + 4 * i)
+            if moonrakerReference == moonrakerAddress:
+                moonrakerOffset = i * 4
+                break
+
+        if moonrakerOffset:
+            gkapi.write(orcaSimStart + moonrakerOffset - 4, p32(moonrakerAddress + 9))
+        
 
     ################
     # Patch calls to printerApi/common/config.LanPrintIsOpen
@@ -387,68 +406,65 @@ def patch_gkapi(binaryPath, modelCode, version):
     # - Force SSDP discovery
     # - Try to force AI detection startup
 
-    lanModeReplacementTargets = {}
-    # lanModeReplacementTargets = {
-    #     # SSDP, safe patches
-    #     'printerApi/service/ssdp.(*ssdp).Advertise': [ True ],
-    #     'printerApi/service/ssdp.(*HttpServer).Run.(*HttpServer).handleInfoWrapper.func2': [ True ],
-    #     'printerApi/service/ssdp.(*HttpServer).Run.(*HttpServer).handleCtrlWrapper.func3': [ True ],
-    #     'printerApi/service/ssdp.(*HttpServer).handleGcodeUpload': [ True ],
+    if False:
+        lanModeReplacementTargets = {}
+        # lanModeReplacementTargets = {
+        #     # SSDP, safe patches
+        #     'printerApi/service/ssdp.(*ssdp).Advertise': [ True ],
+        #     'printerApi/service/ssdp.(*HttpServer).Run.(*HttpServer).handleInfoWrapper.func2': [ True ],
+        #     'printerApi/service/ssdp.(*HttpServer).Run.(*HttpServer).handleCtrlWrapper.func3': [ True ],
+        #     'printerApi/service/ssdp.(*HttpServer).handleGcodeUpload': [ True ],
 
-    #     # To start the MQTT broker
-    #     'main.main': [ True ],
+        #     # To start the MQTT broker
+        #     'main.main': [ True ],
 
-    #     # Control LAN vs Cloud
-    #     'printerApi/common/config.GetDeviceUnionid': [ True ],
-    #     'printerApi/cloud.(*Cloud).Connect': [ True ],
+        #     # Control LAN vs Cloud
+        #     'printerApi/common/config.GetDeviceUnionid': [ True ],
+        #     'printerApi/cloud.(*Cloud).Connect': [ True ],
 
-    #     #'printerApi/cloud.(*printerHandler).runAIDetect': [ False ],
-    #     #'printerApi/cloud.(*printerHandler).handleUIResumePrintEvent': [ False ],
-    #     #'printerApi/cloud.(*printerHandler).localtask': [ True ],
-    #     #'printerApi/cloud.ReportCloudConnectState': [ False ],
-    #     #'0x56c8f4': [ True ], # ?
-    # }
+        #     #'printerApi/cloud.(*printerHandler).runAIDetect': [ False ],
+        #     #'printerApi/cloud.(*printerHandler).handleUIResumePrintEvent': [ False ],
+        #     #'printerApi/cloud.(*printerHandler).localtask': [ True ],
+        #     #'printerApi/cloud.ReportCloudConnectState': [ False ],
+        #     #'0x56c8f4': [ True ], # ?
+        # }
 
-    lanPrintIsOpen = functionsByName['printerApi/common/config.LanPrintIsOpen']
+        lanPrintIsOpen = functionsByName['printerApi/common/config.LanPrintIsOpen']
 
-    for name, patches in lanModeReplacementTargets.items():
-        address = functionsByName.get(name)
-        if not address:
-            address = int(name, 16)
+        for name, patches in lanModeReplacementTargets.items():
+            address = functionsByName.get(name)
+            if not address:
+                address = int(name, 16)
 
-        for p in patches:
-            while True:
-                address += 4
+            for p in patches:
+                while True:
+                    address += 4
 
-                instruction = gkapi.read(address, 4)
-                if instruction[3] != 0xeb:
-                    continue
+                    instruction = gkapi.read(address, 4)
+                    if instruction[3] != 0xeb:
+                        continue
 
-                blInstruction = asm(f'bl 0x{lanPrintIsOpen:x}', vma = address)
-                if instruction == blInstruction:
-                    # Then look for those instructions
-                    #   cmp r0, #0x0
-                    #   beq ? / bne ?
+                    blInstruction = asm(f'bl 0x{lanPrintIsOpen:x}', vma = address)
+                    if instruction == blInstruction:
+                        # Then look for those instructions
+                        #   cmp r0, #0x0
+                        #   beq ? / bne ?
 
-                    for i in range(20):
-                        instruction = gkapi.read(address + i * 4, 4)
-                        if instruction[3] != 0x0a and instruction[3] != 0x1a: # beq or bne
-                            continue
+                        for i in range(20):
+                            instruction = gkapi.read(address + i * 4, 4)
+                            if instruction[3] != 0x0a and instruction[3] != 0x1a: # beq or bne
+                                continue
 
-                        logic = instruction[3] == 0x1a # bne
+                            logic = instruction[3] == 0x1a # bne
 
-                        # Patch accordingly
-                        if p == logic:
-                            gkapi.write(address + i * 4 + 3, b'\xea') # b
-                        else:
-                            gkapi.asm(address + i * 4, 'nop')
+                            # Patch accordingly
+                            if p == logic:
+                                gkapi.write(address + i * 4 + 3, b'\xea') # b
+                            else:
+                                gkapi.asm(address + i * 4, 'nop')
 
+                            break
                         break
-                    break
-
-    # Test patch
-    #gkapi.asm(0x5b6954, 'nop')
-    #gkapi.asm(0x5b6cd4, 'b 0x5b6cfc')
 
     gkapi.save(binaryPath + '.patch')
 
@@ -461,6 +477,9 @@ def create_patch_script(beforePath, afterPath, scriptPath):
     beforeMd5 = enhex(beforeMd5)
     afterMd5 = util.hashes.md5file(afterPath)
     afterMd5 = enhex(afterMd5)
+    
+    if beforeMd5 == afterMd5:
+        return
 
     command = f'cmp -l {beforePath} {afterPath}'
     cmp = subprocess.Popen(command, stdout=subprocess.PIPE, shell=True)
@@ -523,9 +542,9 @@ def main_file(path, model, version):
     fileName = os.path.basename(path)
     print(f'Patching {fileName} for {model} {version}')
 
-    # if 'gkapi' in fileName:
-    #     patch_gkapi(path, model, version)
-    #     create_patch_script(path, f'{path}.patch', f'{path}.sh')
+    if 'gkapi' in fileName:
+        patch_gkapi(path, model, version)
+        create_patch_script(path, f'{path}.patch', f'{path}.sh')
     if 'K3SysUi' in fileName:
         patch_K3SysUi(path, model, version)
         create_patch_script(path, f'{path}.patch', f'{path}.sh')

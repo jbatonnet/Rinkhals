@@ -255,7 +255,7 @@ export USE_MUTABLE_CONFIG=1
 export LD_LIBRARY_PATH=/userdata/app/gk:$LD_LIBRARY_PATH
 
 #TARGETS="gklib gkapi gkcam K3SysUi"
-TARGETS="K3SysUi"
+TARGETS="gkapi K3SysUi"
 
 for TARGET in $TARGETS; do
     TARGET_PATCH=/opt/rinkhals/patches/${TARGET}.${KOBRA_MODEL_CODE}_${KOBRA_VERSION}.sh
