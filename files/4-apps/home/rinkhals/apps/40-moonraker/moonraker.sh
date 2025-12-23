@@ -7,6 +7,7 @@ python -m venv --without-pip .
 # Copy Kobra and Memory Manager components
 cp -rf kobra.py moonraker/moonraker/components/kobra.py
 cp -rf memory_manager.py moonraker/moonraker/components/memory_manager.py
+cp -rf mmu_ace.py moonraker/moonraker/components/mmu_ace.py
 
 # Sometimes .moonraker.uuid is empty for some reason (#199)
 if [ ! -s /useremain/home/rinkhals/printer_data/.moonraker.uuid ]; then
@@ -16,6 +17,10 @@ fi
 # Generate configuration
 [ -f /userdata/app/gk/printer_data/config/moonraker.custom.conf ] || cp moonraker.custom.conf /userdata/app/gk/printer_data/config/moonraker.custom.conf
 python /opt/rinkhals/scripts/process-cfg.py moonraker.conf > /userdata/app/gk/printer_data/config/moonraker.generated.conf
+
+# Optimize kernel message queue parameters for Moonraker IPC performance
+sysctl -w kernel.msgmax=65536 >/dev/null 2>&1
+sysctl -w kernel.msgmnb=65536 >/dev/null 2>&1
 
 # Graceful shutdown handler
 # Ensures Moonraker stops gracefully on SIGTERM/SIGINT
