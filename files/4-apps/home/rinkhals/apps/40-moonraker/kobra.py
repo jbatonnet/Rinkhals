@@ -29,11 +29,56 @@ from typing import (
 FlexCallback = Callable[..., Optional[Coroutine]]
 
 
-def shell(command):
+def shell(command, log_result: bool = False):
+    """Execute shell command. Set log_result=True for debugging only."""
     result = subprocess.check_output(['sh', '-c', command])
     result = result.decode('utf-8').strip()
-    logging.info(f'Shell "{command}" => "{result}"')
+    if log_result:
+        logging.info(f'Shell "{command}" => "{result}"')
     return result
+
+
+def _read_env_from_tools() -> dict:
+    """
+    Read environment variables by sourcing tools.sh directly.
+    More efficient than spawning a Python subprocess.
+    """
+    try:
+        # Source tools.sh and print only the vars we need
+        cmd = '. /useremain/rinkhals/.current/tools.sh && echo "$KOBRA_MODEL_ID|$KOBRA_MODEL_CODE|$KOBRA_DEVICE_ID"'
+        result = subprocess.check_output(['sh', '-c', cmd], stderr=subprocess.DEVNULL)
+        parts = result.decode('utf-8').strip().split('|')
+        if len(parts) == 3:
+            return {
+                'KOBRA_MODEL_ID': parts[0],
+                'KOBRA_MODEL_CODE': parts[1],
+                'KOBRA_DEVICE_ID': parts[2]
+            }
+    except:
+        pass
+    return {}
+
+
+def _find_pid_by_name(process_name: str) -> int:
+    """
+    Find PID by process name using /proc instead of subprocess.
+    Much more efficient than 'ps | grep'.
+    """
+    try:
+        for pid_dir in os.listdir('/proc'):
+            if not pid_dir.isdigit():
+                continue
+            try:
+                cmdline_path = f'/proc/{pid_dir}/cmdline'
+                with open(cmdline_path, 'r') as f:
+                    cmdline = f.read()
+                if process_name in cmdline:
+                    return int(pid_dir)
+            except (IOError, OSError):
+                continue
+    except:
+        pass
+    return None
 
 
 class Kobra:
@@ -66,13 +111,13 @@ class Kobra:
         self.power = self.server.load_component(self.server.config, 'power')
 
         # Extract environment values from the printer
+        # Optimized: Use direct shell echo instead of spawning Python subprocess
         try:
-            environment = shell(f'. /useremain/rinkhals/.current/tools.sh && python -c "import os, json; print(json.dumps(dict(os.environ)))"')
-            environment = json.loads(environment)
+            environment = _read_env_from_tools()
 
-            self.KOBRA_MODEL_ID = environment['KOBRA_MODEL_ID']
-            self.KOBRA_MODEL_CODE = environment['KOBRA_MODEL_CODE']
-            self.KOBRA_DEVICE_ID = environment['KOBRA_DEVICE_ID']
+            self.KOBRA_MODEL_ID = environment.get('KOBRA_MODEL_ID')
+            self.KOBRA_MODEL_CODE = environment.get('KOBRA_MODEL_CODE')
+            self.KOBRA_DEVICE_ID = environment.get('KOBRA_DEVICE_ID')
             
             def load_tool_function(function_name):
                 def tool_function(*args):
@@ -149,9 +194,9 @@ class Kobra:
 
     def is_goklipper_running(self):
         if time.time() < self._goklipper_next_check:
-            return self._goklipper_pid != None
+            return self._goklipper_pid is not None
 
-        if self._goklipper_pid != None:
+        if self._goklipper_pid is not None:
             try:
                 os.kill(self._goklipper_pid, 0)
             except:
@@ -159,14 +204,13 @@ class Kobra:
                 self._goklipper_pid = None
 
         if not self._goklipper_pid:
-            self._goklipper_pid = subprocess.check_output(['sh', '-c', "ps | grep gklib | grep -v grep | head -n 1 | awk '{print $1}'"])
-            self._goklipper_pid = self._goklipper_pid.decode('utf-8').strip()
-            self._goklipper_pid = int(self._goklipper_pid) if self._goklipper_pid else None
+            # Optimized: Use /proc directly instead of subprocess 'ps | grep'
+            self._goklipper_pid = _find_pid_by_name('gklib')
             if self._goklipper_pid:
                 logging.info(f'[Kobra] Found GoKlipper process (PID: {self._goklipper_pid})')
 
         self._goklipper_next_check = time.time() + 5
-        return self._goklipper_pid != None
+        return self._goklipper_pid is not None
 
     def get_remote_mode(self):
         if time.time() < self._remote_mode_next_check:

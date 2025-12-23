@@ -24,8 +24,14 @@ restart_mjpg_streamer() {
     for CAMERA in $CAMERAS; do
         echo "Found camera $CAMERA" >> $APP_LOG
 
-        # List camera resolutions
-        RESOLUTIONS=$(v4l2-ctl -w -d $CAMERA --list-formats-ext | sed -n '/MJPG/,$p' | sed '/Index/,$d' | grep Size | awk '{print $3}' | sort -ruV)
+        # List camera resolutions (with fallback if v4l2-ctl is not available)
+        if command -v v4l2-ctl >/dev/null 2>&1; then
+            RESOLUTIONS=$(v4l2-ctl -w -d $CAMERA --list-formats-ext | sed -n '/MJPG/,$p' | sed '/Index/,$d' | grep Size | awk '{print $3}' | sort -ruV)
+        else
+            # Fallback: use common resolutions when v4l2-ctl is not available
+            RESOLUTIONS="1280x720 640x480"
+            echo "v4l2-ctl not available, using default resolutions" >> $APP_LOG
+        fi
         echo "Camera $INDEX resolutions: $(echo $RESOLUTIONS)" >> $APP_LOG
         if [ "$RESOLUTIONS" = "" ]; then
             echo "No resolution found, skipping..." >> $APP_LOG
