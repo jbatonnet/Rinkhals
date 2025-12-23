@@ -17,6 +17,10 @@ fi
 [ -f /userdata/app/gk/printer_data/config/moonraker.custom.conf ] || cp moonraker.custom.conf /userdata/app/gk/printer_data/config/moonraker.custom.conf
 python /opt/rinkhals/scripts/process-cfg.py moonraker.conf > /userdata/app/gk/printer_data/config/moonraker.generated.conf
 
+# Optimize kernel message queue parameters for Moonraker IPC performance
+sysctl -w kernel.msgmax=65536 >/dev/null 2>&1
+sysctl -w kernel.msgmnb=65536 >/dev/null 2>&1
+
 # Start Klippy
 mkdir -p /useremain/tmp
-TMPDIR=/useremain/tmp HOME=/userdata/app/gk python ./moonraker/moonraker/moonraker.py -c /userdata/app/gk/printer_data/config/moonraker.generated.conf >> $RINKHALS_LOGS/app-moonraker.log 2>&1
+TMPDIR=/useremain/tmp HOME=/userdata/app/gk python ./moonraker/moonraker/moonraker.py -c /userdata/app/gk/printer_data/config/moonraker.generated.conf >> $RINKHALS_LOGS/app-moonraker.log 2>&1 &
