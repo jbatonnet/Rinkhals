@@ -83,6 +83,7 @@ def patch_K3SysUi(binaryPath, modelCode, version):
     #   K2P / 3.1.2.3 - Settings > Support (5th button)
 
     patchJumpOperand = 'b'
+    s1RowRegister = 'r3'
 
     if modelCode == 'K2P' and version == '3.1.2.3':
         buttonCallback = k3sysui.symbols['_ZN10MainWindow23AcSettingListBtnReleaseEi']
@@ -181,11 +182,13 @@ def patch_K3SysUi(binaryPath, modelCode, version):
         buttonCallback = k3sysui.symbols['_ZZN10MainWindow21AcSettingDeviceUiInitEvENKUlRK11QModelIndexE0_clES2_']
         patchJumpAddress = 0x14a51c
         patchReturnAddress = 0x14a524
+        s1RowRegister = 'r1'
         
     elif modelCode == 'KS1M' and version == '2.1.6':
         buttonCallback = k3sysui.symbols['_ZZN10MainWindow21AcSettingDeviceUiInitEvENKUlRK11QModelIndexE0_clES2_']
         patchJumpAddress = 0x14a514
         patchReturnAddress = 0x14a51c
+        s1RowRegister = 'r1'
 
     else:
         raise Exception('Unsupported model and version')
@@ -270,8 +273,8 @@ def patch_K3SysUi(binaryPath, modelCode, version):
     
     if modelCode == 'KS1' or modelCode == 'KS1M':
         # if (row() != 3) return
-        k3sysui.asm(address + 0,  'mov r0, r4')
-        k3sysui.asm(address + 4,  'cmp r3, #0x3')
+        k3sysui.asm(address + 0, 'mov r0, r4')
+        k3sysui.asm(address + 4, f'cmp {s1RowRegister}, #0x3')
         k3sysui.asm(address + 8, f'bne 0x{(patchReturnAddress - 4):x}')
         address = address + 12
 
