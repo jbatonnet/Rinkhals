@@ -12,6 +12,7 @@ get_printer_model_name() {
         "K3M") echo "Kobra 3 Max" ;;
         "K3V2") echo "Kobra 3 V2" ;;
         "KS1") echo "Kobra S1" ;;
+        "KS1M") echo "Kobra S1 Max" ;;
     esac
 }
 get_printer_swu_password() {
@@ -21,6 +22,7 @@ get_printer_swu_password() {
         "K3M") echo "4DKXtEGStWHpPgZm8Xna9qluzAI8VJzpOsEIgd8brTLiXs8fLSu3vRx8o7fMf4h6" ;;
         "K3V2") echo "U2FsdGVkX19deTfqpXHZnB5GeyQ/dtlbHjkUnwgCi+w=" ;;
         "KS1") echo "U2FsdGVkX1+lG6cHmshPLI/LaQr9cZCjA8HZt6Y8qmbB7riY" ;;
+        "KS1M") echo "U2FsdGVkX1+lG6cHmshPLI/LaQr9cZCjA8HZt6Y8qmbB7riY" ;;
     esac
 }
 

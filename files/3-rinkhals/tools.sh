@@ -20,6 +20,9 @@ elif [ "$KOBRA_MODEL_ID" == "20026" ]; then
 elif [ "$KOBRA_MODEL_ID" == "20027" ]; then
     export KOBRA_MODEL="Anycubic Kobra 3 V2"
     export KOBRA_MODEL_CODE=K3V2
+elif [ "$KOBRA_MODEL_ID" == "20029" ]; then
+    export KOBRA_MODEL="Anycubic Kobra S1 Max"
+    export KOBRA_MODEL_CODE=KS1M
 fi
 
 export KOBRA_VERSION=$(cat /useremain/dev/version)
@@ -53,6 +56,7 @@ check_compatibility() {
 }
 is_supported_firmware() {
     SUPPORTED=0
+    [ "$KOBRA_MODEL_CODE" = "KS1M" ] && [ "$KOBRA_VERSION" = "2.1.6" ] && SUPPORTED=1
     [ "$KOBRA_MODEL_CODE" = "KS1" ] && [ "$KOBRA_VERSION" = "2.5.9.9" ] && SUPPORTED=1
     [ "$KOBRA_MODEL_CODE" = "KS1" ] && [ "$KOBRA_VERSION" = "2.5.8.8" ] && SUPPORTED=1
     [ "$KOBRA_MODEL_CODE" = "K3V2" ] && [ "$KOBRA_VERSION" = "1.1.0.4" ] && SUPPORTED=1

@@ -83,7 +83,7 @@ kill_by_name gkapi
 kill_by_name gklib 15 # SIGTERM to be softer on gklib
 
 if [ -f /ac_lib/lib/third_bin/ffmpeg ]; then
-    if [ "$KOBRA_MODEL_CODE" = "KS1" ]; then
+    if [ "$KOBRA_MODEL_CODE" = "KS1" ] || [ "$KOBRA_MODEL_CODE" = "KS1M" ]; then
         TRANSPOSE="vflip,hflip"
         SCALE="0.75"
     elif [ "$KOBRA_MODEL_CODE" = "K3M" ]; then

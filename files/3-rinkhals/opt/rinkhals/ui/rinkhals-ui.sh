@@ -19,7 +19,7 @@ echo "Root: $RINKHALS_ROOT"
 echo
 
 # Add icon overlay while Python is loading
-if [ "$KOBRA_MODEL_CODE" = "KS1" ]; then
+if [ "$KOBRA_MODEL_CODE" = "KS1" ] || [ "$KOBRA_MODEL_CODE" = "KS1M" ]; then
     SCALE="0.75"
     TRANSPOSE="vflip,hflip"
     FILTER="[0:v] drawbox=x=0:y=0:w=iw:h=ih:t=fill:c=black"

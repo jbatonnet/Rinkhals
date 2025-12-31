@@ -178,7 +178,7 @@ class Kobra:
             await self.power.add_device('camera_light', ShellPowerDevice(config.getsection('power camera_light')))
             await self.power.add_device('head_light', ShellPowerDevice(config.getsection('power head_light')))
 
-        elif self.KOBRA_MODEL_CODE == 'KS1':
+        elif self.KOBRA_MODEL_CODE == 'KS1' or self.KOBRA_MODEL_CODE == 'KS1M':
             # Add camera and head lights power devices
             config = self.server.config.read_supplemental_dict({
                 'power chamber_light': {
@@ -707,7 +707,7 @@ class Kobra:
                             'SAVE_CONFIG'
                         ]
 
-                        if self.KOBRA_MODEL_CODE != 'KS1':
+                        if self.KOBRA_MODEL_CODE != 'KS1' and self.KOBRA_MODEL_CODE != 'KS1M':
                             calibrate_script.remove('WIPE_ENTER')
                             calibrate_script.remove('WIPE_EXIT')
 
@@ -844,7 +844,7 @@ class Kobra:
                     for gcode in result:
                         objects.append(f"gcode_macro {gcode}")
                     
-                    if self.KOBRA_MODEL_CODE == 'KS1':
+                    if self.KOBRA_MODEL_CODE == 'KS1' or self.KOBRA_MODEL_CODE == 'KS1M':
                         objects.append("fan_generic air_filter_fan")
                         objects.append("fan_generic box_fan")
 

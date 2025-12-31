@@ -182,6 +182,10 @@ def patch_K3SysUi(binaryPath, modelCode, version):
         patchJumpAddress = 0x14bbc0
         patchReturnAddress = 0x14bbc8
         
+    elif modelCode == 'KS1M' and version == '2.1.6':
+        buttonCallback = k3sysui.symbols['_ZZN10MainWindow26AcSettingGeneralPageUiInitEvENKUlRK11QModelIndexE0_clES2_']
+        patchJumpAddress = 0x14bbb8
+        patchReturnAddress = 0x14bbc0
 
     else:
         raise Exception('Unsupported model and version')
@@ -238,7 +242,7 @@ def patch_K3SysUi(binaryPath, modelCode, version):
     
     if modelCode == 'K3' or modelCode == 'K3M' or modelCode == 'K3V2':
         acDisplayWaitHide = k3sysui.symbols['_ZN10MainWindow17AcDisplayWaitHideEv']
-    elif modelCode == 'KS1':
+    elif modelCode == 'KS1' or modelCode == 'KS1M':
         acDisplayWaitHide = k3sysui.symbols['_ZN10MainWindow17AcDisplayWaitHideEh']
     elif modelCode == 'K2P':
         acDisplayWaitHide = acDisplayWaitHandler
@@ -264,7 +268,7 @@ def patch_K3SysUi(binaryPath, modelCode, version):
     address = address - address % 4
     k3sysui.asm(patchJumpAddress, f'{patchJumpOperand} 0x{address:x}')
     
-    if modelCode == 'KS1':
+    if modelCode == 'KS1' or modelCode == 'KS1M':
         # if (row() != 3) return
         k3sysui.asm(address + 0,  'mov r0, r4')
         k3sysui.asm(address + 4,  'cmp r3, #0x3')
