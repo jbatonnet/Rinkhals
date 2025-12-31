@@ -78,10 +78,6 @@ start_moonraker_with_restart() {
         # Aggressive: (500, 5, 5) - collect more frequently to save RAM
         export PYTHONGCTHRESHOLD="500,5,5"
 
-        # Memory limit for RAM-constrained system (213 MB total RAM)
-        # Limit Moonraker to 80 MB virtual memory to prevent system-wide OOM
-        ulimit -v 81920
-
         # Start Moonraker
         mkdir -p /useremain/tmp
         TMPDIR=/useremain/tmp HOME=/userdata/app/gk python ./moonraker/moonraker/moonraker.py \
