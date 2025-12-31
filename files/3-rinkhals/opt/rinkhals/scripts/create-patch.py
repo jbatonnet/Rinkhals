@@ -35,20 +35,23 @@ def getGoFunctions(binary):
     functions = {}
 
     for i in range(functionCount):
+        try:
+            addressOffset = read32(binary, functionTable + i * 8)
+            address = textStart + addressOffset
 
-        addressOffset = read32(binary, functionTable + i * 8)
-        address = textStart + addressOffset
+            functionOffset = read32(binary, functionTable + i * 8 + 4)
+            function = functionTable + functionOffset
 
-        functionOffset = read32(binary, functionTable + i * 8 + 4)
-        function = functionTable + functionOffset
+            nameOffset = read32(binary, function + 4)
+            name = functionNameTable + nameOffset
 
-        nameOffset = read32(binary, function + 4)
-        name = functionNameTable + nameOffset
+            bytes = binary.read(name, 1024)
+            name = bytes[:bytes.find(0)].decode('utf-8')
 
-        bytes = binary.read(name, 1024)
-        name = bytes[:bytes.find(0)].decode('utf-8')
+            functions[address] = name
 
-        functions[address] = name
+        except:
+            break
 
     with open(cachePath, 'w') as f:
         f.write(json.dumps(functions))
@@ -132,6 +135,10 @@ def patch_K3SysUi(binaryPath, modelCode, version):
         buttonCallback = k3sysui.symbols['_ZZN10MainWindow19AcSettingPageUiInitEvENKUlvE_clEv']
         patchJumpAddress = 0x103528
         patchReturnAddress = 0x103558
+    elif (modelCode == 'K3' and version == '2.4.5') or (modelCode == 'K3M' and version == '2.5.1.7') or (modelCode == 'K3V2' and version == '1.1.0.4'):
+        buttonCallback = k3sysui.symbols['_ZZN10MainWindow19AcSettingPageUiInitEvENKUlvE_clEv']
+        patchJumpAddress = 0x103558
+        patchReturnAddress = 0x103588
 
     # KS1 - Settings > General > Service Support (4th button)
     
@@ -170,6 +177,11 @@ def patch_K3SysUi(binaryPath, modelCode, version):
         buttonCallback = k3sysui.symbols['_ZZN10MainWindow26AcSettingGeneralPageUiInitEvENKUlRK11QModelIndexE0_clES2_']
         patchJumpAddress = 0x12b04c
         patchReturnAddress = 0x12b054
+    elif modelCode == 'KS1' and version == '2.5.9.9':
+        buttonCallback = k3sysui.symbols['_ZZN10MainWindow26AcSettingGeneralPageUiInitEvENKUlRK11QModelIndexE0_clES2_']
+        patchJumpAddress = 0x14bbc0
+        patchReturnAddress = 0x14bbc8
+        
 
     else:
         raise Exception('Unsupported model and version')
