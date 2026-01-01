@@ -4,7 +4,6 @@ on:
   workflow_dispatch:
 
 jobs:
-
   build:
     runs-on: ubuntu-latest
 
@@ -17,22 +16,24 @@ jobs:
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
 
-    - name: Login to GitHub Container Registry
-      uses: docker/login-action@v3
-      with:
-        registry: ghcr.io
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
+    # ❌ GHCR Login entfernt (Forks dürfen nicht schreiben)
+    # - name: Login to GitHub Container Registry
+    #   uses: docker/login-action@v3
+    #   with:
+    #     registry: ghcr.io
+    #     username: ${{ github.actor }}
+    #     password: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Build and export
+    - name: Build and export SWU
       uses: docker/build-push-action@v6
       with:
-        push: false
         context: .
+        push: false
         build-args: version=${{ github.sha }}
         outputs: type=local,dest=./build/dist
-        cache-from: type=registry,ref=ghcr.io/${{ github.repository_owner }}/rinkhals:buildcache
-        cache-to: type=registry,ref=ghcr.io/${{ github.repository_owner }}/rinkhals:buildcache,mode=max
+        # ❌ Registry cache deaktiviert (verursacht write_package)
+        # cache-from: type=registry,ref=ghcr.io/${{ github.repository_owner }}/rinkhals:buildcache
+        # cache-to: type=registry,ref=ghcr.io/${{ github.repository_owner }}/rinkhals:buildcache,mode=max
 
     - name: Upload artifact for K2P, K3
       uses: actions/upload-artifact@v4
