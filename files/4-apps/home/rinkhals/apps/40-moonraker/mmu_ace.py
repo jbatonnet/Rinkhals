@@ -1029,6 +1029,33 @@ class MmuAceController:
 
         self._handle_status_update(force=True)
 
+
+    def _spoolman_sync_from_gate(self, mmu_status):
+        if not getattr(self.patcher, "enable_spoolman_sync", False):
+            return
+
+        gate = mmu_status.gate
+        if gate is None or gate < 0:
+            if getattr(self.patcher, "spoolman_clear_on_empty", True):
+                try:
+                    self.klippy_apis.run_gcode("CLEAR_ACTIVE_SPOOL")
+                except Exception:
+                    pass
+            return
+
+        try:
+            spool_id = mmu_status.gate_spool_id[gate]
+        except Exception:
+            return
+
+        if not spool_id or spool_id <= 0:
+            return
+
+        try:
+            self.klippy_apis.run_gcode(f"SET_ACTIVE_SPOOL ID={int(spool_id)}")
+        except Exception:
+            self.server.logger.info("[MMU] Spoolman sync failed", exc_info=True)
+
     def get_status(self) -> MmuAceStatus:
 
         gates = [gate for gates in [unit.gates for unit in self.ace.units] for gate in gates]
@@ -1195,6 +1222,9 @@ class MmuAceController:
             status.dryer_remaining = unit.dryer.get("remaining_time", 0)
             status.dryer_humidity = unit.dryer.get("humidity", 0)
 
+
+        # --- Spoolman sync (optional) ---
+        self._spoolman_sync_from_gate(status.mmu)
         return status
 
     def get_tools_status(self):
@@ -1308,6 +1338,10 @@ class MmuAcePatcher:
     _last_ttg_reset_time: float = 0.0
 
     def __init__(self, config: ConfigHelper):
+        # --- Spoolman sync (optional) ---
+        self.enable_spoolman_sync = config.getboolean("enable_spoolman_sync", False)
+        self.spoolman_clear_on_empty = config.getboolean("spoolman_clear_on_empty", True)
+
         self.server = config.get_server()
         self.name = config.get_name()
         self.kobra = self.server.load_component(self.server.config, 'kobra')
