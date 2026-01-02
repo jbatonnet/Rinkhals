@@ -25,6 +25,7 @@ Here are the suported printers and firmwares with latest Rinkhals release:
 | Kobra S1 (+ combo) | `2.5.8.8` `2.5.9.9` |
 | Kobra 3 Max (+ combo) | `2.5.1.3` `2.5.1.7` |
 | Kobra 3 V2 (+ combo) | `1.1.0.1` `1.1.0.4` |
+| Kobra S1 Max (+ combo) | `2.1.6` |
 
 In case you're wondering this project is named after rinkhals, a sub-species of Cobras ... Kobra ... Rinkhals 👏
 

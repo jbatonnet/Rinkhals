@@ -5,6 +5,7 @@ title: Network activity
 ## Open ports
 
 - **22**: SSH
+- **71**: Anycubic Orca compatibility API (octoprint compat), moved from port 80
 - **80**: HTTP / Dynamic (Mainsail, Fluidd, ...)
 - **2222**: SSH (only with the tools or installer)
 - **4408**: HTTP / Fluidd
