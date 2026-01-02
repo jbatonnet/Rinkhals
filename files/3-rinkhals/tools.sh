@@ -20,6 +20,9 @@ elif [ "$KOBRA_MODEL_ID" == "20026" ]; then
 elif [ "$KOBRA_MODEL_ID" == "20027" ]; then
     export KOBRA_MODEL="Anycubic Kobra 3 V2"
     export KOBRA_MODEL_CODE=K3V2
+elif [ "$KOBRA_MODEL_ID" == "20029" ]; then
+    export KOBRA_MODEL="Anycubic Kobra S1 Max"
+    export KOBRA_MODEL_CODE=KS1M
 fi
 
 export KOBRA_VERSION=$(cat /useremain/dev/version)
@@ -53,14 +56,15 @@ check_compatibility() {
 }
 is_supported_firmware() {
     SUPPORTED=0
+    [ "$KOBRA_MODEL_CODE" = "KS1M" ] && [ "$KOBRA_VERSION" = "2.1.6" ] && SUPPORTED=1
+    [ "$KOBRA_MODEL_CODE" = "KS1" ] && [ "$KOBRA_VERSION" = "2.5.9.9" ] && SUPPORTED=1
     [ "$KOBRA_MODEL_CODE" = "KS1" ] && [ "$KOBRA_VERSION" = "2.5.8.8" ] && SUPPORTED=1
-    [ "$KOBRA_MODEL_CODE" = "KS1" ] && [ "$KOBRA_VERSION" = "2.5.6.4" ] && SUPPORTED=1
-    [ "$KOBRA_MODEL_CODE" = "K3V2" ] && [ "$KOBRA_VERSION" = "1.0.9.7" ] && SUPPORTED=1
-    [ "$KOBRA_MODEL_CODE" = "K3V2" ] && [ "$KOBRA_VERSION" = "1.0.7.3" ] && SUPPORTED=1
-    [ "$KOBRA_MODEL_CODE" = "K3M" ] && [ "$KOBRA_VERSION" = "2.5.0.9" ] && SUPPORTED=1
-    [ "$KOBRA_MODEL_CODE" = "K3M" ] && [ "$KOBRA_VERSION" = "2.4.8.4" ] && SUPPORTED=1
-    [ "$KOBRA_MODEL_CODE" = "K3" ] && [ "$KOBRA_VERSION" = "2.4.4.3" ] && SUPPORTED=1
-    [ "$KOBRA_MODEL_CODE" = "K3" ] && [ "$KOBRA_VERSION" = "2.4.1.9" ] && SUPPORTED=1
+    [ "$KOBRA_MODEL_CODE" = "K3V2" ] && [ "$KOBRA_VERSION" = "1.1.0.4" ] && SUPPORTED=1
+    [ "$KOBRA_MODEL_CODE" = "K3V2" ] && [ "$KOBRA_VERSION" = "1.1.0.1" ] && SUPPORTED=1
+    [ "$KOBRA_MODEL_CODE" = "K3M" ] && [ "$KOBRA_VERSION" = "2.5.1.7" ] && SUPPORTED=1
+    [ "$KOBRA_MODEL_CODE" = "K3M" ] && [ "$KOBRA_VERSION" = "2.5.1.3" ] && SUPPORTED=1
+    [ "$KOBRA_MODEL_CODE" = "K3" ] && [ "$KOBRA_VERSION" = "2.4.5" ] && SUPPORTED=1
+    [ "$KOBRA_MODEL_CODE" = "K3" ] && [ "$KOBRA_VERSION" = "2.4.4.7" ] && SUPPORTED=1
     [ "$KOBRA_MODEL_CODE" = "K2P" ] && [ "$KOBRA_VERSION" = "3.1.4" ] && SUPPORTED=1
     [ "$KOBRA_MODEL_CODE" = "K2P" ] && [ "$KOBRA_VERSION" = "3.1.2.3" ] && SUPPORTED=1
     echo $SUPPORTED

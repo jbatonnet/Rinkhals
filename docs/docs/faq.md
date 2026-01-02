@@ -57,12 +57,12 @@ The code modifications are already in Rinkhals.
 If Rinkhals is running on your printer, you can already connect to port 22 on your printer.
 
 If you’re running stock firmware or any other, you’ll need to use the SSH SWU tool. This tool will start a SSH server on port 2222 on any firmware at any time.
-
-1. GO to the releases page: [https://github.com/jbatonnet/Rinkhals/releases](https://github.com/jbatonnet/Rinkhals/releases)
+1. Go to the releases page: [https://github.com/jbatonnet/Rinkhals/releases](https://github.com/jbatonnet/Rinkhals/releases)
 2. Download the right SWU tools for your printer (tools-xxx.zip)
 3. Extract and get the SSH tool you want
 4. Copy the tool as `update.swu` on a FAT32 USB drive in a `aGVscF9zb3Nf` directory (same as during Rinkhals installation)
 5. Use any SSH client to connect to your printer IP on port 2222
+
 
 ## How does Rinkhals work with official updates (stock OTA)?
 When you install an official update, Rinkhals startup files will be overwritten and thus Rinkhals won't boot anymore.

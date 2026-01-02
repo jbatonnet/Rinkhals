@@ -204,6 +204,7 @@ RUN chmod +x /build/swu-tools/installer/build-swu.sh
 RUN KOBRA_MODEL_CODE=K3 /build/swu-tools/installer/build-swu.sh /swu/installer-k2p-k3.swu
 RUN KOBRA_MODEL_CODE=K3M /build/swu-tools/installer/build-swu.sh /swu/installer-k3m.swu
 RUN KOBRA_MODEL_CODE=KS1 /build/swu-tools/installer/build-swu.sh /swu/installer-ks1.swu
+RUN KOBRA_MODEL_CODE=KS1M /build/swu-tools/installer/build-swu.sh /swu/installer-ks1m.swu
 
 ###############################################################
 # build-swu-tools builds the tools SWU files
@@ -225,9 +226,10 @@ RUN <<EOT
         KOBRA_MODEL_CODE=K3 /build/swu-tools/$tool/build-swu.sh /swu/${tool}-k2p-k3.swu
         KOBRA_MODEL_CODE=K3M /build/swu-tools/$tool/build-swu.sh /swu/${tool}-k3m.swu
         KOBRA_MODEL_CODE=KS1 /build/swu-tools/$tool/build-swu.sh /swu/${tool}-ks1.swu
+        KOBRA_MODEL_CODE=KS1M /build/swu-tools/$tool/build-swu.sh /swu/${tool}-ks1m.swu
     done
     cd /swu
-    for suffix in k2p-k3 k3m ks1; do
+    for suffix in k2p-k3 k3m ks1 ks1m; do
         zip -j "tools-${suffix}.zip" *.swu -i "*-${suffix}.swu"
     done
 EOT
@@ -303,8 +305,9 @@ RUN <<EOT
     mkdir -p /swu
     prepare_tgz /bundle /swu
     compress_swu K3 /swu/update-k2p-k3.swu &
-    compress_swu KS1 /swu/update-ks1.swu &
     compress_swu K3M /swu/update-k3m.swu &
+    compress_swu KS1 /swu/update-ks1.swu &
+    compress_swu KS1M /swu/update-ks1m.swu &
     wait $(jobs -p)
 EOT
 
