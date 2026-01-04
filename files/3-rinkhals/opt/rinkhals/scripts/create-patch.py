@@ -178,7 +178,7 @@ def patch_K3SysUi(binaryPath, modelCode, version):
         buttonCallback = k3sysui.symbols['_ZZN10MainWindow26AcSettingGeneralPageUiInitEvENKUlRK11QModelIndexE0_clES2_']
         patchJumpAddress = 0x12b04c
         patchReturnAddress = 0x12b054
-    elif modelCode == 'KS1' and version == '2.5.9.9':
+    elif modelCode == 'KS1' and (version == '2.5.9.9' or version == '2.6.0.0'):
         buttonCallback = k3sysui.symbols['_ZZN10MainWindow21AcSettingDeviceUiInitEvENKUlRK11QModelIndexE0_clES2_']
         patchJumpAddress = 0x14a51c
         patchReturnAddress = 0x14a524
