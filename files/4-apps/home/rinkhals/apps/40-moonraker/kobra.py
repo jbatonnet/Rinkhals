@@ -578,7 +578,7 @@ class Kobra:
                 if result is None:
                     return None
 
-                return await result
+                return result
             else:
                 logging.debug(f"hook on gcode cmd not found: {cmd}")
                 return await delegate_run_gcode()
