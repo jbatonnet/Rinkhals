@@ -8,6 +8,7 @@ python -m venv --without-pip .
 cp -rf kobra.py moonraker/moonraker/components/kobra.py
 cp -rf memory_manager.py moonraker/moonraker/components/memory_manager.py
 cp -rf mmu_ace.py moonraker/moonraker/components/mmu_ace.py
+cp -rf mmu_ace_metadata.py moonraker/moonraker/components/mmu_ace_metadata.py
 
 # Sometimes .moonraker.uuid is empty for some reason (#199)
 if [ ! -s /useremain/home/rinkhals/printer_data/.moonraker.uuid ]; then
