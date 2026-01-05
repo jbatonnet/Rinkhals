@@ -37,6 +37,14 @@ progress() {
             ERR_X_OFF=""
             ERR_Y_OFF="-29"
             ;;
+        KS1M)
+            SCL=".5"
+            TRANS="hflip,vflip"
+            Y_OFF="(H/3.4)"
+            X_OFF="((W/2)-(w/2))"
+            ERR_X_OFF=""
+            ERR_Y_OFF="-29"
+            ;;
         K3M)
             SCL=".25"
             TRANS="transpose=2"

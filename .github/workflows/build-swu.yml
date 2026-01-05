@@ -52,6 +52,15 @@ jobs:
           build/dist/*-ks1.swu
           build/dist/*-ks1.zip
 
+    - name: Upload artifact for KS1M
+      uses: actions/upload-artifact@v4
+      with:
+        name: update-ks1m
+        compression-level: 0
+        path: |
+          build/dist/*-ks1m.swu
+          build/dist/*-ks1m.zip
+
     - name: Upload artifact for K3M
       uses: actions/upload-artifact@v4
       with:

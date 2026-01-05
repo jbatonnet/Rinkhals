@@ -28,6 +28,15 @@ start() {
             # Average CPU is 15-20% with 3 FPS
             FPS=3
             ;;
+        KS1M)
+            ROTATION=180
+            MIN_X=0
+            MAX_X=800
+            MIN_Y=0
+            MAX_Y=480
+            # Average CPU is 15-20% with 3 FPS
+            FPS=3
+            ;;
         K3M)
             ROTATION=90
             MIN_X=25

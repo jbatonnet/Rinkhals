@@ -6,7 +6,7 @@ mkdir /work
 cd /work
 
 
-FLUIDD_VERSION="1.34.2"
+FLUIDD_VERSION="1.35.0"
 FLUIDD_DIRECTORY=/files/4-apps/home/rinkhals/apps/26-fluidd
 
 

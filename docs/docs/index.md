@@ -30,6 +30,7 @@ In this documentation, the following printers will be refered to with their mode
 - K3V2: Anycubic Kobra 3 V2 (+ combo)
 - K3M: Anycubic Kobra 3 Max (+ combo)
 - KS1: Anycubic Kobra S1 (+ combo)
+- KS1M: Anycubic Kobra S1 Max (+ combo)
 
 ## Documentation structure
 

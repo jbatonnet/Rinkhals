@@ -20,11 +20,12 @@ Latest version will likely support the two latest firmwares from Anycubic, unles
 Here are the suported printers and firmwares with latest Rinkhals release:
 | Model  | Tested firmwares | Notes |
 | -- | -- | -- |
-| Kobra 3 (+ combo) | `2.4.1.9` `2.4.4.3` |
+| Kobra 3 (+ combo) | `2.4.4.7` `2.4.5` |
 | Kobra 2 Pro | `3.1.2.3` `3.1.4` | Only with mainboard [Trigorilla Spe **B** v1.0.x](https://1coderookie.github.io/Kobra2ProInsights/hardware/mainboard/#trigorilla_spe_b_v10x-stock-new-revision). `3.1.4` seems to be buggy for some people |
-| Kobra S1 (+ combo) | `2.5.6.4` `2.5.8.8` |
-| Kobra 3 Max (+ combo) | `2.4.8.4` `2.5.0.9` |
-| Kobra 3 V2 (+ combo) | `1.0.7.3` `1.0.9.7` |
+| Kobra S1 (+ combo) | `2.5.8.8` `2.5.9.9` `2.6.0.0` |
+| Kobra 3 Max (+ combo) | `2.5.1.3` `2.5.1.7` |
+| Kobra 3 V2 (+ combo) | `1.1.0.1` `1.1.0.4` |
+| Kobra S1 Max (+ combo) | `2.1.6` |
 
 In case you're wondering this project is named after rinkhals, a sub-species of Cobras ... Kobra ... Rinkhals 👏
 
