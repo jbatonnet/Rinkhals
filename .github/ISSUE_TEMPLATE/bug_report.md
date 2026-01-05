@@ -7,6 +7,9 @@ assignees: ''
 
 ---
 
+> [!WARNING]
+> If you have a question or a bug, look for existing issues and use DeepWiki to ask your question: https://deepwiki.com/jbatonnet/Rinkhals
+
 > [!NOTE]
 > Please include as much details as possible and help the maintainers. A bug report only saying "X doesn't work" will end up being frustrating for everyone and not helpful.
 > Please remember that Rinkhals is a project maintained by a few people giving their free time to the community. Help them help you!
