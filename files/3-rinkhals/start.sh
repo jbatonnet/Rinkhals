@@ -164,8 +164,8 @@ for DIRECTORY in $DIRECTORIES; do
     mkdir -p $MERGED_DIRECTORY
     rm -rf $MERGED_DIRECTORY/*
 
-    [ -d $ORIGINAL_DIRECTORY ] && cp -ars $ORIGINAL_DIRECTORY/* $MERGED_DIRECTORY
-    [ -d $RINKHALS_DIRECTORY ] && cp -ars $RINKHALS_DIRECTORY/* $MERGED_DIRECTORY
+    [ -d "$ORIGINAL_DIRECTORY" ] && find "$ORIGINAL_DIRECTORY" -mindepth 1 -maxdepth 1 -exec cp -ars {} "$MERGED_DIRECTORY" \;
+    [ -d "$RINKHALS_DIRECTORY" ] && find "$RINKHALS_DIRECTORY" -mindepth 1 -maxdepth 1 -exec cp -ars {} "$MERGED_DIRECTORY" \;
 
     mount --bind $MERGED_DIRECTORY $DIRECTORY
 done
@@ -211,6 +211,10 @@ fi
 
 ################
 log "> Preparing mounts..."
+
+umount -l /root 2> /dev/null
+mkdir -p "$ROOT_HOME"
+mount --bind "$ROOT_HOME" /root
 
 mkdir -p $RINKHALS_HOME/printer_data
 mkdir -p /userdata/app/gk/printer_data

@@ -3,6 +3,8 @@ export RINKHALS_VERSION=$(cat $RINKHALS_ROOT/.version)
 export RINKHALS_HOME=/useremain/home/rinkhals
 export RINKHALS_LOGS=/tmp/rinkhals
 
+export ROOT_HOME=/useremain/home/root
+
 export KOBRA_MODEL_ID=$(cat /userdata/app/gk/config/api.cfg | sed -nr 's/.*"modelId"\s*:\s*"([0-9]+)".*/\1/p')
 
 if [ "$KOBRA_MODEL_ID" == "20021" ]; then
