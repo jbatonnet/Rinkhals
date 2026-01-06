@@ -5,17 +5,80 @@ import re
 import time
 import logging
 import subprocess
+import shlex
+import ast
+import random
 import paho.mqtt.client as paho
 
 from ..utils import Sentinel
 from .power import PowerDevice
+from ..common import WebRequest
+
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Union,
+    Optional,
+    Dict,
+    List,
+    TypeVar,
+    Mapping,
+    Callable,
+    Coroutine
+)
+FlexCallback = Callable[..., Optional[Coroutine]]
 
 
-def shell(command):
+def shell(command, log_result: bool = False):
+    """Execute shell command. Set log_result=True for debugging only."""
     result = subprocess.check_output(['sh', '-c', command])
     result = result.decode('utf-8').strip()
-    logging.info(f'Shell "{command}" => "{result}"')
+    if log_result:
+        logging.info(f'Shell "{command}" => "{result}"')
     return result
+
+
+def _read_env_from_tools() -> dict:
+    """
+    Read environment variables by sourcing tools.sh directly.
+    More efficient than spawning a Python subprocess.
+    """
+    try:
+        # Source tools.sh and print only the vars we need
+        cmd = '. /useremain/rinkhals/.current/tools.sh && echo "$KOBRA_MODEL_ID|$KOBRA_MODEL_CODE|$KOBRA_DEVICE_ID"'
+        result = subprocess.check_output(['sh', '-c', cmd], stderr=subprocess.DEVNULL)
+        parts = result.decode('utf-8').strip().split('|')
+        if len(parts) == 3:
+            return {
+                'KOBRA_MODEL_ID': parts[0],
+                'KOBRA_MODEL_CODE': parts[1],
+                'KOBRA_DEVICE_ID': parts[2]
+            }
+    except:
+        pass
+    return {}
+
+
+def _find_pid_by_name(process_name: str) -> int:
+    """
+    Find PID by process name using /proc instead of subprocess.
+    Much more efficient than 'ps | grep'.
+    """
+    try:
+        for pid_dir in os.listdir('/proc'):
+            if not pid_dir.isdigit():
+                continue
+            try:
+                cmdline_path = f'/proc/{pid_dir}/cmdline'
+                with open(cmdline_path, 'r') as f:
+                    cmdline = f.read()
+                if process_name in cmdline:
+                    return int(pid_dir)
+            except (IOError, OSError):
+                continue
+    except:
+        pass
+    return None
 
 
 class Kobra:
@@ -38,18 +101,23 @@ class Kobra:
     _total_layer = 0
     _states_cache = []
 
+    # GCode handlers
+    gcode_handlers: dict[str, FlexCallback] = {}
+    status_patchers: List[Callable[[dict], dict]] = []
+    print_data_patchers: List[Callable[[dict], dict]] = []
+
     def __init__(self, config):
         self.server = config.get_server()
         self.power = self.server.load_component(self.server.config, 'power')
 
         # Extract environment values from the printer
+        # Optimized: Use direct shell echo instead of spawning Python subprocess
         try:
-            environment = shell(f'. /useremain/rinkhals/.current/tools.sh && python -c "import os, json; print(json.dumps(dict(os.environ)))"')
-            environment = json.loads(environment)
+            environment = _read_env_from_tools()
 
-            self.KOBRA_MODEL_ID = environment['KOBRA_MODEL_ID']
-            self.KOBRA_MODEL_CODE = environment['KOBRA_MODEL_CODE']
-            self.KOBRA_DEVICE_ID = environment['KOBRA_DEVICE_ID']
+            self.KOBRA_MODEL_ID = environment.get('KOBRA_MODEL_ID')
+            self.KOBRA_MODEL_CODE = environment.get('KOBRA_MODEL_CODE')
+            self.KOBRA_DEVICE_ID = environment.get('KOBRA_DEVICE_ID')
             
             def load_tool_function(function_name):
                 def tool_function(*args):
@@ -71,6 +139,7 @@ class Kobra:
         logging.info('Starting Kobra patching...')
 
         self.patch_status_updates()
+        self.patch_gcode_handler()
         self.patch_network_interfaces()
         self.patch_spoolman()
         self.patch_simplyprint()
@@ -79,6 +148,7 @@ class Kobra:
         self.patch_objects_list()
         self.patch_mainsail()
         self.patch_k2p_bug()
+        self.patch_ace_flush_control()
 
         logging.info('Completed Kobra patching! Yay!')
 
@@ -87,8 +157,8 @@ class Kobra:
 
     async def component_init(self):
 
-        if self.KOBRA_MODEL_CODE == 'K3':
-            # Add camera and head lights power devices
+        if self.KOBRA_MODEL_CODE in ('K3', 'K3M', 'K3V2'):
+            # Add camera and head lights power devices for K3, K3 Max and K3 V2
             config = self.server.config.read_supplemental_dict({
                 'power camera_light': {
                     'type': 'shell',
@@ -108,7 +178,7 @@ class Kobra:
             await self.power.add_device('camera_light', ShellPowerDevice(config.getsection('power camera_light')))
             await self.power.add_device('head_light', ShellPowerDevice(config.getsection('power head_light')))
 
-        elif self.KOBRA_MODEL_CODE == 'KS1':
+        elif self.KOBRA_MODEL_CODE == 'KS1' or self.KOBRA_MODEL_CODE == 'KS1M':
             # Add camera and head lights power devices
             config = self.server.config.read_supplemental_dict({
                 'power chamber_light': {
@@ -124,9 +194,9 @@ class Kobra:
 
     def is_goklipper_running(self):
         if time.time() < self._goklipper_next_check:
-            return self._goklipper_pid != None
+            return self._goklipper_pid is not None
 
-        if self._goklipper_pid != None:
+        if self._goklipper_pid is not None:
             try:
                 os.kill(self._goklipper_pid, 0)
             except:
@@ -134,14 +204,13 @@ class Kobra:
                 self._goklipper_pid = None
 
         if not self._goklipper_pid:
-            self._goklipper_pid = subprocess.check_output(['sh', '-c', "ps | grep gklib | grep -v grep | head -n 1 | awk '{print $1}'"])
-            self._goklipper_pid = self._goklipper_pid.decode('utf-8').strip()
-            self._goklipper_pid = int(self._goklipper_pid) if self._goklipper_pid else None
+            # Optimized: Use /proc directly instead of subprocess 'ps | grep'
+            self._goklipper_pid = _find_pid_by_name('gklib')
             if self._goklipper_pid:
                 logging.info(f'[Kobra] Found GoKlipper process (PID: {self._goklipper_pid})')
 
         self._goklipper_next_check = time.time() + 5
-        return self._goklipper_pid != None
+        return self._goklipper_pid is not None
 
     def get_remote_mode(self):
         if time.time() < self._remote_mode_next_check:
@@ -173,22 +242,52 @@ class Kobra:
         vibration_compensation = self.get_app_property('40-moonraker', 'mqtt_print_vibration_compensation').lower() == 'true'
         flow_calibration = self.get_app_property('40-moonraker', 'mqtt_print_flow_calibration').lower() == 'true'
 
-        payload = f"""{{
-            "type": "print",
-            "action": "start",
-            "msgid": "{uuid.uuid4()}",
-            "timestamp": {round(time.time() * 1000)},
-            "data": {{
-                "taskid": "-1",
-                "filename": "{file}",
-                "filetype": 1,
-                "task_settings": {{
-                    "auto_leveling": {'1' if auto_leveling else '0'},
-                    "vibration_compensation": {'1' if vibration_compensation else '0'},
-                    "flow_calibration": {'1' if flow_calibration else '0'}
-                }}
-            }}
-        }}"""
+        print_request = {
+            'type': 'print',
+            'action': 'start',
+            'msgid': str(uuid.uuid4()),
+            'timestamp': int(time.time() * 1000),
+            'data': {
+                'filename': file,
+                'filepath': '/',
+                'taskid': str(random.randint(0, 1000000)),
+                'task_mode': 1,
+                'filetype': 1,
+                'task_settings': {
+                    'auto_leveling': 1 if auto_leveling else 0,
+                    'vibration_compensation': 1 if vibration_compensation else 0,
+                    'flow_calibration': 1 if flow_calibration else 0
+                }
+            }
+        }
+        
+        print_data = print_request["data"]
+
+        for patcher in self.print_data_patchers:
+            print_data = patcher(print_data)
+
+        print_request["data"] = print_data
+
+        logging.info(f'[Kobra] print data : {json.dumps(print_data)}')
+
+        payload = json.dumps(print_request)
+        
+        # payload = f"""{{
+        #     "type": "print",
+        #     "action": "start",
+        #     "msgid": "{uuid.uuid4()}",
+        #     "timestamp": {round(time.time() * 1000)},
+        #     "data": {{
+        #         "taskid": "-1",
+        #         "filename": "{file}",
+        #         "filetype": 1,
+        #         "task_settings": {{
+        #             "auto_leveling": {'1' if auto_leveling else '0'},
+        #             "vibration_compensation": {'1' if vibration_compensation else '0'},
+        #             "flow_calibration": {'1' if flow_calibration else '0'}
+        #         }}
+        #     }}
+        # }}"""
 
         self.mqtt_print_report = False
         self.mqtt_print_error = None
@@ -292,8 +391,16 @@ class Kobra:
                     # Remove path prefix from file path
                     status['virtual_sdcard']['file_path'] = status['virtual_sdcard']['file_path'].replace('/useremain/app/gk/gcodes/', '')
 
+        for patcher in self.status_patchers:
+            status = patcher(status)
+
         return status
 
+    def register_status_patcher(self, patcher: Callable[[dict], dict]):
+        self.status_patchers.append(patcher)
+
+    def register_print_data_patcher(self, patcher: Callable[[dict], dict]):
+        self.print_data_patchers.append(patcher)
 
     def patch_status_updates(self):
         from .klippy_apis import KlippyAPI
@@ -347,6 +454,24 @@ class Kobra:
         logging.debug(f'  Before: {KlippyRequest.set_result}')
         setattr(KlippyRequest, 'set_result', wrap_set_result(KlippyRequest.set_result))
         logging.debug(f'  After: {KlippyRequest.set_result}')
+        
+        def wrap_request(original_request):
+            async def request(me, web_request: WebRequest) -> Any:
+                rpc_method = web_request.get_endpoint()
+                logging.debug(f'Wrap request method: {rpc_method}')
+                result = await original_request(me, web_request)
+                logging.debug(f'Wrap request method {rpc_method} result type: {type(result)}')
+                if result and isinstance(result, dict):
+                    logging.debug(f'Wrap request method {rpc_method} result: {json.dumps(result)}')
+                if result and isinstance(result, dict) and 'status' in result:
+                    result['status'] = self.patch_status(result['status'])
+                    logging.debug(f'Wrap request method {rpc_method} result status: {json.dumps(result)}')
+                return result
+            return request
+
+        logging.debug(f'  Before: {KlippyConnection.request}')
+        setattr(KlippyConnection, 'request', wrap_request(KlippyConnection.request))
+        logging.debug(f'  After: {KlippyConnection.request}')
 
     def patch_network_interfaces(self):
         from .machine import Machine
@@ -396,26 +521,125 @@ class Kobra:
         setattr(Server, 'get_klippy_info', wrap_get_klippy_info(Server.get_klippy_info))
         logging.debug(f'  After: {Server.get_klippy_info}')
 
-    def patch_mqtt_print(self):
-        from .klippy_apis import KlippyAPI
+    def register_gcode_handler(self, cmd, callback: FlexCallback):
+        logging.info(f'> Registering gcode handler for {cmd}...')
+        self.gcode_handlers[cmd.upper()] = callback
 
-        def wrap_run_gcode(original_run_gcode):
-            async def run_gcode(me, script, default = Sentinel.MISSING):
-                if self.is_goklipper_running() and script.startswith('SDCARD_PRINT_FILE'):
-                    self._total_layer = 0
-                    filename = re.search("FILENAME=\"([^\"]+)\"$", script)
-                    filename = filename[1] if filename else None
-                    if filename and self.is_using_mqtt():
-                        self.mqtt_print_file(filename)
-                        return None
-                return await original_run_gcode(me, script, default)
+    def patch_gcode_handler(self):
+        from .klippy_apis import KlippyAPI
+        from .klippy_connection import KlippyConnection
+
+        async def handle_gcode(me, script, delegate_run_gcode: Callable[[], Coroutine]):
+            parts = [s.strip() for s in shlex.split(script.strip()) if s.strip()]
+            logging.debug(f"hook on gcode received: {json.dumps(parts)}")
+
+            # Split multi-command lines (e.g., "CMD1 ARG1=X CMD2 ARG2=Y")
+            # Find indices where a part is a registered handler (indicates new command)
+            handler_indices = [0]  # First part is always a command
+            for i, part in enumerate(parts[1:], 1):
+                if part in self.gcode_handlers and '=' not in part:
+                    handler_indices.append(i)
+
+            # If multiple commands detected, execute them sequentially
+            if len(handler_indices) > 1:
+                logging.debug(f"Multiple commands detected in one line: {handler_indices}")
+                last_result = None
+                for idx, start_idx in enumerate(handler_indices):
+                    end_idx = handler_indices[idx + 1] if idx + 1 < len(handler_indices) else len(parts)
+                    sub_parts = parts[start_idx:end_idx]
+                    sub_script = ' '.join(sub_parts)
+                    logging.debug(f"Executing sub-command: {sub_script}")
+                    last_result = await handle_gcode(me, sub_script, delegate_run_gcode)
+                return last_result
+
+            cmd = parts[0]
+
+            logging.debug(f"hook on gcode cmd: {cmd}")
+            handlers = self.gcode_handlers.keys()
+            # join handlers
+            handlers = ', '.join(handlers)
+            logging.debug(f"hook on gcode handlers: {handlers}")
+
+            if cmd in self.gcode_handlers:
+                logging.debug(f"hook on gcode cmd found: {cmd}")
+                args = {}
+                for part in parts[1:]:
+                    if '=' in part:
+                        key, value = part.split('=', 1)
+                        args[key] = value
+                    else:
+                        args[part] = None
+
+                logging.debug(f"hook on gcode args: {json.dumps(args)}")
+                result = await self.gcode_handlers[cmd](args, delegate_run_gcode)
+                result_str = "None" if result is None else "Any"
+                logging.debug(f"hook on gcode result: {result_str}")
+
+                if result is None:
+                    return None
+
+                return result
+            else:
+                logging.debug(f"hook on gcode cmd not found: {cmd}")
+                return await delegate_run_gcode()
+
+        def wrap_request(original_request: KlippyConnection.request):
+            async def request(me: KlippyConnection, web_request: WebRequest):
+                logging.debug(f"hook on request")
+
+                rpc_method = web_request.get_endpoint()
+                if rpc_method == "gcode/script":
+
+                    script = web_request.get_str('script', "")
+                    if script:
+                        async def delegate_run_gcode():
+                            return await original_request(me, web_request)
+
+                        return await handle_gcode(me, script, delegate_run_gcode)
+
+                return await original_request(me, web_request)
+
+            return request
+
+        def wrap_run_gcode(original_run_gcode: KlippyAPI.run_gcode):
+            async def run_gcode(me: KlippyAPI, script: str, default: Any = Sentinel.MISSING):
+                logging.debug(f"hook on run gcode: {script}")
+
+                async def delegate_run_gcode():
+                    return await original_run_gcode(me, script, default)
+
+                return await handle_gcode(me, script, delegate_run_gcode)
+
             return run_gcode
 
-        logging.info('> Send prints to MQTT...')
+        logging.info('> Adding gcode handler...')
+
+        logging.debug(f'  Before: {KlippyConnection.request}')
+        setattr(KlippyConnection, 'request', wrap_request(KlippyConnection.request))
+        logging.debug(f'  After: {KlippyConnection.request}')
 
         logging.debug(f'  Before: {KlippyAPI.run_gcode}')
         setattr(KlippyAPI, 'run_gcode', wrap_run_gcode(KlippyAPI.run_gcode))
         logging.debug(f'  After: {KlippyAPI.run_gcode}')
+
+    def patch_mqtt_print(self):
+        async def handle_gcode_print_file(args: dict, delegate_run_gcode):
+            logging.info(f'[Kobra] Print file: {args}')
+            if self.is_goklipper_running():
+                self._total_layer = 0
+                filename = args["FILENAME"] if "FILENAME" in args else None
+                logging.info(f'[Kobra] Print file: {filename}')
+                
+                if filename and self.is_using_mqtt():
+                    logging.info(f'[Kobra] MQTT print file: {filename}')
+                    self.mqtt_print_file(filename)
+                    return None
+            
+            logging.info(f'[Kobra] Not MQTT print file: {filename}')
+            return await delegate_run_gcode()
+
+        logging.info('> Send prints to MQTT...')
+        self.register_gcode_handler('SDCARD_PRINT_FILE', handle_gcode_print_file)
 
     def patch_bed_mesh(self):
         from .klippy_connection import KlippyConnection
@@ -483,7 +707,7 @@ class Kobra:
                             'SAVE_CONFIG'
                         ]
 
-                        if self.KOBRA_MODEL_CODE != 'KS1':
+                        if self.KOBRA_MODEL_CODE != 'KS1' and self.KOBRA_MODEL_CODE != 'KS1M':
                             calibrate_script.remove('WIPE_ENTER')
                             calibrate_script.remove('WIPE_EXIT')
 
@@ -620,7 +844,7 @@ class Kobra:
                     for gcode in result:
                         objects.append(f"gcode_macro {gcode}")
                     
-                    if self.KOBRA_MODEL_CODE == 'KS1':
+                    if self.KOBRA_MODEL_CODE == 'KS1' or self.KOBRA_MODEL_CODE == 'KS1M':
                         objects.append("fan_generic air_filter_fan")
                         objects.append("fan_generic box_fan")
 
@@ -672,6 +896,88 @@ class Kobra:
         logging.debug(f'  Before: {KlippyAPI.get_klippy_info}')
         setattr(KlippyAPI, 'get_klippy_info', wrap_get_klippy_info(KlippyAPI.get_klippy_info))
         logging.debug(f'  After: {KlippyAPI.get_klippy_info}')
+
+    def patch_ace_flush_control(self):
+        from .klippy_connection import KlippyConnection
+        import asyncio
+
+        async def handle_ace_flush_command(script_upper, script):
+            """Handle ACE flush control commands. Returns (handled, result)."""
+
+            if script_upper.startswith('SET_ACE_FLUSH_MULTIPLIER'):
+                import re
+                value_match = re.search(r'VALUE=([0-9.]+)', script, re.IGNORECASE)
+                if not value_match:
+                    logging.error('[ACE Flush] Missing VALUE parameter')
+                    return (True, None)
+
+                value = float(value_match.group(1))
+
+                # Validate range
+                if value < 0.0 or value > 3.0:
+                    logging.error(f'[ACE Flush] Invalid value {value}, must be 0.0-3.0')
+                    return (True, None)
+
+                # Call GoKlipper's filament_hub API via HTTP client
+                try:
+                    http_client = self.server.lookup_component('http_client')
+                    url = 'http://localhost:7125/printer/filament_hub/set_config'
+                    data = {'flush_multiplier': value}
+
+                    response = await http_client.post(url, body=json.dumps(data),
+                                                    headers={'Content-Type': 'application/json'})
+
+                    logging.info(f'[ACE Flush] Set flush_multiplier to {value} via HTTP API')
+                    self.server.send_event("server:gcode_response", f"// ACE flush_multiplier set to {value}")
+                    return (True, "ok")
+                except Exception as e:
+                    logging.error(f'[ACE Flush] Failed to call API: {e}')
+                    return (True, None)
+
+            elif script_upper == 'ACE_FLUSH_MINIMAL':
+                return await handle_ace_flush_command('SET_ACE_FLUSH_MULTIPLIER', 'SET_ACE_FLUSH_MULTIPLIER VALUE=0.1')
+
+            elif script_upper == 'ACE_FLUSH_NORMAL':
+                return await handle_ace_flush_command('SET_ACE_FLUSH_MULTIPLIER', 'SET_ACE_FLUSH_MULTIPLIER VALUE=1.0')
+
+            elif script_upper == 'ACE_FLUSH_MAXIMUM':
+                return await handle_ace_flush_command('SET_ACE_FLUSH_MULTIPLIER', 'SET_ACE_FLUSH_MULTIPLIER VALUE=3.0')
+
+            elif script_upper == 'GET_ACE_FLUSH_MULTIPLIER':
+                try:
+                    http_client = self.server.lookup_component('http_client')
+                    url = 'http://localhost:7125/printer/filament_hub/get_config'
+
+                    response = await http_client.get(url)
+                    data = response.json()
+                    value = data['result']['flush_multiplier']
+
+                    self.server.send_event("server:gcode_response", f"// ACE flush_multiplier: {value}")
+                    logging.info(f'[ACE Flush] Current flush_multiplier: {value}')
+                    return (True, "ok")
+                except Exception as e:
+                    logging.error(f'[ACE Flush] Failed to read config: {e}')
+                    return (True, None)
+
+            return (False, None)
+
+        def wrap_request(original_request):
+            async def request(me, web_request):
+                rpc_method = web_request.get_endpoint()
+                if self.is_goklipper_running() and rpc_method == "gcode/script":
+                    script = web_request.get_str('script', "")
+                    script_upper = script.strip().upper()
+
+                    # Check if it's an ACE flush control command
+                    handled, result = await handle_ace_flush_command(script_upper, script)
+                    if handled:
+                        return result
+
+                return await original_request(me, web_request)
+            return request
+
+        logging.info('> Adding ACE flush control macros...')
+        setattr(KlippyConnection, 'request', wrap_request(KlippyConnection.request))
 
 
 class ShellPowerDevice(PowerDevice):

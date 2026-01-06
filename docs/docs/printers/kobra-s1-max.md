@@ -1,5 +1,5 @@
 ---
-title: Anycubic Kobra S1
+title: Anycubic Kobra S1 Max
 ---
 
 ## General
@@ -11,4 +11,4 @@ title: Anycubic Kobra S1
 
 ## Firmware history
 
-Check https://github.com/jbatonnet/Rinkhals.Firmwares/blob/main/manifests-anycubic/manifest-ks1.json
+Check https://github.com/jbatonnet/Rinkhals.Firmwares/blob/main/manifests-anycubic/manifest-ks1m.json

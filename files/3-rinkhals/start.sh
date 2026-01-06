@@ -83,7 +83,7 @@ kill_by_name gkapi
 kill_by_name gklib 15 # SIGTERM to be softer on gklib
 
 if [ -f /ac_lib/lib/third_bin/ffmpeg ]; then
-    if [ "$KOBRA_MODEL_CODE" = "KS1" ]; then
+    if [ "$KOBRA_MODEL_CODE" = "KS1" ] || [ "$KOBRA_MODEL_CODE" = "KS1M" ]; then
         TRANSPOSE="vflip,hflip"
         SCALE="0.75"
     elif [ "$KOBRA_MODEL_CODE" = "K3M" ]; then
@@ -140,7 +140,7 @@ umount -l /bin 2> /dev/null
 umount -l /usr 2> /dev/null
 umount -l /lib 2> /dev/null
 
-DIRECTORIES="/lib /usr /bin /sbin /opt /etc"
+DIRECTORIES="/lib /usr /bin /sbin /opt /etc /root"
 MERGED_ROOT=/tmp/rinkhals/merged
 
 # Backup original directories
@@ -259,7 +259,7 @@ export USE_MUTABLE_CONFIG=1
 export LD_LIBRARY_PATH=/userdata/app/gk:$LD_LIBRARY_PATH
 
 #TARGETS="gklib gkapi gkcam K3SysUi"
-TARGETS="K3SysUi"
+TARGETS="gkapi K3SysUi"
 
 for TARGET in $TARGETS; do
     TARGET_PATCH=/opt/rinkhals/patches/${TARGET}.${KOBRA_MODEL_CODE}_${KOBRA_VERSION}.sh

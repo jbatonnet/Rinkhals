@@ -152,6 +152,9 @@ class PrinterInfo:
             elif model_id == '20027':
                 printer_info.model = 'Anycubic Kobra 3 V2'
                 printer_info.model_code = 'K3V2'
+            elif model_id == '20029':
+                printer_info.model = 'Anycubic Kobra S1 Max'
+                printer_info.model_code = 'KS1M'
         except:
             return None
         
@@ -180,7 +183,7 @@ class ScreenInfo:
         QT_QPA_PLATFORM = os.environ.get('QT_QPA_PLATFORM')
 
         if USING_SIMULATOR:
-            if printer_info.model_code == 'KS1':
+            if printer_info.model_code == 'KS1' or printer_info.model_code == 'KS1M':
                 QT_QPA_PLATFORM = 'linuxfb:fb=/dev/fb0:size=800x480:rotation=180:offset=0x0:nographicsmodeswitch'
             else:
                 QT_QPA_PLATFORM = 'linuxfb:fb=/dev/fb0:size=480x272:rotation=90:offset=0x0:nographicsmodeswitch'
@@ -205,7 +208,7 @@ class ScreenInfo:
             info.width = info.height
             info.height = temp
 
-        if printer_info.model_code == 'KS1':
+        if printer_info.model_code == 'KS1' or printer_info.model_code == 'KS1M':
             info.touch_calibration = [0, 0, 800, 480]
             info.dpi = 180
         else:
@@ -352,6 +355,7 @@ class Firmware:
         'K3V2': 'https://rinkhals.thedju.net/Kobra%203%20V2/manifest.json',
         'KS1': 'https://rinkhals.thedju.net/Kobra%20S1/manifest.json',
         'K3M': 'https://rinkhals.thedju.net/Kobra%203%20Max/manifest.json',
+        'KS1M': 'https://rinkhals.thedju.net/Kobra%20S1%20Max/manifest.json',
     }
 
     def get_current_version():
@@ -1907,7 +1911,7 @@ class BaseApp:
     def extract_swu(self):
         if self.printer_info.model_code == 'K2P' or self.printer_info.model_code == 'K3' or self.printer_info.model_code == 'K3V2':
             password = 'U2FsdGVkX19deTfqpXHZnB5GeyQ/dtlbHjkUnwgCi+w='
-        elif self.printer_info.model_code == 'KS1':
+        elif self.printer_info.model_code == 'KS1' or self.printer_info.model_code == 'KS1M':
             password = 'U2FsdGVkX1+lG6cHmshPLI/LaQr9cZCjA8HZt6Y8qmbB7riY'
         elif self.printer_info.model_code == 'K3M':
             password = '4DKXtEGStWHpPgZm8Xna9qluzAI8VJzpOsEIgd8brTLiXs8fLSu3vRx8o7fMf4h6'
