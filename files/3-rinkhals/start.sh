@@ -212,6 +212,10 @@ fi
 ################
 log "> Preparing mounts..."
 
+umount -l /root 2> /dev/null
+mkdir -p "$ROOT_HOME"
+mount --bind "$ROOT_HOME" /root
+
 mkdir -p $RINKHALS_HOME/printer_data
 mkdir -p /userdata/app/gk/printer_data
 umount -l /userdata/app/gk/printer_data 2> /dev/null
