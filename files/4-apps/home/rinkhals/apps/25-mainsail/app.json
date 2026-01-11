@@ -3,7 +3,7 @@
 
     "name": "Mainsail",
     "description": "Lightweight, responsive web user interface for Klipper. Uses port 4409.",
-    "version": "2.16.1",
+    "version": "2.17.0",
 
     "requirements":
     {

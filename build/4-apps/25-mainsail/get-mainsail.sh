@@ -6,7 +6,7 @@ mkdir /work
 cd /work
 
 
-MAINSAIL_VERSION="2.16.1"
+MAINSAIL_VERSION="2.17.0"
 MAINSAIL_DIRECTORY=/files/4-apps/home/rinkhals/apps/25-mainsail
 
 
