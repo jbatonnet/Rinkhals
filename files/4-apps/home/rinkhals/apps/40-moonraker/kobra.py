@@ -490,15 +490,16 @@ class Kobra:
         from .spoolman import SpoolManager
 
         def wrap_set_active_spool(original_set_active_spool):
-            def set_active_spool(me, spool_id = None, SPOOL_ID = None):
-                if spool_id is None:
-                    logging.info('[Kobra] Injected SPOOL_ID')
-                    spool_id = int(SPOOL_ID)
-                return original_set_active_spool(me, spool_id)
+            def set_active_spool(me, spool_id = None, SPOOL_ID = None, **kwargs):
+                if spool_id is not None:
+                    return original_set_active_spool(me, spool_id)
+                if SPOOL_ID is not None and str(SPOOL_ID).strip() != "":
+                    logging.info('[Kobra] Using fallback SPOOL_ID')
+                    return original_set_active_spool(me, int(SPOOL_ID))
+                return original_set_active_spool(me, None)
             return set_active_spool
 
         logging.info('> Allowing SPOOL_ID parameter...')
-
         logging.debug(f'  Before: {SpoolManager.set_active_spool}')
         setattr(SpoolManager, 'set_active_spool', wrap_set_active_spool(SpoolManager.set_active_spool))
         logging.debug(f'  After: {SpoolManager.set_active_spool}')
