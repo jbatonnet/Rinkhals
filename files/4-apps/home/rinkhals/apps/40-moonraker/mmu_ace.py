@@ -816,12 +816,18 @@ class MmuAceController:
             filament_hub = status["filament_hub"]
             logging.debug(f"mmu ace status update: {json.dumps(filament_hub)}")
 
+            hubs = filament_hub.get("filament_hubs")
+            if not hubs:
+                # ACE from time to time sends some updates ("current_filaments", "filament_present") without filament_hubs array. That leads to error - so we prevent that
+                self._set_ace_status(filament_hub)
+                return
+
             # Fetch temperature info for all gates with material
             # Collect all temperature fetch tasks for parallel execution
             temp_tasks = []
             task_metadata = []  # Store (hub, slot) references to apply results later
 
-            for hub in filament_hub["filament_hubs"]:
+            for hub in hubs:
                 hub_id = hub["id"]
                 for slot in hub["slots"]:
                     gate_index = slot["index"]
@@ -917,87 +923,88 @@ class MmuAceController:
 
         # Track global gate index across all units for tool mapping
         global_gate_index = 0
+        hubs = filament_hub.get("filament_hubs")
+        if hubs:
+            for hub in hubs:
+                hub_id = hub["id"]
+                unit = MmuAceUnit(hub_id, f"ACE {hub_id + 1}")
 
-        for hub in filament_hub["filament_hubs"]:
-            hub_id = hub["id"]
-            unit = MmuAceUnit(hub_id, f"ACE {hub_id + 1}")
+                unit.status = hub["status"] if "status" in hub else None
+                unit.temp = hub["temp"] if "temp" in hub else None
 
-            unit.status = hub["status"] if "status" in hub else None
-            unit.temp = hub["temp"] if "temp" in hub else None
+                if "dryer_status" in hub:
+                    unit.dryer = hub["dryer_status"]
 
-            if "dryer_status" in hub:
-                unit.dryer = hub["dryer_status"]
+                unit.gates = []
+                for i, slot in enumerate(hub["slots"]):
+                    index: int = slot["index"] if "index" in slot else None
+                    # preload ready shifting runout empty
+                    status: str = slot["status"] if "status" in slot else None
+                    sku: str = slot["sku"] if "sku" in slot else ""
+                    type: str = slot["type"] if "type" in slot else None
+                    color: list[int] = slot["color"] if "color" in slot else None
+                    rfid: int = slot["rfid"] if "rfid" in slot else None
+                    source: int = slot["source"] if "source" in slot else None
+                    temp_data: dict = slot["temperature"] if "temperature" in slot else None
 
-            unit.gates = []
-            for i, slot in enumerate(hub["slots"]):
-                index: int = slot["index"] if "index" in slot else None
-                # preload ready shifting runout empty
-                status: str = slot["status"] if "status" in slot else None
-                sku: str = slot["sku"] if "sku" in slot else ""
-                type: str = slot["type"] if "type" in slot else None
-                color: list[int] = slot["color"] if "color" in slot else None
-                rfid: int = slot["rfid"] if "rfid" in slot else None
-                source: int = slot["source"] if "source" in slot else None
-                temp_data: dict = slot["temperature"] if "temperature" in slot else None
+                    gate = MmuAceGate()
+                    gate.index = index
+                    gate.material = type
+                    gate.filament_name = type
+                    gate.color = rgb_to_rgba(color)
+                    gate.rfid = rfid
+                    gate.source = source
+                    gate.status = GATE_AVAILABLE if status == "ready" else GATE_EMPTY if status == "empty" or status == "runout" else GATE_UNKNOWN
 
-                gate = MmuAceGate()
-                gate.index = index
-                gate.material = type
-                gate.filament_name = type
-                gate.color = rgb_to_rgba(color)
-                gate.rfid = rfid
-                gate.source = source
-                gate.status = GATE_AVAILABLE if status == "ready" else GATE_EMPTY if status == "empty" or status == "runout" else GATE_UNKNOWN
+                    # Set temperature from RFID tag if available, otherwise use material default
+                    if temp_data and isinstance(temp_data, dict) and "min" in temp_data:
+                        # Store both min and max from RFID tag
+                        gate.temperature_min = temp_data.get("min", -1)
+                        gate.temperature_max = temp_data.get("max", -1)
+                        # Use min temperature as default (more conservative)
+                        gate.temperature = gate.temperature_min
+                        logging.info(f"Gate {index}: Using RFID temperatures min={gate.temperature_min}°C, max={gate.temperature_max}°C")
+                    elif type:
+                        # Fallback to material-based default (no min/max range for defaults)
+                        gate.temperature = get_material_temperature(type)
+                        gate.temperature_min = -1
+                        gate.temperature_max = -1
+                        logging.info(f"Gate {index}: Using material default temperature {gate.temperature}°C for {type}")
 
-                # Set temperature from RFID tag if available, otherwise use material default
-                if temp_data and isinstance(temp_data, dict) and "min" in temp_data:
-                    # Store both min and max from RFID tag
-                    gate.temperature_min = temp_data.get("min", -1)
-                    gate.temperature_max = temp_data.get("max", -1)
-                    # Use min temperature as default (more conservative)
-                    gate.temperature = gate.temperature_min
-                    logging.info(f"Gate {index}: Using RFID temperatures min={gate.temperature_min}°C, max={gate.temperature_max}°C")
-                elif type:
-                    # Fallback to material-based default (no min/max range for defaults)
-                    gate.temperature = get_material_temperature(type)
-                    gate.temperature_min = -1
-                    gate.temperature_max = -1
-                    logging.info(f"Gate {index}: Using material default temperature {gate.temperature}°C for {type}")
+                    # Parse SKU for additional information
+                    gate.sku = sku
+                    if sku:
+                        sku_info = parse_anycubic_sku(sku)
+                        gate.vendor = sku_info["vendor"]
+                        gate.series = sku_info["series"]
+                        gate.color_name = sku_info["color_name"]
+                        # Use serial number as spool_id if available
+                        try:
+                            gate.spool_id = int(sku_info["serial"]) if sku_info["serial"] else abs(hash(sku)) % (2**31)
+                        except:
+                            gate.spool_id = abs(hash(sku)) % (2**31)
 
-                # Parse SKU for additional information
-                gate.sku = sku
-                if sku:
-                    sku_info = parse_anycubic_sku(sku)
-                    gate.vendor = sku_info["vendor"]
-                    gate.series = sku_info["series"]
-                    gate.color_name = sku_info["color_name"]
-                    # Use serial number as spool_id if available
-                    try:
-                        gate.spool_id = int(sku_info["serial"]) if sku_info["serial"] else abs(hash(sku)) % (2**31)
-                    except:
-                        gate.spool_id = abs(hash(sku)) % (2**31)
+                        # Update filament_name with full description if parsed
+                        if sku_info["vendor"] and sku_info["series"]:
+                            parts = [sku_info["vendor"], sku_info["series"], sku_info["material_type"]]
+                            if sku_info["color_name"]:
+                                parts.append(sku_info["color_name"])
+                            gate.filament_name = " ".join(parts)
+                    else:
+                        gate.spool_id = 0
 
-                    # Update filament_name with full description if parsed
-                    if sku_info["vendor"] and sku_info["series"]:
-                        parts = [sku_info["vendor"], sku_info["series"], sku_info["material_type"]]
-                        if sku_info["color_name"]:
-                            parts.append(sku_info["color_name"])
-                        gate.filament_name = " ".join(parts)
-                else:
-                    gate.spool_id = 0
+                    unit.gates.append(gate)
 
-                unit.gates.append(gate)
+                    # Create tool with global index (spans across all units)
+                    # Tool 0 = Unit 0 Gate 0, Tool 4 = Unit 1 Gate 0, etc.
+                    tool = MmuAceTool()
+                    tool.name = f"T{global_gate_index}"
+                    self.ace.tools.append(tool)
+                    self.ace.ttg_map.append(global_gate_index)
 
-                # Create tool with global index (spans across all units)
-                # Tool 0 = Unit 0 Gate 0, Tool 4 = Unit 1 Gate 0, etc.
-                tool = MmuAceTool()
-                tool.name = f"T{global_gate_index}"
-                self.ace.tools.append(tool)
-                self.ace.ttg_map.append(global_gate_index)
+                    global_gate_index += 1
 
-                global_gate_index += 1
-
-            self.ace.units.append(unit)
+                self.ace.units.append(unit)
 
         # Sync MMU status with ACE Hub current_filament state
         # Only sync if MMU thinks filament is loaded (pos == LOADED) but ACE Hub disagrees
