@@ -219,6 +219,8 @@ mount --bind $RINKHALS_HOME/printer_data /userdata/app/gk/printer_data
 
 # Let Anycubic firmware manage printer_mutable.cfg natively in /userdata/app/gk/
 # We just need to expose it to Moonraker and kobra.py
+# (Important: if upgrading from an older build, /userdata/app/gk/printer_mutable.cfg might be a legacy reverse symlink, so delete it first if it's a symlink)
+[ -L /userdata/app/gk/printer_mutable.cfg ] && rm -f /userdata/app/gk/printer_mutable.cfg
 [ ! -f /userdata/app/gk/printer_mutable.cfg ] && echo "{}" > /userdata/app/gk/printer_mutable.cfg
 ln -sf /userdata/app/gk/printer_mutable.cfg $RINKHALS_HOME/printer_data/config/printer_mutable.cfg
 
