@@ -24,8 +24,38 @@
 		terminal.open(terminalContainer);
 		fitAddon.fit();
 
-		terminal.writeln('Connecting to Rinkhals...');
-		terminal.writeln('Welcome to the Rinkhals Web Terminal MVP!\r\n');
+		const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+		// In dev use localhost:8080 where Go runs, in prod use same host
+		const wsHost = import.meta.env.DEV ? 'localhost:8080' : window.location.host;
+		const ws = new WebSocket(`${protocol}//${wsHost}/api/terminal`);
+		ws.binaryType = 'arraybuffer';
+
+		ws.onopen = () => {
+			const dims = { cols: terminal.cols, rows: terminal.rows };
+			ws.send(JSON.stringify(dims));
+			terminal.focus();
+		};
+
+		ws.onmessage = (event) => {
+			if (event.data instanceof ArrayBuffer) {
+				terminal.write(new Uint8Array(event.data));
+			} else {
+				terminal.write(event.data);
+			}
+		};
+
+		terminal.onData((data) => {
+			if (ws.readyState === WebSocket.OPEN) {
+				// Send as text since server handles text as raw data too if it doesn't parse as JSON
+				ws.send(data); 
+			}
+		});
+
+		terminal.onResize((size) => {
+			if (ws.readyState === WebSocket.OPEN) {
+				ws.send(JSON.stringify({ cols: size.cols, rows: size.rows }));
+			}
+		});
 
 		// Handle resizing
 		const resizeObserver = new ResizeObserver(() => {
@@ -36,6 +66,7 @@
 		return () => {
 			resizeObserver.disconnect();
 			terminal.dispose();
+			ws.close();
 		};
 	});
 </script>

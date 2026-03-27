@@ -18,13 +18,15 @@
 
 	<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 		{#each apps as app}
+			{@const Icon = app.icon}
 			<a
 				href={app.url}
 				target="_blank"
 				class="bg-gray-800 rounded-xl p-6 border border-gray-700 hover:border-gray-500 transition-colors shadow-lg block"
 			>
 				<div class="flex items-center justify-between mb-4">
-					<svelte:component this={app.icon} size={32} class={app.color} />
+					
+					<Icon size={32} class={app.color} />
 					<span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-emerald-500/10 text-emerald-400">
 						{app.status}
 					</span>
