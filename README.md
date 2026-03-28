@@ -138,7 +138,9 @@ Current maintainers:
 Special thanks to those people for providing the base research and helping support for more printers:
 - **utkabobr** (https://github.com/utkabobr/DuckPro-Kobra3)
 - **systemik** (https://github.com/systemik/Kobra3-Firmware)
-- **moosbewohner** for Kobra 2 Pro support (https://github.com/moosbewohner/Rinkhals)
-- **Kalenell** and **woswai1337** for Kobra S1 support
-- **evil_santa**, **CalmFrog**, **basvd**, **_René**, **RadioRadio** and more for Kobra 3 Max support
-- Anycubic for the cool printer and the few OSS items (https://github.com/ANYCUBIC-3D/Kobra)
+- **moosbewohner** for Kobra 2 Pro support. (https://github.com/moosbewohner/Rinkhals)
+- **Kalenell** and **woswai1337** for Kobra S1 support.
+- **evil_santa**, **CalmFrog**, **basvd**, **_René**, **RadioRadio** and more for Kobra 3 Max support.
+- **AndrewS** for ethernet adapters USB testing and Kobra X firmware dump.
+- **Ac_K** for passwords and technical discovery of Kobra X.
+- Anycubic for the cool printer and the few OSS items. (https://github.com/ANYCUBIC-3D/Kobra)

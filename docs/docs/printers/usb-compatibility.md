@@ -6,8 +6,6 @@ title: USB devices compatibility
 
 Anycubic Kobra printers run a custom Linux Buildroot distribution. Compatibility depends on the drivers compiled into the kernel. 
 
-**Special thanks to AndrewS for the extensive hardware testing.*
-
 ## Ethernet Adapters
 
 Most "Nintendo Switch compatible" adapters work out of the box. Specifically, those based on the **ASIX AX88179/AX88179A** chipset are verified.

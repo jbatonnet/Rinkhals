@@ -11,8 +11,6 @@ title: Anycubic Kobra X (K4Pro)
 - **Ex/Im password**: `2YLVrATRvUEnMeXk6Vtc7qxfzYM4TJzrLnEBma8zpUKeGtseGWqp4LXs7e8KeU2u`
 - **SSH root password**: `rockchip`
 
-*Thanks to AndrewS for the system dump and Ac_K for passwords and technical discovery.*
-
 ## Software Architecture
 
 The Kobra X (K4 software base) represents a complete overhaul compared to the K3 series. It moves away from the Go-based "GoKlipper" stack (K3SysUi, gklib, gkapi) and introduces a C++ implementation of Klipper.
