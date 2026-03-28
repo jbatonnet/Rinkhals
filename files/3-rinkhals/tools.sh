@@ -57,6 +57,7 @@ check_compatibility() {
 is_supported_firmware() {
     SUPPORTED=0
     [ "$KOBRA_MODEL_CODE" = "KS1M" ] && [ "$KOBRA_VERSION" = "2.1.6" ] && SUPPORTED=1
+    [ "$KOBRA_MODEL_CODE" = "KS1M" ] && [ "$KOBRA_VERSION" = "2.6.6" ] && SUPPORTED=1
     [ "$KOBRA_MODEL_CODE" = "KS1" ] && [ "$KOBRA_VERSION" = "2.7.0.9" ] && SUPPORTED=1
     [ "$KOBRA_MODEL_CODE" = "KS1" ] && [ "$KOBRA_VERSION" = "2.7.0.7" ] && SUPPORTED=1
     [ "$KOBRA_MODEL_CODE" = "KS1" ] && [ "$KOBRA_VERSION" = "2.6.0.0" ] && SUPPORTED=1
@@ -64,9 +65,11 @@ is_supported_firmware() {
     [ "$KOBRA_MODEL_CODE" = "KS1" ] && [ "$KOBRA_VERSION" = "2.5.8.8" ] && SUPPORTED=1
     [ "$KOBRA_MODEL_CODE" = "K3V2" ] && [ "$KOBRA_VERSION" = "1.1.0.4" ] && SUPPORTED=1
     [ "$KOBRA_MODEL_CODE" = "K3V2" ] && [ "$KOBRA_VERSION" = "1.1.0.1" ] && SUPPORTED=1
-    [ "$KOBRA_MODEL_CODE" = "K3M" ] && [ "$KOBRA_VERSION" = "2.5.2.8" ] && SUPPORTED=1
+    [ "$KOBRA_MODEL_CODE" = "K3V2" ] && [ "$KOBRA_VERSION" = "1.1.2.7" ] && SUPPORTED=1
+    [ "$KOBRA_MODEL_CODE" = "K3V2" ] && [ "$KOBRA_VERSION" = "1.1.2.8" ] && SUPPORTED=1
     [ "$KOBRA_MODEL_CODE" = "K3M" ] && [ "$KOBRA_VERSION" = "2.5.1.7" ] && SUPPORTED=1
     [ "$KOBRA_MODEL_CODE" = "K3M" ] && [ "$KOBRA_VERSION" = "2.5.1.3" ] && SUPPORTED=1
+    [ "$KOBRA_MODEL_CODE" = "K3M" ] && [ "$KOBRA_VERSION" = "2.5.2.8" ] && SUPPORTED=1
     [ "$KOBRA_MODEL_CODE" = "K3" ] && [ "$KOBRA_VERSION" = "2.4.6.7" ] && SUPPORTED=1
     [ "$KOBRA_MODEL_CODE" = "K3" ] && [ "$KOBRA_VERSION" = "2.4.5" ] && SUPPORTED=1
     [ "$KOBRA_MODEL_CODE" = "K3" ] && [ "$KOBRA_VERSION" = "2.4.4.7" ] && SUPPORTED=1
