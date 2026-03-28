@@ -7,7 +7,7 @@
     let autoScroll = $state(true);
     let logContainer: HTMLElement;
     
-    let activeLog = $state('/var/log/rinkhals.log');
+    let activeLog = $state('/useremain/rinkhals/rinkhals.log');
     const logFiles = [
         { name: "Rinkhals", path: "/useremain/rinkhals/rinkhals.log" },
         { name: "Klipper (gklib)", path: "/useremain/log/gklib.log" },
