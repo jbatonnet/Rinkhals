@@ -3,33 +3,44 @@
     import { page } from '$app/stores';
     import { Save, FileText, AlertCircle, Loader2 } from 'lucide-svelte';
 
-    let filePath = $state($page.url.searchParams.get("path") || "/opt/rinkhals/start.sh");
+    let filePath = $state($page.url.searchParams.get("path") || "");
 
     let content = $state('');
     let loading = $state(false);
     let saving = $state(false);
+    let isFileLoaded = $state(false);
     let message = $state({ text: '', isError: false });
 
     async function loadFile() {
+        if (!filePath.trim()) {
+            message = { text: "Please enter a valid path to load", isError: true };
+            return;
+        }
+
         loading = true;
         message = { text: '', isError: false };
         try {
             const res = await fetch(`/api/download?path=${encodeURIComponent(filePath)}`);
             if (res.ok) {
                 content = await res.text();
+                isFileLoaded = true;
             } else {
                 message = { text: `Failed to load: ${res.statusText}`, isError: true };
                 content = '';
+                isFileLoaded = false;
             }
         } catch (e: any) {
             message = { text: `Error: ${e.message}`, isError: true };
             content = '';
+            isFileLoaded = false;
         } finally {
             loading = false;
         }
     }
 
     async function saveFile() {
+        if (!isFileLoaded && !content) return;
+        
         saving = true;
         message = { text: '', isError: false };
         try {
@@ -53,7 +64,9 @@
     }
 
     onMount(() => {
-        loadFile();
+        if (filePath) {
+            loadFile();
+        }
     });
 </script>
 
@@ -109,17 +122,24 @@
         </div>
     </div>
 
-    <div class="flex-1 rounded-xl overflow-hidden border border-gray-700 relative">
+    <div class="flex-1 rounded-xl overflow-hidden border border-gray-700 relative bg-gray-950">
         {#if loading}
             <div class="absolute inset-0 bg-gray-900/50 flex flex-col items-center justify-center z-10 backdrop-blur-sm">
                 <Loader2 size={48} class="text-emerald-500 animate-spin mb-4" />
                 <span class="text-gray-300 font-medium">Loading contents...</span>
             </div>
+        {:else if !isFileLoaded && !content}
+            <div class="absolute inset-0 flex flex-col items-center justify-center text-gray-500">
+                <FileText size={48} class="mb-4 opacity-50" />
+                <p class="text-lg font-medium">No file loaded</p>
+                <p class="text-sm">Enter a file path above, or begin typing to create a new file.</p>
+            </div>
         {/if}
         
         <textarea
             bind:value={content}
-            class="w-full h-full bg-gray-950 text-gray-300 font-mono text-sm p-4 focus:outline-none resize-none"
+            oninput={() => { if(!isFileLoaded) isFileLoaded = true; }}
+            class="w-full h-full bg-transparent text-gray-300 font-mono text-sm p-4 focus:outline-none resize-none relative z-0 {(!isFileLoaded && !content) ? 'opacity-0' : 'opacity-100'}"
             placeholder="File content..."
             spellcheck="false"
         ></textarea>

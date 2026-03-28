@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/subtle"
 	"embed"
 	"encoding/json"
 	"io"
@@ -64,7 +65,6 @@ func isTextFile(path string, info fs.FileInfo) bool {
 	}
 	return true
 }
-
 
 func handleFilesList(w http.ResponseWriter, r *http.Request) {
 	requestedPath := r.URL.Query().Get("path")
@@ -238,6 +238,7 @@ func handleTools(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{"success": true, "output": string(output)})
 }
+
 type FsRequest struct {
 	Action      string   `json:"action"`
 	Targets     []string `json:"targets"`
@@ -310,6 +311,78 @@ func handleFileSystem(w http.ResponseWriter, r *http.Request) {
 
 	json.NewEncoder(w).Encode(map[string]interface{}{"success": true})
 }
+
+func getCredentials() (string, string) {
+	authFile := "/useremain/home/rinkhals/monitor_auth.txt"
+	data, err := os.ReadFile(authFile)
+	if err != nil {
+		// Create default
+		defaultAuth := "admin:rinkhals"
+		os.WriteFile(authFile, []byte(defaultAuth), 0600)
+		return "admin", "rinkhals"
+	}
+	parts := strings.SplitN(strings.TrimSpace(string(data)), ":", 2)
+	if len(parts) == 2 {
+		return parts[0], parts[1]
+	}
+	return "admin", "rinkhals" // fallback
+}
+
+func basicAuthMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		expectedUser, expectedPass := getCredentials()
+
+		user, pass, ok := r.BasicAuth()
+		if !ok || subtle.ConstantTimeCompare([]byte(user), []byte(expectedUser)) != 1 || subtle.ConstantTimeCompare([]byte(pass), []byte(expectedPass)) != 1 {
+			w.Header().Set("WWW-Authenticate", `Basic realm="Rinkhals Terminal"`)
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
+func handleAuthStatus(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	user, pass := getCredentials()
+	isDefault := (user == "admin" && pass == "rinkhals")
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{"is_default": isDefault})
+}
+
+func handleAuthChange(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	if r.Method == "OPTIONS" {
+		w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+		return
+	}
+	if r.Method != "POST" {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req struct {
+		Username string `json:"username"`
+		Password string `json:"password"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Username == "" || req.Password == "" {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	authFile := "/useremain/home/rinkhals/monitor_auth.txt"
+	newAuth := req.Username + ":" + req.Password
+	if err := os.WriteFile(authFile, []byte(newAuth), 0600); err != nil {
+		http.Error(w, "Failed to save password", http.StatusInternalServerError)
+		return
+	}
+
+	json.NewEncoder(w).Encode(map[string]interface{}{"success": true})
+}
+
 func startWebServer() {
 	uiFS, err := fs.Sub(uiFiles, "ui")
 	if err != nil {
@@ -321,16 +394,21 @@ func startWebServer() {
 	mux.HandleFunc("/api/download", handleFileDownload)
 	mux.HandleFunc("/api/terminal", handleTerminal)
 	mux.HandleFunc("/api/tools", handleTools)
-        mux.HandleFunc("/api/fs", handleFileSystem)
+	mux.HandleFunc("/api/fs", handleFileSystem)
 	mux.HandleFunc("/api/metrics", handleMetrics)
 	mux.HandleFunc("/api/saveFile", handleSaveFile)
 	mux.HandleFunc("/api/services", handleServices)
 	mux.HandleFunc("/api/logstream", handleLogStream)
+	mux.HandleFunc("/api/auth/status", handleAuthStatus)
+	mux.HandleFunc("/api/auth/change", handleAuthChange)
 
-        mux.Handle("/", http.FileServer(http.FS(uiFS)))
+	mux.Handle("/", http.FileServer(http.FS(uiFS)))
 
-        log.Println("Starting Rinkhals Web Portal on :8090")
-        if err := http.ListenAndServe(":8090", mux); err != nil {
-                log.Fatalf("HTTP server failed: %v", err)
-        }
+	log.Println("Starting Rinkhals Web Portal on :8090")
+
+	protectedMux := basicAuthMiddleware(mux)
+
+	if err := http.ListenAndServe(":8090", protectedMux); err != nil {
+		log.Fatalf("HTTP server failed: %v", err)
+	}
 }

@@ -80,9 +80,4 @@
 	<div class="bg-gray-800 rounded-lg p-4 border border-gray-700 flex-1 relative overflow-hidden shadow-xl">
 		<div bind:this={terminalContainer} class="absolute inset-0 p-4"></div>
 	</div>
-
-	<div class="flex items-center space-x-2 text-yellow-500 bg-yellow-500/10 p-4 rounded-lg border border-yellow-500/20">
-		<AlertTriangle size={20} />
-		<p class="text-sm">This is an MVP mock for the Web Terminal. True integration to the Go backend is in-progress.</p>
-	</div>
 </div>

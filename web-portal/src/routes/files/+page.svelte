@@ -297,8 +297,8 @@
 <div class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
     <div class="bg-gray-800 border border-gray-700 rounded-xl p-6 max-w-md w-full shadow-2xl">
         <h2 class="text-xl font-bold text-white mb-4">Move {selectedFiles.size} Item(s)</h2>
-        <label class="block text-sm text-gray-400 mb-1">Destination Directory (absolute path):</label>
-        <input type="text" bind:value={modalInput} class="w-full bg-gray-950 border border-gray-600 rounded px-3 py-2 text-white mb-6 font-mono text-sm focus:outline-none focus:border-yellow-500" />
+        <label for="move_dest" class="block text-sm text-gray-400 mb-1">Destination Directory (absolute path):</label>
+        <input id="move_dest" type="text" bind:value={modalInput} class="w-full bg-gray-950 border border-gray-600 rounded px-3 py-2 text-white mb-6 font-mono text-sm focus:outline-none focus:border-yellow-500" />
         <div class="flex justify-end space-x-3">
             <button onclick={closeModals} class="px-4 py-2 rounded font-medium bg-gray-700 hover:bg-gray-600 text-white">Cancel</button>
             <button onclick={() => fsAction('move', Array.from(selectedFiles), modalInput)} class="px-4 py-2 rounded font-medium bg-yellow-600 hover:bg-yellow-500 text-white flex items-center">
@@ -314,8 +314,8 @@
 <div class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
     <div class="bg-gray-800 border border-gray-700 rounded-xl p-6 max-w-md w-full shadow-2xl">
         <h2 class="text-xl font-bold text-white mb-4">New Folder</h2>
-        <label class="block text-sm text-gray-400 mb-1">Folder Path:</label>
-        <input type="text" bind:value={modalInput} class="w-full bg-gray-950 border border-gray-600 rounded px-3 py-2 text-white mb-6 font-mono text-sm focus:outline-none focus:border-emerald-500" />
+        <label for="new_folder" class="block text-sm text-gray-400 mb-1">Folder Path:</label>
+        <input id="new_folder" type="text" bind:value={modalInput} class="w-full bg-gray-950 border border-gray-600 rounded px-3 py-2 text-white mb-6 font-mono text-sm focus:outline-none focus:border-emerald-500" />
         <div class="flex justify-end space-x-3">
             <button onclick={closeModals} class="px-4 py-2 rounded font-medium bg-gray-700 hover:bg-gray-600 text-white">Cancel</button>
             <button onclick={() => fsAction('mkdir', [], modalInput)} class="px-4 py-2 rounded font-medium bg-emerald-600 hover:bg-emerald-500 text-white flex items-center">

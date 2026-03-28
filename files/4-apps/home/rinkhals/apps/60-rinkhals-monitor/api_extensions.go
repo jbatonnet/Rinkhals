@@ -84,15 +84,15 @@ func handleServices(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method == "GET" {
 		services := []map[string]string{
-			{"id": "mainsail", "name": "Mainsail", "status": "Stopped"},
-			{"id": "fluidd", "name": "Fluidd", "status": "Stopped"},
-			{"id": "moonraker", "name": "Moonraker", "status": "Stopped"},
-			{"id": "mjpg-streamer", "name": "Webcam", "status": "Stopped"},
+			{"id": "25-mainsail", "name": "Mainsail", "status": "Stopped"},
+			{"id": "26-fluidd", "name": "Fluidd", "status": "Stopped"},
+			{"id": "40-moonraker", "name": "Moonraker", "status": "Stopped"},
+			{"id": "30-mjpg-streamer", "name": "Webcam", "status": "Stopped"},
 		}
-		
+
 		for _, s := range services {
-			out, _ := exec.Command("sh", "-c", "ps | grep -v grep | grep run_"+s["id"]).CombinedOutput()
-			if len(out) > 0 {
+			out, err := exec.Command("sh", "-c", "source /useremain/rinkhals/.current/tools.sh && get_app_status "+s["id"]).CombinedOutput()
+			if err == nil && string(out) != "" {
 				s["status"] = "Running"
 			}
 		}
@@ -106,11 +106,11 @@ func handleServices(w http.ResponseWriter, r *http.Request) {
 	}
 	json.NewDecoder(r.Body).Decode(&req)
 
-	cmdStr := fmt.Sprintf("source /opt/rinkhals/tools.sh && %s_app %s", req.Action, req.Service)
+	cmdStr := fmt.Sprintf("source /useremain/rinkhals/.current/tools.sh && %s_app %s", req.Action, req.Service)
 	if req.Action == "restart" {
-		cmdStr = fmt.Sprintf("source /opt/rinkhals/tools.sh && stop_app %s && sleep 1 && start_app %s", req.Service, req.Service)
+		cmdStr = fmt.Sprintf("source /useremain/rinkhals/.current/tools.sh && stop_app %s && sleep 1 && start_app %s", req.Service, req.Service)
 	}
-	
+
 	out, err := exec.Command("sh", "-c", cmdStr).CombinedOutput()
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"success": err == nil,
