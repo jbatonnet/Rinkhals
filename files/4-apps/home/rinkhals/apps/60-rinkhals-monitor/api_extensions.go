@@ -92,7 +92,7 @@ func handleServices(w http.ResponseWriter, r *http.Request) {
 
 		for _, s := range services {
 			out, err := exec.Command("sh", "-c", "source /useremain/rinkhals/.current/tools.sh && get_app_status "+s["id"]).CombinedOutput()
-			if err == nil && string(out) != "" {
+			if err == nil && strings.Contains(string(out), "started") {
 				s["status"] = "Running"
 			}
 		}
