@@ -88,6 +88,7 @@ func handleServices(w http.ResponseWriter, r *http.Request) {
 			{"id": "26-fluidd", "name": "Fluidd", "status": "Stopped"},
 			{"id": "40-moonraker", "name": "Moonraker", "status": "Stopped"},
 			{"id": "30-mjpg-streamer", "name": "Webcam", "status": "Stopped"},
+			{"id": "50-remote-display", "name": "Remote Display", "status": "Stopped"},
 		}
 
 		for _, s := range services {

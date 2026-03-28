@@ -1,15 +1,17 @@
 <script lang="ts">
 	import { onMount } from "svelte";
-	import { Box, Video } from "lucide-svelte";
-	
-	type AppInfo = { id: string; name: string; url?: string; port: string; icon: any; status: string; color: string; };
+        import { Box, Video, MonitorPlay } from "lucide-svelte";
 
-	let apps = $state<AppInfo[]>([]);
-	let loading = $state(true);
+        type AppInfo = { id: string; name: string; url?: string; port: string; icon: any; status: string; color: string; };
 
-	const appBlueprints: Record<string, Partial<AppInfo>> = {
+        let apps = $state<AppInfo[]>([]);
+        let loading = $state(true);
+
+        const appBlueprints: Record<string, Partial<AppInfo>> = {
                 "25-mainsail": { port: "4409", icon: Box, color: "text-blue-400" },
                 "26-fluidd": { port: "4408", icon: Box, color: "text-indigo-400" },
+                "30-mjpg-streamer": { port: "8080", icon: Video, color: "text-emerald-400" },
+                "50-remote-display": { port: "5800", icon: MonitorPlay, color: "text-purple-400" }
 	};
 
 	onMount(async () => {
