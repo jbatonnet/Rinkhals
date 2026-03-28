@@ -76,11 +76,12 @@
 				<span class="font-medium">System Logs</span>
 			</a>
 			<a href="/terminal" class="flex items-center space-x-3 px-4 py-3 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"><Terminal size={20} /><span class="font-medium">Terminal</span></a>
-			<a href="/management" class="flex items-center space-x-3 px-4 py-3 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"><Settings size={20} /><span class="font-medium">Machine Settings</span></a>
 			<a href="/editor" class="flex items-center space-x-3 px-4 py-3 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors">
 				<FileText size={20} />
 				<span class="font-medium">Text Editor</span>
 			</a>
+                        <a href="/management" class="flex items-center space-x-3 px-4 py-3 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"><Settings size={20} /><span class="font-medium">Manage Rinkhals</span></a>
+
 		</nav>
 	</aside>
 
