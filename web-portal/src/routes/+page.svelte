@@ -8,9 +8,8 @@
 	let loading = $state(true);
 
 	const appBlueprints: Record<string, Partial<AppInfo>> = {
-                "25-mainsail": { port: "4408", icon: Box, color: "text-blue-400" },
-                "26-fluidd": { port: "4409", icon: Box, color: "text-indigo-400" },
-                "30-mjpg-streamer": { port: "8080", icon: Video, color: "text-emerald-400" }
+                "25-mainsail": { port: "4409", icon: Box, color: "text-blue-400" },
+                "26-fluidd": { port: "4408", icon: Box, color: "text-indigo-400" },
 	};
 
 	onMount(async () => {
