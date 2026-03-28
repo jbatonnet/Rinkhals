@@ -150,6 +150,24 @@ RUN --mount=type=cache,sharing=locked,target=/var/cache/apt \
     rm -rf /var/lib/apt/lists/*
 
 ###############################################################
+# build-monitor-ui builds the Svelte UI
+FROM node:22-bookworm AS build-monitor-ui
+COPY ./web-portal /web-portal
+WORKDIR /web-portal
+RUN npm ci
+RUN npm run build
+
+###############################################################
+# build-monitor-backend builds the Go backend
+FROM golang:1.24-alpine AS build-monitor-backend
+COPY ./files/4-apps/home/rinkhals/apps/60-rinkhals-monitor /app
+COPY --from=build-monitor-ui /web-portal/build /app/ui
+WORKDIR /app
+RUN apk update && apk add upx
+RUN GOOS=linux GOARCH=arm go build -ldflags="-s -w" -trimpath -v -o rinkhals-monitor
+RUN upx --lzma rinkhals-monitor || true
+
+###############################################################
 # app-mainsail prepares Mainsail app files
 FROM build-base AS app-mainsail
 COPY ./build/4-apps/25-mainsail/* /build/
@@ -252,6 +270,16 @@ COPY --from=app-remote-display /files/4-apps/ /bundle/rinkhals/
 COPY ./files/3-rinkhals /bundle/rinkhals/
 COPY ./files/4-apps /bundle/rinkhals/
 COPY ./files/*.* /bundle/
+
+# Clean up Go stuff and inject built UI and binaries
+RUN rm -rf /bundle/rinkhals/home/rinkhals/apps/60-rinkhals-monitor/ui/* \
+    && rm -f /bundle/rinkhals/home/rinkhals/apps/60-rinkhals-monitor/*.go \
+    && rm -f /bundle/rinkhals/home/rinkhals/apps/60-rinkhals-monitor/go.* \
+    && rm -f /bundle/rinkhals/home/rinkhals/apps/60-rinkhals-monitor/update-layout.js \
+    && rm -f /bundle/rinkhals/home/rinkhals/apps/60-rinkhals-monitor/rinkhals-monitor
+COPY --from=build-monitor-ui /web-portal/build/ /bundle/rinkhals/home/rinkhals/apps/60-rinkhals-monitor/ui/
+COPY --from=build-monitor-backend /app/rinkhals-monitor /bundle/rinkhals/home/rinkhals/apps/60-rinkhals-monitor/rinkhals-monitor
+RUN chmod +x /bundle/rinkhals/home/rinkhals/apps/60-rinkhals-monitor/rinkhals-monitor
 
 # Remove everything but shell patches
 RUN find /bundle/rinkhals/opt/rinkhals/patches -type f ! -name "*.sh" -exec rm {} +

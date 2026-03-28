@@ -1,0 +1,7 @@
+{
+  "$schema": "https://rinkhals.readthedocs.io/schema/app/1.json",
+  "$version": "1",
+  "name": "Rinkhals Monitor",
+  "version": "1.0",
+  "description": "Web portal and system dashboard"
+}
