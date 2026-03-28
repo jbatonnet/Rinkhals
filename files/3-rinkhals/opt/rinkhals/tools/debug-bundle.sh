@@ -87,6 +87,7 @@ if [ -e /mnt/udisk ]; then
     mkdir -p /mnt/udisk/aGVscF9zb3Nf
     cp debug-bundle.zip /mnt/udisk/aGVscF9zb3Nf/debug-bundle_${ID}_${DATE}.zip
 fi
+cp debug-bundle.zip /tmp/debug-bundle.zip
 
 # Cleanup
 cd

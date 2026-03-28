@@ -9,10 +9,10 @@ function beep() {
 UPDATE_PATH="/useremain/update_swu"
 
 RINKHALS_PATH="/useremain/rinkhals"
-RINKHALS_ROOT=$(dirname $(realpath /useremain/rinkhals/.current))
+RINKHALS_CURRENT=$(realpath /useremain/rinkhals/.current)
 
 # List all directories in RINKHALS_PATH except symlinks
-installs=$(find "$RINKHALS_PATH" -mindepth 1 -maxdepth 1 -type d ! -lname '*')
+installs=$(find "$RINKHALS_PATH" -mindepth 1 -maxdepth 1 -type d ! -type l)
 
 # Separate installs with and without date prefix (YYYYMMDD_)
 non_dates_installs=""
@@ -20,7 +20,7 @@ dates_installs=""
 
 for i in $installs; do
     basename=$(basename "$i")
-    if [ "$i" = "$RINKHALS_ROOT" ] || [ "$basename" = "dev" ]; then
+    if [ "$i" = "$RINKHALS_CURRENT" ] || [ "$basename" = "dev" ]; then
         continue
     fi
     if echo "$basename" | grep -qE '^20[0-9]{6}_'; then
