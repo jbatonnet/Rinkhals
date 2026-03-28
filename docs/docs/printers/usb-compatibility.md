@@ -2,19 +2,24 @@
 title: USB devices compatibility
 ---
 
+## Overview
+
+Anycubic Kobra printers run a custom Linux Buildroot distribution. Compatibility depends on the drivers compiled into the kernel. 
+
+**Special thanks to AndrewS for the extensive hardware testing.*
+
+## Ethernet Adapters
+
+Most "Nintendo Switch compatible" adapters work out of the box. Specifically, those based on the **ASIX AX88179/AX88179A** chipset are verified.
+
+### Verified Working Models
+
+| Manufacturer | Model / Reference | Link |
+| :--- | :--- | :--- |
+| **Amazon Basics** | USB 3.0 to Gigabit Ethernet | [Amazon](https://a.co/d/hlnewaz) |
+| **TP-Link** | UE306 (Foldable Design) | [Amazon](https://a.co/d/0bOLvcum) |
+| **UGREEN** | 20256 (USB 3.0) | [Amazon](https://a.co/d/03IOsCMa) |
+
 ## Cameras
 
-X
-
-
-## Ethernet
-
-USB to Ethernet adapters using the AX88179 chip have been tested and are compatible with Kobra printers.
-Thanks to AndrewS for all the testing.
-
-For example:
-
-- [Amazon Basics USB 3.0 to 10/100/1000 Gigabit Ethernet Adapter](https://a.co/d/hlnewaz)
-- TPLink UE306 USB Ethernet Adapter
-- Ugreen 20256
-- Many other "Nintendo Switch Compatible" Ethernet adapters
+Status: Currently unknown.
