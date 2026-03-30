@@ -239,9 +239,19 @@ EOT
 
 
 ###############################################################
+# build-patcher builds the dynamic patcher
+FROM golang:1.23 AS build-patcher
+WORKDIR /app
+COPY ./patcher /app/patcher
+WORKDIR /app/patcher
+# Build for ARM32 which is the target architecture for Kobra 3
+RUN GOOS=linux GOARCH=arm go build -ldflags="-s -w" -o /rinkhals-patcher .
+
+###############################################################
 # prepare-bundle collects all files and prepares a bundle
 FROM build-base AS prepare-bundle
 
+COPY --from=build-patcher /rinkhals-patcher /bundle/rinkhals/opt/rinkhals/bin/rinkhals-patcher
 COPY --from=buildroot-rebuild /files/1-buildroot/ /bundle/rinkhals/
 COPY --from=build-python-armv7 /files/2-python/ /bundle/rinkhals/
 COPY --from=app-mainsail /files/4-apps/ /bundle/rinkhals/
@@ -253,8 +263,8 @@ COPY ./files/3-rinkhals /bundle/rinkhals/
 COPY ./files/4-apps /bundle/rinkhals/
 COPY ./files/*.* /bundle/
 
-# Remove everything but shell patches
-RUN find /bundle/rinkhals/opt/rinkhals/patches -type f ! -name "*.sh" -exec rm {} +
+# Remove the old static patches logic entirely since we use the native dynamic patcher
+RUN rm -rf /bundle/rinkhals/opt/rinkhals/patches /bundle/rinkhals/opt/rinkhals/scripts/create-patch.py /bundle/rinkhals/opt/rinkhals/scripts/factory_mode_patch.py
 
 # Rename busybox (to avoid conflict with stock) and update all symlinks
 RUN <<EOT

@@ -260,9 +260,9 @@ export LD_LIBRARY_PATH=/userdata/app/gk:$LD_LIBRARY_PATH
 TARGETS="gkapi K3SysUi"
 
 for TARGET in $TARGETS; do
-    TARGET_PATCH=/opt/rinkhals/patches/${TARGET}.${KOBRA_MODEL_CODE}_${KOBRA_VERSION}.sh
+    PATCHER_BIN="/opt/rinkhals/bin/rinkhals-patcher"
 
-    if [ -f $TARGET_PATCH ]; then
+    if [ -f "$PATCHER_BIN" ]; then
         # Little dance to patch binaries
         # We should be able to delete the file after starting it, Linux will keep the inode alive until the process exits (https://stackoverflow.com/a/196910)
         # But those binaries checks for their location, so moving does the trick instead
@@ -271,7 +271,16 @@ for TARGET in $TARGETS; do
         rm -rf $TARGET.original 2> /dev/null
         mv $TARGET $TARGET.original
         cp $TARGET.original $TARGET
-        $TARGET_PATCH $TARGET &> /dev/null
+        
+        $PATCHER_BIN --binary $TARGET > /tmp/rinkhals-patcher-$TARGET.log 2>&1
+        
+        if [ -f "${TARGET}.patched" ]; then
+            mv ${TARGET}.patched $TARGET
+        else
+            echo "Warning: failed to patch $TARGET" >> /tmp/rinkhals-patcher-$TARGET.log
+            mv $TARGET.original $TARGET
+        fi
+
         chmod +x $TARGET
     fi
 done

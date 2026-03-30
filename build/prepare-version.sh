@@ -80,21 +80,7 @@ for PRINTER_MODEL_CODE in $PRINTER_MODEL_CODES; do
             touch $VERSION_DIRECTORY/update_swu/.complete
         fi
 
-        # Patch K3SysUi
-        DEST_K3SYSUI_PATH=$BASE_DIRECTORY/files/3-rinkhals/opt/rinkhals/patches/K3SysUi.${PRINTER_MODEL_CODE}_${SUPPORTED_VERSION}
-        if [ ! -f $DEST_K3SYSUI_PATH ]; then
-            cp -f $VERSION_DIRECTORY/update_swu/app/K3SysUi $DEST_K3SYSUI_PATH
-        fi
-
-        python $BASE_DIRECTORY/files/3-rinkhals/opt/rinkhals/scripts/create-patch.py $DEST_K3SYSUI_PATH
-
-        # Patch gkapi
-        DEST_GKAPI_PATH=$BASE_DIRECTORY/files/3-rinkhals/opt/rinkhals/patches/gkapi.${PRINTER_MODEL_CODE}_${SUPPORTED_VERSION}
-        if [ ! -f $DEST_GKAPI_PATH ]; then
-            cp -f $VERSION_DIRECTORY/update_swu/app/gkapi $DEST_GKAPI_PATH
-        fi
-        
-        python $BASE_DIRECTORY/files/3-rinkhals/opt/rinkhals/scripts/create-patch.py $DEST_GKAPI_PATH
+        # Extract but skip static patches - migrated to Go dynamic patcher
 
         # TODO: Hash printer.cfg
 
