@@ -2170,6 +2170,72 @@ class MmuAcePatcher:
 
     def patch_print_data(self, print_data: dict):
 
+        # ── ext_spool auto-detect (Kobra 3 / Kobra 3 Combo) ──────────
+        # Problem: printing without ACE Pro connected fails with error 11503
+        # Cause 1: T0 in start gcode triggers filament hub API call
+        # Cause 2: .acm file (AMS Color Map) triggers multicolor mode
+        # Fix: auto-detect ACE via self.ace.enabled and handle both files
+        # Note: T0 in start gcode is required for single-color ACE printing
+        import os as _os, re as _re
+        try:
+            _fn = print_data.get('filename', '')
+            if _fn:
+                _dirs = ['/useremain/app/gk/gcodes', '/userdata/app/gk/gcodes']
+                _gcode = next(
+                    (p for p in [_fn] + [_os.path.join(d, _fn) for d in _dirs]
+                     if _os.path.isfile(p)), None
+                )
+                logging.info(
+                    f"[ext_spool] ace.enabled={self.ace.enabled} | file={_gcode}"
+                )
+                if _gcode:
+                    _base    = _os.path.splitext(_gcode)[0]
+                    _acm     = _base + '.acm'
+                    _acm_dis = _base + '.acm.disabled'
+
+                    with open(_gcode, 'r') as _f:
+                        _content = _f.read()
+
+                    if not self.ace.enabled:
+                        # No ACE connected: disable T0 and ACM file
+                        _patched = _re.sub(
+                            r'(?m)^T0[ 	]*$',
+                            '; T0 disabled (no ACE connected)',
+                            _content
+                        )
+                        if _patched != _content:
+                            with open(_gcode, 'w') as _f:
+                                _f.write(_patched)
+                            logging.info(f"[ext_spool] T0 disabled in: {_gcode}")
+                        else:
+                            logging.info("[ext_spool] T0 not found or already disabled")
+
+                        if _os.path.isfile(_acm):
+                            _os.rename(_acm, _acm_dis)
+                            logging.info(f"[ext_spool] ACM disabled: {_acm}")
+                        elif _os.path.isfile(_acm_dis):
+                            logging.info("[ext_spool] ACM was already disabled")
+                        else:
+                            logging.info("[ext_spool] No ACM file - OK")
+                    else:
+                        # ACE connected: restore T0 and ACM file
+                        _restored = _re.sub(
+                            r'(?m)^; T0 disabled \(no ACE connected\)[ 	]*$',
+                            'T0',
+                            _content
+                        )
+                        if _restored != _content:
+                            with open(_gcode, 'w') as _f:
+                                _f.write(_restored)
+                            logging.info(f"[ext_spool] T0 restored in: {_gcode}")
+
+                        if _os.path.isfile(_acm_dis):
+                            _os.rename(_acm_dis, _acm)
+                            logging.info(f"[ext_spool] ACM restored: {_acm}")
+        except Exception as _e:
+            logging.error(f"[ext_spool] auto-detect error: {_e}", exc_info=True)
+        # ── end ext_spool auto-detect ─────────────────────────────────
+
         # add gate mapping for multi color printing
         if self.ace.enabled and "ams_settings" not in print_data:
 
