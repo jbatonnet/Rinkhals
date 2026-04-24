@@ -91,15 +91,17 @@ For more information about installation, firmware updates and details about spec
 
 After installation, Rinkhals provides a touch UI accessible from the printer screen when you tap the Settings icon, then tap Rinkhals.
 
-This UI allows you to manage installed apps, trigger an OTA update, reboot your printer and much more. This will allow you to customize your experience and keep the printer memory as low as needed based on your needs.
+The main menu gives you quick access to four areas arranged in a 2×2 grid:
+- **Manage apps** — enable, disable, start and stop individual apps
+- **App Store** — browse and install community apps directly from the printer screen (see below)
+- **Updates** — check for and apply OTA Rinkhals updates
+- **Settings** — advanced options, reboot controls and system information
 
 <p align="center">
-    <!-- <img width="192" src="./.github/images/screenshot-settings.png"> -->
     <img width="192" src="./docs/docs/assets/rinkhals-ui/ui-main.png">
     <img width="192" src="./docs/docs/assets/rinkhals-ui/ui-apps.png">
-    <img width="192" src="./docs/docs/assets/rinkhals-ui/ui-apps-moonraker.png">
+    <img width="192" src="./docs/docs/assets/rinkhals-ui/ui-app-store.png">
     <img width="192" src="./docs/docs/assets/rinkhals-ui/ui-updates.png">
-    <!-- <img width="192" src="./.github/images/screenshot-rinkhals-advanced.png"> -->
 </p>
 
 ## Rinkhals Installer
@@ -119,6 +121,17 @@ An apps system is provided in Rinkhals. It allows for the users to easily add so
 - https://github.com/basvd/Rinkhals.WebUI (a web interface for Rinkhals)
 
 Instructions on how to install or develop apps are on the other repo as well.
+
+### App Store
+
+The Rinkhals Touch UI includes a built-in **App Store** that lets you browse, install and remove community apps without leaving the printer screen. Apps are sourced directly from [jbatonnet/Rinkhals.Apps](https://github.com/jbatonnet/Rinkhals.Apps) on GitHub.
+
+<p align="center">
+    <img width="192" src="./docs/docs/assets/rinkhals-ui/ui-app-store.png">
+    <img width="192" src="./docs/docs/assets/rinkhals-ui/ui-app-store-detail.png">
+</p>
+
+To use it, open the Rinkhals Touch UI and tap **App Store**. The store will fetch the latest app list, show version info and flag already-installed apps. Tap any app to see its description, then tap **Install** or **Remove** as needed.
 
 
 <p align="center">
@@ -153,4 +166,5 @@ Special thanks to those people for providing the base research and helping suppo
 - **evil_santa**, **CalmFrog**, **basvd**, **_René**, **RadioRadio** and more for Kobra 3 Max support.
 - **AndrewS** for ethernet adapters USB testing and Kobra X firmware dump.
 - **Ac_K** for passwords and technical discovery of Kobra X.
+- **clutchthrower** for the built-in App Store in the Touch UI.
 - Anycubic for the cool printer and the few OSS items. (https://github.com/ANYCUBIC-3D/Kobra)
