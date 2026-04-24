@@ -1195,11 +1195,16 @@ class RinkhalsUiApp(BaseApp):
         def fetch_apps():
             try:
                 import requests
+                api_headers = {'User-Agent': 'Rinkhals-AppStore/1.0'}
                 api_url = f'https://api.github.com/repos/{self.APP_STORE_REPO}/contents/apps'
-                response = requests.get(api_url, timeout=10)
+                response = requests.get(api_url, headers=api_headers, timeout=10)
                 if response.status_code != 200:
+                    if response.status_code == 403 and response.headers.get('X-RateLimit-Remaining') == '0':
+                        msg = 'Rate limit exceeded\nTry again in a few minutes'
+                    else:
+                        msg = f'Failed to load ({response.status_code})'
                     with lvr.lock():
-                        label_loading.set_text(f'Failed to load ({response.status_code})')
+                        label_loading.set_text(msg)
                     return
 
                 entries = response.json()
@@ -1215,7 +1220,7 @@ class RinkhalsUiApp(BaseApp):
 
                     manifest_url = f'https://raw.githubusercontent.com/{self.APP_STORE_REPO}/{self.APP_STORE_BRANCH}/apps/{app_dir}/app.json'
                     try:
-                        manifest_response = requests.get(manifest_url, timeout=5)
+                        manifest_response = requests.get(manifest_url, headers=api_headers, timeout=5)
                         if manifest_response.status_code == 200:
                             app_manifest = json.loads(manifest_response.text, cls=JSONWithCommentsDecoder)
                         else:
@@ -1305,6 +1310,7 @@ class RinkhalsUiApp(BaseApp):
         def do_install():
             target_dir = f'{RINKHALS_HOME}/apps/{app_dir}'
             api_url = f'https://api.github.com/repos/{self.APP_STORE_REPO}/contents/apps/{app_dir}'
+            api_headers = {'User-Agent': 'Rinkhals-AppStore/1.0'}
 
             try:
                 import requests
@@ -1313,7 +1319,7 @@ class RinkhalsUiApp(BaseApp):
                     self.modal_store_install.label_progress_text.set_text('Fetching file list...')
 
                 def collect_files(url):
-                    r = requests.get(url, timeout=10)
+                    r = requests.get(url, headers=api_headers, timeout=10)
                     if r.status_code != 200:
                         raise Exception(f'HTTP {r.status_code} listing {url}')
                     files = []
@@ -1349,10 +1355,11 @@ class RinkhalsUiApp(BaseApp):
                     file_path = os.path.join(target_dir, rel_path)
                     os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
-                    file_response = requests.get(download_url, timeout=30)
-                    file_response.raise_for_status()
-                    with open(file_path, 'wb') as f:
-                        f.write(file_response.content)
+                    with requests.get(download_url, headers=api_headers, timeout=120, stream=True) as file_response:
+                        file_response.raise_for_status()
+                        with open(file_path, 'wb') as f:
+                            for chunk in file_response.iter_content(chunk_size=65536):
+                                f.write(chunk)
 
                     if rel_path.endswith('.sh'):
                         os.chmod(file_path, 0o755)
