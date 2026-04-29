@@ -11,16 +11,9 @@ quit() {
     echo
     log "/!\\ Startup failed, stopping Rinkhals..."
 
-    B=/sys/class/pwm/pwmchip0/pwm0
-    echo 0 > $B/enable; echo 0 > $B/duty_cycle
-    echo 3817000 > $B/period; echo 1526800 > $B/duty_cycle; echo 1 > $B/enable
-    usleep 300000; echo 0 > $B/enable; usleep 100000
-    echo 0 > $B/duty_cycle
-    echo 4545000 > $B/period; echo 1818000 > $B/duty_cycle; echo 1 > $B/enable
-    usleep 300000; echo 0 > $B/enable; usleep 100000
-    echo 0 > $B/duty_cycle
-    echo 5714000 > $B/period; echo 2285600 > $B/duty_cycle; echo 1 > $B/enable
-    usleep 600000; echo 0 > $B/enable
+    beep 500
+    msleep 500
+    beep 500
 
     ./stop.sh
     touch /useremain/rinkhals/.disable-rinkhals
@@ -366,14 +359,3 @@ rm /useremain/rinkhals/.reboot-marker 2> /dev/null
 
 echo
 log "Rinkhals started"
-
-ta_da() {
-    B=/sys/class/pwm/pwmchip0/pwm0
-    echo 0 > $B/enable; echo 0 > $B/duty_cycle
-    echo 2551000 > $B/period; echo 1020400 > $B/duty_cycle; echo 1 > $B/enable
-    usleep 180000; echo 0 > $B/enable; usleep 50000
-    echo 0 > $B/duty_cycle
-    echo 1912000 > $B/period; echo 764800 > $B/duty_cycle; echo 1 > $B/enable
-    usleep 280000; echo 0 > $B/enable
-}
-ta_da &
