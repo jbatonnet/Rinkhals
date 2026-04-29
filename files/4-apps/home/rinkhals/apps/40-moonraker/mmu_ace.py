@@ -2217,6 +2217,60 @@ class MmuAcePatcher:
 
     def patch_print_data(self, print_data: dict):
 
+        # ── ext_spool auto-detect (Kobra 3 / Kobra 3 Combo) ──────────
+        # Fix for issue 433 / 448: Disable T0 and ACM files when no ACE hub is connected.
+        import os as _os
+
+        def _toggle_tools_in_gcode(filepath: str, disable: bool):
+            try:
+                with open(filepath, 'r+b') as f:
+                    for _ in range(2000):  # Scans first 2000 lines (very fast)
+                        pos = f.tell()
+                        line = f.readline()
+                        if not line:
+                            break
+                        stripped = line.lstrip()
+
+                        if disable:
+                            if stripped == b'T0\n' or stripped == b'T0\r\n' or stripped.startswith(b'T0 '):
+                                idx = line.find(b'T0')
+                                f.seek(pos + idx)
+                                f.write(b';T')
+                                f.readline()  # consume the rest of the line
+                                logging.info(f"[ext_spool] Disabled T0 at offset {pos + idx}")
+                        else:
+                            if stripped == b';T\n' or stripped == b';T\r\n' or stripped.startswith(b';T '):
+                                idx = line.find(b';T')
+                                f.seek(pos + idx)
+                                f.write(b'T0')
+                                f.readline()  # consume the rest of the line
+                                logging.info(f"[ext_spool] Restored T0 at offset {pos + idx}")
+            except Exception as e:
+                logging.error(f"[ext_spool] Failed to toggle T0 in {filepath}: {e}")
+
+        try:
+            filename = print_data.get('filename')
+            if filename:
+                gcode_path = _os.path.join('/userdata/app/gk/printer_data/gcodes', filename.lstrip('/'))
+                if _os.path.exists(gcode_path):
+                    base_name, _ = _os.path.splitext(gcode_path)
+                    acm_path = base_name + '.acm'
+                    acm_dis_path = base_name + '.acm.disabled'
+
+                    if self.ace.enabled:
+                        if _os.path.exists(acm_dis_path):
+                            _os.rename(acm_dis_path, acm_path)
+                            logging.info(f"[ext_spool] Restored ACM metadata {acm_path}")
+                        _toggle_tools_in_gcode(gcode_path, disable=False)
+                    else:
+                        if _os.path.exists(acm_path):
+                            _os.rename(acm_path, acm_dis_path)
+                            logging.info(f"[ext_spool] Disabled ACM metadata {acm_path}")
+                        _toggle_tools_in_gcode(gcode_path, disable=True)
+        except Exception as e:
+            logging.error(f"[ext_spool] auto-detect error: {e}", exc_info=True)
+        # ── end ext_spool auto-detect ─────────────────────────────────
+
         # add gate mapping for multi color printing
         if self.ace.enabled and "ams_settings" not in print_data:
 
