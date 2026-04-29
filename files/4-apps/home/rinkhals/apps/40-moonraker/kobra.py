@@ -696,7 +696,7 @@ class Kobra:
                         state = 'printing'
                     if state.lower() == 'onpause':
                         state = 'paused'
-                    if state.lower() in ['complete', 'print_complete', 'finished']:
+                    if state.lower() in ['complete', 'completed', 'print_complete', 'finished', 'finish', 'done']:
                         state = 'complete'
 
                     # Ensures same string memory location for Moonraker job_state check (https://github.com/jbatonnet/Rinkhals/issues/118#issuecomment-2980916709)
