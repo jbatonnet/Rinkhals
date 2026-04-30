@@ -891,39 +891,24 @@ class Kobra:
     def patch_machine_power_actions(self):
         from .machine import Machine
 
-        def wrap__handle_machine_request(original__handle_machine_request):
-            async def _handle_machine_request(me, web_request):
-                ep = web_request.get_endpoint()
+        logging.info('> Patching machine exec_sudo_command handling...')
 
-                if ep in ("/machine/reboot", "machine.reboot", "/machine/shutdown", "machine.shutdown"):
-                    action_name = ep.split('/')[-1].split('.')[-1]
-                    cmd = "reboot" if action_name == "reboot" else "poweroff"
-                    
-                    if me.inside_container:
-                        virt_id = me.system_info.get('virtualization', {}).get(
-                            'virt_identifier', 'none'
-                        )
-                        raise me.server.error(
-                            f"Cannot {action_name} from within a {virt_id} container"
-                        )
+        original_exec_sudo_command = Machine.exec_sudo_command
 
-                    logging.info(f'[Kobra] Intercepting machine {action_name} request')
-                    self._schedule_native_machine_action(cmd)
-                    return "ok"
-
-                return await original__handle_machine_request(me, web_request)
-
-            return _handle_machine_request
-
-        logging.info('> Patching machine reboot handling...')
-
-        logging.debug(f'  Before: {Machine._handle_machine_request}')
-        setattr(
-            Machine,
-            '_handle_machine_request',
-            wrap__handle_machine_request(Machine._handle_machine_request)
-        )
-        logging.debug(f'  After: {Machine._handle_machine_request}')
+        async def wrap_exec_sudo_command(me, command: str, tries: int = 1, timeout=2.):
+            if command in ("systemctl reboot", "reboot", "/sbin/reboot"):
+                logging.info('[Kobra] Intercepting sudo command for reboot')
+                self._schedule_native_machine_action("reboot")
+                return ""
+            elif command in ("systemctl poweroff", "systemctl halt", "poweroff", "halt", "/sbin/poweroff", "/sbin/halt"):
+                logging.info('[Kobra] Intercepting sudo command for shutdown')
+                self._schedule_native_machine_action("poweroff")
+                return ""
+            
+            return await original_exec_sudo_command(me, command, tries, timeout)
+            
+        Machine.exec_sudo_command = wrap_exec_sudo_command
+        logging.info('> Patched Machine.exec_sudo_command')
 
     def patch_spoolman(self):
         from .spoolman import SpoolManager
