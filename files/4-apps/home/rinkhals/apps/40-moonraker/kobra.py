@@ -872,21 +872,21 @@ class Kobra:
         setattr(Machine, '_parse_network_interfaces', _parse_network_interfaces)
         logging.debug(f'  After: {Machine._parse_network_interfaces}')
 
-    async def _run_native_machine_reboot(self):
+    async def _run_native_machine_action(self, action: str):
         await asyncio.sleep(0.1)
 
         try:
             subprocess.Popen(
-                ['sh', '-c', 'sync && /sbin/reboot'],
+                ['sh', '-c', f'sync && /sbin/{action}'],
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
             )
         except Exception:
-            logging.exception('[Kobra] Failed to launch native host reboot')
+            logging.exception(f'[Kobra] Failed to launch native host {action}')
 
-    def _schedule_native_machine_reboot(self):
-        logging.info('[Kobra] Scheduling native host reboot')
-        self.server.get_event_loop().create_task(self._run_native_machine_reboot())
+    def _schedule_native_machine_action(self, action: str):
+        logging.info(f'[Kobra] Scheduling native host {action}')
+        self.server.get_event_loop().create_task(self._run_native_machine_action(action))
 
     def patch_machine_power_actions(self):
         from .machine import Machine
@@ -895,17 +895,20 @@ class Kobra:
             async def _handle_machine_request(me, web_request):
                 ep = web_request.get_endpoint()
 
-                if ep == "/machine/reboot":
+                if ep in ("/machine/reboot", "machine.reboot", "/machine/shutdown", "machine.shutdown"):
+                    action_name = ep.split('/')[-1].split('.')[-1]
+                    cmd = "reboot" if action_name == "reboot" else "poweroff"
+                    
                     if me.inside_container:
                         virt_id = me.system_info.get('virtualization', {}).get(
                             'virt_identifier', 'none'
                         )
                         raise me.server.error(
-                            f"Cannot {ep.split('/')[-1]} from within a {virt_id} container"
+                            f"Cannot {action_name} from within a {virt_id} container"
                         )
 
-                    logging.info('[Kobra] Intercepting machine reboot request')
-                    self._schedule_native_machine_reboot()
+                    logging.info(f'[Kobra] Intercepting machine {action_name} request')
+                    self._schedule_native_machine_action(cmd)
                     return "ok"
 
                 return await original__handle_machine_request(me, web_request)

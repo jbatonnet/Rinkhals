@@ -131,29 +131,40 @@ class KobraMachineRebootPatchTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_reboot_request_is_intercepted_and_scheduled(self):
         scheduled = []
-        self.kobra._schedule_native_machine_reboot = lambda: scheduled.append(True)
+        self.kobra._schedule_native_machine_action = lambda action: scheduled.append(action)
 
         machine = self.machine_module.Machine()
         result = await machine._handle_machine_request(DummyWebRequest("/machine/reboot"))
 
         self.assertEqual(result, "ok")
-        self.assertEqual(scheduled, [True])
+        self.assertEqual(scheduled, ["reboot"])
         self.assertEqual(machine.original_calls, [])
 
-    async def test_non_reboot_request_falls_back_to_original_handler(self):
+    async def test_shutdown_request_is_intercepted_and_scheduled(self):
         scheduled = []
-        self.kobra._schedule_native_machine_reboot = lambda: scheduled.append(True)
+        self.kobra._schedule_native_machine_action = lambda action: scheduled.append(action)
 
         machine = self.machine_module.Machine()
         result = await machine._handle_machine_request(DummyWebRequest("/machine/shutdown"))
 
-        self.assertEqual(result, "original:/machine/shutdown")
+        self.assertEqual(result, "ok")
+        self.assertEqual(scheduled, ["poweroff"])
+        self.assertEqual(machine.original_calls, [])
+
+    async def test_non_power_request_falls_back_to_original_handler(self):
+        scheduled = []
+        self.kobra._schedule_native_machine_action = lambda action: scheduled.append(action)
+
+        machine = self.machine_module.Machine()
+        result = await machine._handle_machine_request(DummyWebRequest("/machine/restart"))
+
+        self.assertEqual(result, "original:/machine/restart")
         self.assertEqual(scheduled, [])
-        self.assertEqual(machine.original_calls, ["/machine/shutdown"])
+        self.assertEqual(machine.original_calls, ["/machine/restart"])
 
     async def test_reboot_request_preserves_container_guard(self):
         scheduled = []
-        self.kobra._schedule_native_machine_reboot = lambda: scheduled.append(True)
+        self.kobra._schedule_native_machine_action = lambda action: scheduled.append(action)
 
         machine = self.machine_module.Machine()
         machine.inside_container = True
