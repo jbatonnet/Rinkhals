@@ -699,6 +699,27 @@ class Kobra:
                     if state.lower() in ['complete', 'completed', 'print_complete', 'finished', 'finish', 'done']:
                         state = 'complete'
 
+                    # Debounce GoKlipper's standby state due to race condition at end of print (#445)
+                    # GoKlipper emits "standby" then "complete" 1-2 seconds later, causing Moonraker to report "cancelled"
+                    if state.lower() == 'standby' and getattr(self, '_last_tracked_state', None) == 'printing':
+                        state = 'printing' # Keep it printing for now
+                        
+                        async def _apply_delayed_standby():
+                            import asyncio
+                            await asyncio.sleep(2.5)
+                            if getattr(self, '_last_tracked_state', None) == 'printing':
+                                setattr(self, '_last_tracked_state', 'standby')
+                                import time
+                                klippy_conn = self.server.lookup_component("klippy_connection", None)
+                                if klippy_conn:
+                                    klippy_conn._process_status_update(time.time(), {'print_stats': {'state': 'standby'}})
+
+                        if not getattr(self, '_delayed_standby_task', None) or getattr(self, '_delayed_standby_task').done():
+                            # Run the debouncer
+                            setattr(self, '_delayed_standby_task', self.server.get_event_loop().create_task(_apply_delayed_standby()))
+
+                    setattr(self, '_last_tracked_state', state)
+
                     # Ensures same string memory location for Moonraker job_state check (https://github.com/jbatonnet/Rinkhals/issues/118#issuecomment-2980916709)
                     if state not in self._states_cache:
                         self._states_cache.append(state)
