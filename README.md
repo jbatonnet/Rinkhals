@@ -25,7 +25,7 @@ Here are the supported GoKlipper / K3-family printers and firmwares with the lat
 | Kobra S1 (+ combo) | `2.6.0.0` `2.7.0.9` |
 | Kobra 3 Max (+ combo) | `2.5.1.3` `2.5.1.7` |
 | Kobra 3 V2 (+ combo) | `1.1.0.1` `1.1.0.4` |
-| Kobra S1 Max (+ combo) | `2.1.6` `2.6.6` 🔴`2.6.9.3`🔴 |
+| Kobra S1 Max (+ combo) | `2.6.6` `2.6.9.3` |
 
 🔴 - in testing, not yet ready
 
