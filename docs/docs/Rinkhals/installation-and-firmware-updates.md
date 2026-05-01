@@ -31,7 +31,7 @@ On the Kobra series of 3D printer, it's possible to sideload .swu files to insta
 
     Follow those steps to downgrade to 3.1.2.3:
 
-    - Download firmware from here: [https://rinkhals.thedju.net/](https://rinkhals.thedju.net/)
+    - Download firmware from here: [https://rinkhals.firmwareforge.org](https://rinkhals.firmwareforge.org)
     - Format a USB drive as FAT32 (using MBR, GPT won’t work)
     - Create a directory named `update`
     - Rename `K2P_3.1.2.3.swu` to `update.swu`
@@ -44,7 +44,7 @@ On the Kobra series of 3D printer, it's possible to sideload .swu files to insta
 
 ## Stock firmware installation
 
-- Download the stock firmware you want to install from this share: [https://rinkhals.thedju.net/](https://rinkhals.thedju.net/)
+- Download the stock firmware you want to install from this share: [https://rinkhals.firmwareforge.org](https://rinkhals.firmwareforge.org)
 - Follow the installation steps above for your printer model
 - After a couple of minutes, you will hear 2 beeps and the printer will reboot with your chosen firmware
 
