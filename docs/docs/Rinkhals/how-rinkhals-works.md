@@ -2,7 +2,7 @@
 title: How does Rinkhals work?
 ---
 
-Rinkhals is a robust custom firmware extension—or overlay—designed specifically for Anycubic Kobra 3D printers running the proprietary "Kobra OS" stack. 
+Rinkhals is a robust custom firmware extension (overlay) designed specifically for Anycubic Kobra 3D printers running the proprietary "Kobra OS" stack. 
 
 Instead of completely erasing the printer to install vanilla Klipper (which usually breaks the native touchscreen UI and Anycubic cloud integrations), Rinkhals is built to safely run *alongside* the stock environment. This gives you the best of both worlds: open-source community features combined with the polished aspects of the stock firmware.
 
