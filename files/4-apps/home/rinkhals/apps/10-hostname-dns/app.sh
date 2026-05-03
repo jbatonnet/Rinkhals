@@ -1,6 +1,7 @@
+# shellcheck source=../../../../../3-rinkhals/tools.sh
 source /useremain/rinkhals/.current/tools.sh
 
-APP_ROOT=$(dirname $(realpath $0))
+APP_ROOT=$(dirname "$(realpath "$0")")
 APP_NAME="10-hostname-dns"
 
 resolve_hostname() {
@@ -22,6 +23,7 @@ resolve_hostname() {
     fi
 
     # Sanitize: lowercase, replace invalid chars with hyphens, trim leading/trailing hyphens
+    # shellcheck disable=SC2019,SC2018 # (use only latin chars, others will be replaced with hyphens)
     HOSTNAME=$(echo "$HOSTNAME" | tr 'A-Z' 'a-z' | sed 's/[^a-z0-9-]/-/g; s/^-*//; s/-*$//' | head -c 63)
 
     # Final guard: if sanitization produced an empty string, use a fallback
@@ -33,7 +35,7 @@ resolve_hostname() {
 }
 
 status() {
-    PIDS=$(get_by_name mdns_responder.py)
+    PIDS=$(get_by_name mdns_responder.py; get_by_name dhcp_watchdog.sh)
 
     if [ "$PIDS" = "" ]; then
         report_status $APP_STATUS_STOPPED
@@ -55,28 +57,28 @@ start() {
         log "/!\ Failed to set hostname to $HOSTNAME"
     fi
 
-    # Propagate hostname via DHCP if enabled
+    # Propagate hostname via DHCP if enabled.
+    # K3SysUi may (re)spawn udhcpc without the hostname flag at any time,
+    # so we run a watchdog that replaces rogue instances.
     DHCP_ENABLED=$(get_app_property $APP_NAME dhcp_hostname)
     if [ "$DHCP_ENABLED" = "True" ]; then
-        # Restart each udhcpc instance with -H so the router registers the hostname
-        for UDHCPC_PID in $(get_by_name udhcpc); do
-            UDHCPC_IFACE=$(cat /proc/$UDHCPC_PID/cmdline 2>/dev/null | tr '\0' '\n' | grep -A1 -- '^-i$' | tail -1)
-            if [ -n "$UDHCPC_IFACE" ]; then
-                kill $UDHCPC_PID
-                udhcpc -i "$UDHCPC_IFACE" -H "$HOSTNAME" -b &
-            fi
-        done
-
+        cd "$APP_ROOT" || exit 1
+        sh dhcp_watchdog.sh "$HOSTNAME" >> $RINKHALS_LOGS/app-hostname-dns-dhcp.log 2>&1 &
+        log "Started udhcpc watchdog to propagate hostname via DHCP"
     fi
 
     # Start mDNS responder
     mkdir -p $RINKHALS_LOGS
-    cd $APP_ROOT
-    python3 mdns_responder.py "$HOSTNAME" >> $RINKHALS_LOGS/app-hostname-dns.log 2>&1 &
+    cd "$APP_ROOT" || exit 1
+    python3 mdns_responder.py "$HOSTNAME" >> $RINKHALS_LOGS/app-hostname-dns-mdns.log 2>&1 &
+    log "Started mDNS responder to propagate hostname via mDNS"
 }
 
 stop() {
     kill_by_name mdns_responder.py
+    log "Stopped mDNS responder"
+    kill_by_name dhcp_watchdog.sh
+    log "Stopped udhcpc watchdog"
 }
 
 case "$1" in
