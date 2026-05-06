@@ -20,11 +20,11 @@ Latest version will likely support the two latest firmwares from Anycubic, unles
 Here are the supported GoKlipper / K3-family printers and firmwares with the latest Rinkhals release:
 | Model  | Tested firmwares | Notes |
 | -- | -- | -- |
-| Kobra 3 (+ combo) | `2.4.4.7` `2.4.5` `2.4.6.7` |
+| Kobra 3 (+ combo) | `2.4.5` `2.4.6.7` |
 | Kobra 2 Pro | `3.1.2.3` `3.1.4` | Only with mainboard [Trigorilla Spe **B** v1.0.x](https://1coderookie.github.io/Kobra2ProInsights/hardware/mainboard/#trigorilla_spe_b_v10x-stock-new-revision). `3.1.4` seems to be buggy for some people |
 | Kobra S1 (+ combo) | `2.6.0.0` `2.7.0.9` |
-| Kobra 3 Max (+ combo) | `2.5.1.3` `2.5.1.7` |
-| Kobra 3 V2 (+ combo) | `1.1.0.1` `1.1.0.4` |
+| Kobra 3 Max (+ combo) | `2.5.1.7` `2.5.2.8` |
+| Kobra 3 V2 (+ combo) | `1.1.0.4` `1.1.2.8` |
 | Kobra S1 Max (+ combo) | `2.6.6` `2.6.9.3` |
 
 🔴 - in testing, not yet ready
