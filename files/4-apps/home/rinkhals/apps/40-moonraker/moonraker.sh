@@ -81,6 +81,8 @@ start_moonraker_with_restart() {
 
         # Start Moonraker
         mkdir -p /useremain/tmp
+        mkdir -p /userdata/app/gk/printer_data/logs
+        chmod 777 /userdata/app/gk/printer_data/logs
         TMPDIR=/useremain/tmp HOME=/userdata/app/gk python ./moonraker/moonraker/moonraker.py \
             -c /userdata/app/gk/printer_data/config/moonraker.generated.conf \
             >> $RINKHALS_ROOT/logs/app-moonraker.log 2>&1 &

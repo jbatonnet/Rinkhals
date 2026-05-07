@@ -15,6 +15,14 @@ Rinkhals includes many firmware protection features. It is designed as an overla
 
 For anyone curious enough: [Rinkhals internals](how-rinkhals-works.md)
 
+## Kobra X status
+
+Some Kobra X firmware images are available publicly and the SWU password is known.
+
+However, the software stack differs significantly from the K3 family. Anycubic appears to have moved from GoKlipper-based firmware to a K4 base with a C++ Klipper port. Because of this, Kobra X support is not expected to be a straightforward Rinkhals port.
+
+Additionally, Kobra X SWU updates appear to require certificate validation. Until a reliable method is found to bypass or satisfy this requirement, Rinkhals-style SWU injection is not currently feasible on Kobra X.
+
 
 ## Summary
 

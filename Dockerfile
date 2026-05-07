@@ -53,6 +53,7 @@ RUN --mount=type=cache,sharing=locked,target=/var/cache/apt \
     apt-get update && \
     apt-get install -y --no-install-recommends \
         which sed make binutils build-essential diffutils gcc g++ bash patch gzip bzip2 perl tar cpio unzip rsync file bc findutils wget \
+        texinfo \
         python3 libncurses5 git mercurial ca-certificates \
         locales whois vim bison flex \
         libncurses5-dev libdevmapper-dev libsystemd-dev libssl-dev libfdt-dev libvncserver-dev libdrm-dev && \
@@ -82,6 +83,7 @@ ENV KCONFIG_NOSILENTUPDATE=1
 RUN --mount=type=cache,target=/buildroot/dl \
 <<EOT
     set -e
+    make BR2_EXTERNAL=/external olddefconfig
     make BR2_EXTERNAL=/external
     chmod +x /buildroot/prepare-final.sh
     /buildroot/prepare-final.sh
@@ -108,6 +110,7 @@ ARG rebuild=""
 RUN --mount=type=cache,target=/buildroot/dl \
 <<EOT
     set -e
+    make BR2_EXTERNAL=/external olddefconfig
     if [ $clean_buildroot -eq 1 ] && [ -n "$rebuild" ]; then
         echo "Unable to rebuild because Buildroot stage was cleaned"
         exit 1

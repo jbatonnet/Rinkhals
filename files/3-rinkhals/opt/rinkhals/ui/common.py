@@ -234,11 +234,14 @@ class Rinkhals:
     def get_current_path():
         try:
             version_file = os.path.join(RINKHALS_BASE, '.version')
+            current_path = None
             if os.path.exists(version_file):
                 with open(version_file, 'r') as f:
                     current_path = f.read().strip()
 
-            return os.path.join(RINKHALS_BASE, current_path)
+            if current_path:
+                return os.path.join(RINKHALS_BASE, current_path)
+            return None
         except:
             return None
     def get_current_version():

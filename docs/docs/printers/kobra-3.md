@@ -2,13 +2,13 @@
 title: Anycubic Kobra 3
 ---
 
-
 ## General
 
-- SWU password: `U2FsdGVkX19deTfqpXHZnB5GeyQ/dtlbHjkUnwgCi+w=`
-- Ex/Im password: `2YLVrATRvUEnMeXk6Vtc7qxfzYM4TJzrLnEBma8zpUKeGtseGWqp4LXs7e8KeU2u`
-- SSH root password: `rockchip`
-
+- **Software base**: `GoKlipper`
+- **Supported by Rinkhals**: `Yes`
+- **SWU password**: `U2FsdGVkX19deTfqpXHZnB5GeyQ/dtlbHjkUnwgCi+w=`
+- **Ex/Im password**: `2YLVrATRvUEnMeXk6Vtc7qxfzYM4TJzrLnEBma8zpUKeGtseGWqp4LXs7e8KeU2u`
+- **SSH root password**: `rockchip`
 
 ## Components
 
@@ -24,7 +24,6 @@ title: Anycubic Kobra 3
     Cropped image of SW2 and surrounding components (late unit with missing SW2)
 
     </div>
-
 
 ## Firmware history
 

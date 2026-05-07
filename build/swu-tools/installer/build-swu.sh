@@ -94,7 +94,15 @@ cat /files/1-buildroot/usr/sbin/dropbear |
 cat /files/1-buildroot/usr/libexec/sftp-server |
     sed "s/\/lib\/ld-uClibc.so.0/\/tmp\/rin\/\/ld-uClibc/g" \
     > /tmp/update_swu/sftp-server
-
+# Create .version files
+mkdir -p /tmp/update_swu/rinkhals
+if [ -n "$RINKHALS_VERSION" ]; then
+    echo "$RINKHALS_VERSION" > /tmp/update_swu/.version
+    echo "$RINKHALS_VERSION" > /tmp/update_swu/rinkhals/.version
+else
+    echo "dev" > /tmp/update_swu/.version
+    echo "dev" > /tmp/update_swu/rinkhals/.version
+fi
 # Create the update.swu
 echo "Building update package..."
 

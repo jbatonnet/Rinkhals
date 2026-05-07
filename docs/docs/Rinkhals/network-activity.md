@@ -54,6 +54,8 @@ DNS uses 1.1.1.1 (Cloudflare DNS) and 8.8.8.8 (Google DNS) using standard port 5
 
 ### Apps
 
+- [Hostname and DNS](https://github.com/jbatonnet/Rinkhals/tree/master/files/4-apps/home/rinkhals/apps/10-hostname-dns)
+    - Advertises the printer's hostname locally via DHCP/DNS.
 - [Cloud2LAN bridge](https://github.com/jbatonnet/Rinkhals.apps/tree/master/apps/cloud2lan-bridge)
     - MQTT servers listed above to simulate cloud features
 - [Discovery helper](https://github.com/jbatonnet/Rinkhals.apps/tree/master/apps/discovery-helper)

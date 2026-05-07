@@ -1,0 +1,21 @@
+{
+    "$version": "1",
+
+    "name": "Hostname & DNS",
+    "description": "Sets a custom hostname and advertises it via mDNS (.local) so the printer is discoverable on the network",
+    "version": "1.0",
+
+    "properties": {
+        "hostname": {
+            "display": "Hostname",
+            "type": "text",
+            "default": ""
+        },
+        "dhcp_hostname": {
+            "display": "Send hostname via DHCP",
+            "type": "enum",
+            "options": ["False", "True"],
+            "default": "True"
+        }
+    }
+}

@@ -3,7 +3,7 @@ source /useremain/rinkhals/.current/tools.sh
 APP_ROOT=$(dirname $(realpath $0))
 
 status() {
-    PIDS=$(get_by_name rinkhals-monitor.sh)
+    PIDS=$(get_by_name rinkhals-monitor)
 
     if [ "$PIDS" == "" ]; then
         report_status $APP_STATUS_STOPPED
