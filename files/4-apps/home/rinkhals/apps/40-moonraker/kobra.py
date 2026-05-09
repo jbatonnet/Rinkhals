@@ -1055,9 +1055,9 @@ class Kobra:
     def patch_mqtt_print(self):
         async def handle_gcode_print_file(args: dict, delegate_run_gcode):
             logging.info(f'[Kobra] Print file: {args}')
+            filename = args["FILENAME"] if "FILENAME" in args else None
             if self.is_goklipper_running():
                 self._total_layer = 0
-                filename = args["FILENAME"] if "FILENAME" in args else None
                 logging.info(f'[Kobra] Print file: {filename}')
                 
                 if filename and self.is_using_mqtt():
