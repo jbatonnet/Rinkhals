@@ -2363,11 +2363,23 @@ class MmuAcePatcher:
             # ACE retracts filament between prints (the touchscreen Color Match →
             # Print flow currently doesn't issue FEED_FILAMENT; this hook fills
             # that gap). See issue #464.
+            #
+            # Slot selection order:
+            #   1. self.ace.gate if set — honours touchscreen Color Match selection
+            #      (relies on #443 being fixed; safe fallback if not)
+            #   2. mapping[0].ams_index — the first slot mapped from the slicer's
+            #      tool order. Correct for single-colour prints and for the initial
+            #      feed of multi-colour prints (subsequent T-commands switch).
             if self.ace.loaded_gate == TOOL_GATE_UNKNOWN and mapping:
-                target_gate = mapping[0]["ams_index"]
+                if self.ace.gate != TOOL_GATE_UNKNOWN:
+                    target_gate = self.ace.gate
+                    source = "Color Match (self.ace.gate)"
+                else:
+                    target_gate = mapping[0]["ams_index"]
+                    source = "ams_box_mapping[0]"
                 logging.info(
                     f"patch_print_data: no filament currently loaded, "
-                    f"scheduling auto-feed for gate {target_gate}"
+                    f"scheduling auto-feed for gate {target_gate} (via {source})"
                 )
                 self.ace_controller.eventloop.create_task(
                     self._auto_feed_at_print_start(target_gate)
