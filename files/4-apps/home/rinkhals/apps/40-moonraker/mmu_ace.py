@@ -2358,7 +2358,99 @@ class MmuAcePatcher:
 
             logging.debug(f"mmu_ace: patch_print_data: {json.dumps(print_data)}")
 
+            # Auto-feed filament when the ACE has no slot loaded into the toolhead
+            # going into this print. Without this, prints fail to extrude after the
+            # ACE retracts filament between prints (the touchscreen Color Match →
+            # Print flow currently doesn't issue FEED_FILAMENT; this hook fills
+            # that gap). See issue #464.
+            #
+            # Slot selection order:
+            #   1. self.ace.gate if set — honours touchscreen Color Match selection
+            #      (relies on #443 being fixed; safe fallback if not)
+            #   2. mapping[0].ams_index — the first slot mapped from the slicer's
+            #      tool order. Correct for single-colour prints and for the initial
+            #      feed of multi-colour prints (subsequent T-commands switch).
+            if self.ace.loaded_gate == TOOL_GATE_UNKNOWN and mapping:
+                if self.ace.gate != TOOL_GATE_UNKNOWN:
+                    target_gate = self.ace.gate
+                    source = "Color Match (self.ace.gate)"
+                else:
+                    target_gate = mapping[0]["ams_index"]
+                    source = "ams_box_mapping[0]"
+                logging.info(
+                    f"patch_print_data: no filament currently loaded, "
+                    f"scheduling auto-feed for gate {target_gate} (via {source})"
+                )
+                self.ace_controller.eventloop.create_task(
+                    self._auto_feed_at_print_start(target_gate)
+                )
+
         return print_data
+
+    async def _auto_feed_at_print_start(self, gate: int) -> None:
+        """Auto-feed filament from `gate` shortly after a print starts.
+
+        Workaround for issue #464: the Color Match → Print flow doesn't issue
+        FEED_FILAMENT, so a print after the ACE has retracted filament starts
+        with an empty nozzle and fails to extrude.
+
+        Waits until the extruder has been commanded to a real print temperature
+        (target >= 190 C) and is within 10 C of target. This avoids triggering
+        during the LeviQ3 probing routine, which oscillates target between
+        170 C (extru_temp) and 140 C (extru_end_temp) -- feeding during that
+        window would either be rejected by min_extrude_temp or ooze onto the
+        probing nozzle.
+        """
+        FEED_TARGET_MIN = 190
+        FEED_TEMP_MARGIN = 10
+        FEED_LENGTH = 80
+        FEED_SPEED = 25
+        MAX_WAIT_SECONDS = 600
+        POLL_INTERVAL = 2.0
+
+        start = time.time()
+        while time.time() - start < MAX_WAIT_SECONDS:
+            try:
+                # Bail if loaded externally (e.g. via MMU_LOAD or T-command)
+                if self.ace.loaded_gate != TOOL_GATE_UNKNOWN:
+                    logging.info(
+                        f"auto-feed: gate {self.ace.loaded_gate} loaded externally, "
+                        f"skipping scheduled auto-feed"
+                    )
+                    return
+
+                result = await self.ace_controller.printer.query_objects({
+                    "extruder": ["temperature", "target"]
+                })
+                ext = result.get("extruder", {}) if isinstance(result, dict) else {}
+                temp = float(ext.get("temperature", 0) or 0)
+                target = float(ext.get("target", 0) or 0)
+
+                if target >= FEED_TARGET_MIN and temp >= (target - FEED_TEMP_MARGIN):
+                    ace_id = gate // 4
+                    local_index = gate % 4
+                    gcode = (
+                        f"FEED_FILAMENT ID={ace_id} INDEX={local_index} "
+                        f"LENGTH={FEED_LENGTH} SPEED={FEED_SPEED}"
+                    )
+                    logging.info(f"auto-feed: sending {gcode}")
+                    await self.ace_controller.printer.send_gcode(gcode)
+
+                    # Update internal state to reflect the loaded gate
+                    self.ace.gate = gate
+                    self.ace.tool = gate
+                    self.ace.loaded_gate = gate
+                    return
+
+            except Exception as exc:
+                logging.warning(f"auto-feed: poll error: {exc}")
+
+            await asyncio.sleep(POLL_INTERVAL)
+
+        logging.warning(
+            f"auto-feed: gave up after {MAX_WAIT_SECONDS}s "
+            f"(extruder target never reached {FEED_TARGET_MIN} C)"
+        )
 
     def _combine(self, sourceA, sourceB):
         result = {}
