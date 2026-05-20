@@ -137,6 +137,8 @@ func main() {
 
 	if os.Getenv("MQTT_USERNAME") != "" {
 		mqttUsername = os.Getenv("MQTT_USERNAME")
+	} else if os.Getenv("MQTT_USER") != "" {
+		mqttUsername = os.Getenv("MQTT_USER")
 	}
 	if os.Getenv("MQTT_PASSWORD") != "" {
 		mqttPassword = os.Getenv("MQTT_PASSWORD")
@@ -164,7 +166,6 @@ func main() {
 	if mqttPassword != "" {
 		opts.SetPassword(mqttPassword)
 	}
-	opts.SetPassword(mqttPassword)
 
 	opts.OnConnectionLost = func(client mqtt.Client, err error) {
 		log.Printf("Connection lost: %v", err)
@@ -186,7 +187,9 @@ func main() {
 
 	// Retrieve current device ID
 	deviceID := ""
-	if os.Getenv("KOBRA_DEVICE_ID") != "" {
+	if os.Getenv("DEVICE_ID") != "" {
+		deviceID = os.Getenv("DEVICE_ID")
+	} else if os.Getenv("KOBRA_DEVICE_ID") != "" {
 		deviceID = os.Getenv("KOBRA_DEVICE_ID")
 	}
 

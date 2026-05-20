@@ -66,4 +66,14 @@ You can now slice your prints and send them off to your printer 🖨️ 😊✌�
 
 You are done with setting up your printer on OrcaSlicer with the basic settings.
 
+## Best Practices and Troubleshooting
+
+**"Timer too close" errors or MCU Starvation**
+If your printer suddenly halts with a "Timer too close" error during prints:
+- **Decrease G-Code Resolution:** Go to Print settings > Precision and increase the **Max Deviation** value. Highly detailed arcs or circles can spawn too many tiny segments that overwhelm the printer.
+- **Turn off Dynamic Cooling:** Go to Filament settings > Cooling. Disable "Dynamic overhang cooling" or minimize the frequency of fan speed changes. Rapid temperature/fan adjustment commands (`M106` / `M160`) interleaved with tight G-Code movements easily overload the host communications.
+
+**Anycubic Slicer Next ACE Connection Issues**
+If you are using Anycubic Slicer Next (based on Orca) and experience errors where the slicer fails to detect the ACE unit or complains about ACE status, ensure your firmware is updated to **Rinkhals 20260501_01** or later, which completely resolves the `ACE missing` error logic payload from Slicer Next.
+
 **Happy Printing!**

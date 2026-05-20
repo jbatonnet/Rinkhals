@@ -84,6 +84,7 @@ def patch_K3SysUi(binaryPath, modelCode, version):
 
     patchJumpOperand = 'b'
     s1RowRegister = 'r3'
+    s1CaseAlreadySelected = False
 
     if modelCode == 'K2P' and version == '3.1.2.3':
         buttonCallback = k3sysui.symbols['_ZN10MainWindow23AcSettingListBtnReleaseEi']
@@ -140,6 +141,10 @@ def patch_K3SysUi(binaryPath, modelCode, version):
         buttonCallback = k3sysui.symbols['_ZZN10MainWindow19AcSettingPageUiInitEvENKUlvE_clEv']
         patchJumpAddress = 0x103558
         patchReturnAddress = 0x103588
+    elif (modelCode == 'K3M' and version == '2.5.2.8') or (modelCode == 'K3V2' and (version == '1.1.2.7' or version == '1.1.2.8')):
+        buttonCallback = k3sysui.symbols['_ZZN10MainWindow19AcSettingPageUiInitEvENKUlvE_clEv']
+        patchJumpAddress = 0x1076ec
+        patchReturnAddress = 0x10772c
 
     # KS1 - Settings > General > Service Support (4th button)
     
@@ -183,12 +188,38 @@ def patch_K3SysUi(binaryPath, modelCode, version):
         patchJumpAddress = 0x14a51c
         patchReturnAddress = 0x14a524
         s1RowRegister = 'r1'
-        
+    elif modelCode == 'KS1' and version == '2.7.0.7':
+        buttonCallback = k3sysui.symbols['_ZZN10MainWindow21AcSettingDeviceUiInitEvENKUlRK11QModelIndexE0_clES2_']
+        # In 2.7.0.7 the actual Service Support case body starts at 0x14e870.
+        # The NOPs at 0x14e890 are after the original case-3 page switch.
+        patchJumpAddress = 0x14e870
+        patchReturnAddress = 0x14e89c
+        s1CaseAlreadySelected = True
+    elif modelCode == 'KS1' and version == '2.7.0.9':
+        buttonCallback = k3sysui.symbols['_ZZN10MainWindow21AcSettingDeviceUiInitEvENKUlRK11QModelIndexE0_clES2_']
+        # In 2.7.0.9, case 3 (Service Support) begins at 0x14f5b0.
+        # The switch break target (cleanup/epilog) is at 0x14f674.
+        patchJumpAddress = 0x14f5b0
+        patchReturnAddress = 0x14f674
+        s1CaseAlreadySelected = True
+
     elif modelCode == 'KS1M' and version == '2.1.6':
         buttonCallback = k3sysui.symbols['_ZZN10MainWindow21AcSettingDeviceUiInitEvENKUlRK11QModelIndexE0_clES2_']
         patchJumpAddress = 0x14a514
         patchReturnAddress = 0x14a51c
         s1RowRegister = 'r1'
+    elif modelCode == 'KS1M' and version == '2.6.6':
+        buttonCallback = k3sysui.symbols['_ZZN10MainWindow21AcSettingDeviceUiInitEvENKUlRK11QModelIndexE0_clES2_']
+        patchJumpAddress = 0x14efc0
+        patchReturnAddress = 0x14efec
+        s1CaseAlreadySelected = True
+    elif modelCode == 'KS1M' and version == '2.6.9.3':
+        buttonCallback = k3sysui.symbols['_ZZN10MainWindow21AcSettingDeviceUiInitEvENKUlRK11QModelIndexE0_clES2_']
+        # In 2.6.9.3 the Support entry now routes through a warning popup path.
+        # Hook that case directly to bypass the popup and open Rinkhals instead.
+        patchJumpAddress = 0x150b30
+        patchReturnAddress = 0x150bd4
+        s1CaseAlreadySelected = True
 
     else:
         raise Exception('Unsupported model and version')
@@ -271,7 +302,7 @@ def patch_K3SysUi(binaryPath, modelCode, version):
     address = address - address % 4
     k3sysui.asm(patchJumpAddress, f'{patchJumpOperand} 0x{address:x}')
     
-    if modelCode == 'KS1' or modelCode == 'KS1M':
+    if (modelCode == 'KS1' or modelCode == 'KS1M') and not s1CaseAlreadySelected:
         # if (row() != 3) return
         k3sysui.asm(address + 0, 'mov r0, r4')
         k3sysui.asm(address + 4, f'cmp {s1RowRegister}, #0x3')
@@ -572,7 +603,7 @@ def main_file(path, model, version):
 def main_directory(path):
     files = os.listdir(path)
     for file in files:
-        match = re.search('^([a-zA-Z0-9]+)\.(K[A-Z0-9]+)_([0-9.]+)$', file)
+        match = re.search(r'^([a-zA-Z0-9]+)\.(K[A-Z0-9]+)_([0-9.]+)$', file)
         if not match:
             continue
 
@@ -602,7 +633,7 @@ def main():
             model = os.getenv('KOBRA_MODEL_CODE')
             version = os.getenv('KOBRA_VERSION')
 
-            match = re.search('^([a-zA-Z0-9]+)\.(K[A-Z0-9]+)_([0-9.]+)$', os.path.basename(path))
+            match = re.search(r'^([a-zA-Z0-9]+)\.(K[A-Z0-9]+)_([0-9.]+)$', os.path.basename(path))
             if match:
                 model = match.group(2)
                 version = match.group(3)

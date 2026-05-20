@@ -13,6 +13,14 @@ GoKlipper (1) is not starting properly, it's most likely due to a printer config
 
 Please check the information in [I got 11407 or my printer doesn't boot anymore](Rinkhals/printer-configuration.md#i-got-11407-or-my-printer-doesnt-boot-anymore)
 
+## I'm getting "Timer too close" errors during prints
+This is often caused by MCU starvation when GoKlipper receives too many small, high-resolution G-Code segments combined with rapid Dynamic Cooling fan adjustments (frequent `M106` / `M160` commands). 
+
+If you are using **Anycubic Slicer Next** or **Orca Slicer**:
+1. Increase your **Max Deviation** settings (under Print settings > Precision) to reduce the G-Code fragment density.
+2. Consider disabling **Dynamic overhang cooling** or reducing the frequency of fan speed changes, as the constant back-and-forth commands can overwhelm the host proxy.
+*(Note: As of Rinkhals 20260501_01, core priority processes have been optimized to better mitigate this, but slicer adjustments remain the best practice.)*
+
 ## Should I use installer-\*.swu or update-\*.swu?
 
 The installer-\*.swu is the Rinkhals Installer tool. It's like a web installer on steroids. Using this tool you can download any Rinkhals or system firmware and perform some other operations. Check more details on the [Installer page](Rinkhals/rinkhals-installer.md)
