@@ -8,17 +8,18 @@
 # or a temporary file that the main udhcpc script then copies.
 
 RESOLV_CONF="/etc/resolv.conf"
+RESOLV_CONF_ORG="$RESOLV_CONF.org"
 
 case "$1" in
   renew|bound)
     if [ -n "$search" ]; then
-      search_list=$search
+      search_list="$search"
     elif [ -n "$domain" ]; then
-      search_list=$domain
+      search_list="$domain"
     fi
 
     # Create a temporary file for the new resolv.conf content
-    TEMP_RESOLV_CONF=$(mktemp)
+    TEMP_RESOLV_CONF="$(mktemp)"
 
     # Add search domain if available
     [ -n "$search_list" ] && echo "search $search_list # $interface" >> "$TEMP_RESOLV_CONF"
@@ -28,8 +29,14 @@ case "$1" in
         echo "nameserver $ns # $interface" >> "$TEMP_RESOLV_CONF"
     done
 
-    # Prepend the new entries to the existing resolv.conf
-    cat "$RESOLV_CONF" >> "$TEMP_RESOLV_CONF"
+    # Add static (fallback nameservers)
+    echo "nameserver 1.1.1.1" >> "$TEMP_RESOLV_CONF"
+    echo "nameserver 8.8.8.8" >> "$TEMP_RESOLV_CONF"
+
+    # Backup original resolv.conf if it hasn't been backed up yet
+    [ -f "$RESOLV_CONF_ORG" ] || cp "$RESOLV_CONF" "$RESOLV_CONF_ORG"
+
+    # Replace old with new version
     mv "$TEMP_RESOLV_CONF" "$RESOLV_CONF"
   ;;
 esac
