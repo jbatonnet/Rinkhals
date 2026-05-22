@@ -1,5 +1,16 @@
 [![Discord](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fdiscord.com%2Fapi%2Finvites%2F3mrANjpNJC%3Fwith_counts%3Dtrue&query=%24.approximate_member_count&logo=discord&logoColor=white&label=Discord&suffix=%20members&color=%235865F2)](https://discord.gg/3mrANjpNJC) [![Downloads](https://img.shields.io/github/downloads/jbatonnet/Rinkhals/total?label=Downloads&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4KPCEtLSBMaWNlbnNlOiBQRC4gTWFkZSBieSBzdGVwaGVuaHV0Y2hpbmdzOiBodHRwczovL2dpdGh1Yi5jb20vc3RlcGhlbmh1dGNoaW5ncy9taWNyb25zIC0tPgo8c3ZnIGZpbGw9IiNmZmZmZmYiIHdpZHRoPSI4MDBweCIgaGVpZ2h0PSI4MDBweCIgdmlld0JveD0iMCAwIDUxMiA1MTIiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgPjx0aXRsZT5kb3dubG9hZDwvdGl0bGU%2BPHBhdGggZD0iTTIzMiA2NEwyODAgNjQgMjgwIDIxNCAyNzcgMjcwIDMwMCAyNDIgMzU2IDE4OSAzODggMjIxIDI1NiAzNTMgMTI0IDIyMSAxNTYgMTg5IDIxMiAyNDIgMjM1IDI3MCAyMzIgMjE0IDIzMiA2NFpNNjQgNDAwTDQ0OCA0MDAgNDQ4IDQ0OCA2NCA0NDggNjQgNDAwWiIgLz48L3N2Zz4%3D)](https://github.com/jbatonnet/Rinkhals/releases) [![Firmwares](https://img.shields.io/badge/Stock%20firmwares-blue?logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4KPCEtLSBMaWNlbnNlOiBQRC4gTWFkZSBieSBzdGVwaGVuaHV0Y2hpbmdzOiBodHRwczovL2dpdGh1Yi5jb20vc3RlcGhlbmh1dGNoaW5ncy9taWNyb25zIC0tPgo8c3ZnIGZpbGw9IiNmZmZmZmYiIHdpZHRoPSI4MDBweCIgaGVpZ2h0PSI4MDBweCIgdmlld0JveD0iMCAwIDUxMiA1MTIiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgPjx0aXRsZT5kb3dubG9hZDwvdGl0bGU%2BPHBhdGggZD0iTTIzMiA2NEwyODAgNjQgMjgwIDIxNCAyNzcgMjcwIDMwMCAyNDIgMzU2IDE4OSAzODggMjIxIDI1NiAzNTMgMTI0IDIyMSAxNTYgMTg5IDIxMiAyNDIgMjM1IDI3MCAyMzIgMjE0IDIzMiA2NFpNNjQgNDAwTDQ0OCA0MDAgNDQ4IDQ0OCA2NCA0NDggNjQgNDAwWiIgLz48L3N2Zz4%3D)](https://rinkhals.firmwareforge.org) [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/jbatonnet/Rinkhals)
 
+# THIS REPOSITORY WILL BE DEPRECATED ON JULY 1st, 2026 
+
+🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥
+
+We have moved from @jbatonnet's repo to the new Rinkhals-community repo!  You can find it here:
+
+[https://github.com/rinkhals-community/Rinkhals/]
+
+**Please sumbit any issues, PR's, requests on the new site!**
+
+🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥
 
 # Rinkhals
 
